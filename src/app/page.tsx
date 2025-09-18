@@ -1,6 +1,4 @@
-import LoginPage from "../../login-page-project/src/components/LoginPage";
-
-
+import LoginPage from "@/app/login/LoginPage";
 
 export default function Home() {
   return <LoginPage />;
