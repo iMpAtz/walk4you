@@ -54,13 +54,36 @@ npx prisma studio
 ### รัน Backend (FastAPI)
 ```
 cd api
+
+# 1) สร้าง venv (ใช้ Python ที่มีอยู่บนเครื่อง)
 python -m venv .venv
 .\.venv\Scripts\Activate.ps1
-pip install --upgrade pip
-pip install fastapi "uvicorn[standard]" motor python-dotenv pydantic-settings python-multipart
-uvicorn app.main:app --reload --port 8000
+
+# 2) ติดตั้ง dependencies หลัก
+python -m pip install --upgrade pip
+python -m pip install fastapi "uvicorn[standard]" motor python-dotenv pydantic email-validator
+
+# 3) ตั้งค่า .env (เช่นเชื่อม MongoDB Atlas)
+#   สร้างไฟล์ api/.env แล้วใส่:
+#   MONGODB_URI=mongodb+srv://<user>:<pass>@<cluster>/?retryWrites=true&w=majority
+#   MONGODB_DB=walk4you
+
+# 4) รันเซิร์ฟเวอร์ด้วย interpreter ของ venv โดยตรง (แนะนำ)
+python -m uvicorn app.main:app --reload --port 8000
 ```
 ทดสอบ: http://localhost:8000/health และ http://localhost:8000/docs
+
+คำสั่งตรวจสอบ/ดีบัก
+```
+# ตรวจว่าใช้ python จาก venv จริง
+python -c "import sys; print(sys.executable)"
+
+# ตรวจว่าแพ็กเกจสำคัญพร้อมใช้งาน
+python -c "import uvicorn, email_validator; print('deps ok')"
+
+# ตรวจการเชื่อม MongoDB
+curl http://localhost:8000/db/status
+```
 
 ### รัน Frontend (Next.js)
 ```
@@ -75,6 +98,8 @@ npm run dev:no-turbo
 - PowerShell ใช้ `;` แทน `&&` เมื่อต่อคำสั่งหลายตัว
 - Prisma P1012 (Decimal ไม่รองรับ MongoDB): สคีมาใช้ Int หน่วยเซ็นต์แล้ว
 - หาก `npx prisma generate` error: ติดตั้ง `prisma` และ `@prisma/client` แล้วลองใหม่
+- FastAPI แจ้ง email-validator ไม่พบ: ติดตั้งเพิ่มด้วย `python -m pip install email-validator` ใน venv
+- ถ้ารัน `uvicorn` แล้วดึง Python global: รันแบบ `python -m uvicorn ...` แทน เพื่อบังคับใช้ venv
 
 ### สคริปต์ใน package.json
 ```
