@@ -1,0 +1,245 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "mongodb"
+  url      = env("DATABASE_URL")
+}
+
+// ============ Enums ============
+enum UserRole {
+  CUSTOMER
+  SELLER
+  ADMIN
+}
+
+enum CommonStatus {
+  ACTIVE
+  INACTIVE
+  BLOCKED
+}
+
+enum ProductStatus {
+  DRAFT
+  PUBLISHED
+  HIDDEN
+  OUT_OF_STOCK
+}
+
+enum OrderStatus {
+  PENDING
+  PAID
+  PROCESSING
+  SHIPPED
+  COMPLETED
+  CANCELLED
+}
+
+enum ShipmentStatus {
+  PREPARING
+  IN_TRANSIT
+  DELIVERED
+  RETURNED
+}
+
+enum PaymentMethod {
+  COD
+  CREDIT_CARD
+  BANK_TRANSFER
+  E_WALLET
+}
+
+enum PaymentStatus {
+  PENDING
+  PAID
+  FAILED
+  REFUNDED
+}
+
+enum ReportStatus {
+  OPEN
+  REVIEWING
+  RESOLVED
+  REJECTED
+}
+
+// ============ Models ============
+model User {
+  id           String   @id @default(auto()) @map("_id") @db.ObjectId
+  username     String   @unique
+  password     String
+  email        String   @unique
+  phone        String?
+  role         UserRole @default(CUSTOMER)
+  registerDate DateTime @default(now())
+
+  // Relations
+  stores               Store[]
+  orders               Order[]       @relation("UserOrders")
+  reports              Report[]
+  adminActions         AdminAction[] @relation("AdminPerformedActions")
+  adminTargetedActions AdminAction[] @relation("AdminTargetUser")
+}
+
+model Store {
+  id               String       @id @default(auto()) @map("_id") @db.ObjectId
+  ownerId          String       @db.ObjectId
+  storeName        String
+  storeDescription String?
+  registerDate     DateTime     @default(now())
+  status           CommonStatus @default(ACTIVE)
+
+  // Relations
+  owner                User          @relation(fields: [ownerId], references: [id])
+  products             Product[]
+  subOrders            SubOrder[]
+  adminTargetedActions AdminAction[] @relation("AdminTargetStore")
+
+  @@index([ownerId])
+}
+
+model Category {
+  id           String @id @default(auto()) @map("_id") @db.ObjectId
+  categoryName String @unique
+
+  products Product[]
+}
+
+model Product {
+  id          String        @id @default(auto()) @map("_id") @db.ObjectId
+  storeId     String        @db.ObjectId
+  productName String
+  description String?
+  // ใช้ Int เก็บราคาเป็นจำนวนเซ็นต์ แทน Decimal (MongoDB connector ไม่รองรับ Decimal)
+  price       Int
+  stock       Int           @default(0)
+  categoryId  String?       @db.ObjectId
+  createdAt   DateTime      @default(now())
+  status      ProductStatus @default(PUBLISHED)
+
+  // Relations
+  store      Store       @relation(fields: [storeId], references: [id])
+  category   Category?   @relation(fields: [categoryId], references: [id])
+  orderItems OrderItem[]
+
+  @@index([storeId])
+  @@index([categoryId])
+}
+
+model Order {
+  id         String      @id @default(auto()) @map("_id") @db.ObjectId
+  buyerId    String      @db.ObjectId
+  orderDate  DateTime    @default(now())
+  // เก็บยอดรวมหน่วยเป็นเซ็นต์
+  totalPrice Int
+  status     OrderStatus @default(PENDING)
+
+  // Relations
+  buyer     User       @relation("UserOrders", fields: [buyerId], references: [id])
+  subOrders SubOrder[]
+  payment   Payment?
+
+  @@index([buyerId])
+}
+
+model SubOrder {
+  id       String      @id @default(auto()) @map("_id") @db.ObjectId
+  orderId  String      @db.ObjectId
+  storeId  String      @db.ObjectId
+  // ยอดย่อยหน่วยเป็นเซ็นต์
+  subTotal Int
+  status   OrderStatus @default(PENDING)
+
+  // Relations
+  order    Order       @relation(fields: [orderId], references: [id])
+  store    Store       @relation(fields: [storeId], references: [id])
+  items    OrderItem[]
+  // ความสัมพันธ์ virtual ไปยัง Shipment (FK อยู่ที่ Shipment)
+  shipment Shipment?
+
+  @@index([orderId])
+  @@index([storeId])
+}
+
+model OrderItem {
+  id         String @id @default(auto()) @map("_id") @db.ObjectId
+  subOrderId String @db.ObjectId
+  productId  String @db.ObjectId
+  quantity   Int
+  // ราคา/ชิ้น หน่วยเป็นเซ็นต์
+  price      Int
+
+  // Relations
+  subOrder SubOrder @relation(fields: [subOrderId], references: [id])
+  product  Product  @relation(fields: [productId], references: [id])
+
+  @@index([subOrderId])
+  @@index([productId])
+}
+
+model Shipment {
+  id             String         @id @default(auto()) @map("_id") @db.ObjectId
+  subOrderId     String         @unique @db.ObjectId
+  shipmentDate   DateTime?      @default(now())
+  trackingNumber String?
+  status         ShipmentStatus @default(PREPARING)
+
+  // Relations: one-to-one กับ SubOrder โดย FK อยู่ที่ Shipment
+  subOrder SubOrder @relation(fields: [subOrderId], references: [id])
+}
+
+model Payment {
+  id            String        @id @default(auto()) @map("_id") @db.ObjectId
+  orderId       String        @db.ObjectId
+  paymentDate   DateTime      @default(now())
+  // จำนวนเงินหน่วยเป็นเซ็นต์
+  amount        Int
+  paymentMethod PaymentMethod @default(COD)
+  paymentStatus PaymentStatus @default(PENDING)
+
+  // Relations
+  order Order @relation(fields: [orderId], references: [id])
+
+  @@unique([orderId])
+}
+
+model Report {
+  id          String       @id @default(auto()) @map("_id") @db.ObjectId
+  userId      String       @db.ObjectId
+  reportType  String
+  description String?
+  submittedAt DateTime     @default(now())
+  status      ReportStatus @default(OPEN)
+
+  // Relations
+  user User @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+}
+
+model AdminAction {
+  id            String   @id @default(auto()) @map("_id") @db.ObjectId
+  adminId       String   @db.ObjectId
+  actionType    String
+  targetUserId  String?  @db.ObjectId
+  targetStoreId String?  @db.ObjectId
+  timestamp     DateTime @default(now())
+  description   String?
+
+  // Relations
+  admin       User   @relation("AdminPerformedActions", fields: [adminId], references: [id])
+  targetUser  User?  @relation("AdminTargetUser", fields: [targetUserId], references: [id])
+  targetStore Store? @relation("AdminTargetStore", fields: [targetStoreId], references: [id])
+
+  @@index([adminId])
+  @@index([targetUserId])
+  @@index([targetStoreId])
+}
