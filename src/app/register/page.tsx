@@ -2,8 +2,10 @@
 
 import Link from 'next/link';
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { useRouter } from 'next/navigation';
 
 export default function RegisterPage() {
+  const router = useRouter();
   const [fullName, setFullName] = useState('');
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
@@ -46,14 +48,38 @@ export default function RegisterPage() {
 
   const days = Array.from({ length: 31 }, (_, i) => String(i + 1).padStart(2, '0'));
 
-  const onSubmit = (e: React.FormEvent) => {
+  const [loading, setLoading] = useState(false);
+  const [showSuccess, setShowSuccess] = useState(false);
+
+  const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (password !== confirm) {
       alert('Password และ Confirm Password ไม่ตรงกัน');
       return;
     }
+    setLoading(true);
+    const apiBase = process.env.NEXT_PUBLIC_API_BASE ?? 'http://localhost:8000';
     const birth = day && month && year ? `${year}-${month}-${day}` : undefined;
-    console.log('Register submit', { fullName, username, password: '•••', email, gender, birth });
+    try {
+      const res = await fetch(`${apiBase}/auth/register`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username, password, email, fullName, gender, birthDay: birth })
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data?.detail || 'Register failed');
+      if (data?.access_token) localStorage.setItem('access_token', data.access_token);
+      console.log('[register] success', data);
+      setShowSuccess(true);
+      setTimeout(() => {
+        router.push('/login');
+      }, 1200);
+    } catch (err: any) {
+      console.error('[register] error', err);
+      alert(`Register failed: ${err?.message || 'unknown error'}`);
+    } finally {
+      setLoading(false);
+    }
   };
 
   // ทำความสะอาด URL ชั่วคราวเมื่อ unmount หรือเปลี่ยนรูป
@@ -219,12 +245,29 @@ export default function RegisterPage() {
           <div className="flex justify-center pt-4">
             <button
               type="submit"
-              className="rounded bg-[#ff6b6b] px-8 py-2 text-white shadow transition-transform hover:translate-y-[-1px] active:translate-y-[0] focus:outline-none focus:ring-2 focus:ring-[#ff6b6b]/40"
+              disabled={loading}
+              className="rounded bg-[#ff6b6b] px-8 py-2 text-white shadow transition-transform hover:translate-y-[-1px] active:translate-y-[0] focus:outline-none focus:ring-2 focus:ring-[#ff6b6b]/40 disabled:opacity-60 disabled:cursor-not-allowed"
             >
-              Submit
+              {loading ? 'Loading...' : 'Submit'}
             </button>
           </div>
         </form>
+        {/* Success Popup */}
+        {showSuccess && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+            <div className="w-[92%] max-w-sm rounded-lg bg-white p-6 text-center shadow-xl">
+              <div className="mb-2 text-lg font-semibold text-gray-900">Register Successful</div>
+              <div className="mb-4 text-sm text-gray-600">กำลังพากลับไปหน้า Login...</div>
+              <button
+                type="button"
+                onClick={() => router.push('/')}
+                className="rounded bg-[#ff6b6b] px-4 py-2 text-white shadow hover:brightness-95"
+              >
+                ไปหน้า Login ตอนนี้
+              </button>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

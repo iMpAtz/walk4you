@@ -2,22 +2,40 @@
 
 import Link from 'next/link';
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 
 export default function LoginPage() {
+  const router = useRouter();
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
 
   // sanitize เบื้องต้นฝั่ง client
   const sanitizeSql = (value: string) =>
     value.replace(/(--|\/\*|\*\/)/g, '').replace(/[;'"`\\<>]/g, '').trim();
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (username === 'admin' && password === '1234') {
-      alert('Login successful!');
-    } else {
-      setError('❌ Invalid username or password');
+    setError('');
+    setLoading(true);
+    const apiBase = process.env.NEXT_PUBLIC_API_BASE ?? 'http://localhost:8000';
+    try {
+      const res = await fetch(`${apiBase}/auth/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username, password })
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data?.detail || 'Login failed');
+      if (data?.access_token) localStorage.setItem('access_token', data.access_token);
+      console.log('[login] success', data);
+      router.push('/');
+    } catch (err: any) {
+      console.error('[login] error', err);
+      setError(`❌ ${err?.message || 'Login failed'}`);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -58,9 +76,10 @@ export default function LoginPage() {
           {error && <p className="text-sm text-red-400">{error}</p>}
           <button
             type="submit"
-            className="w-full rounded-lg bg-white px-4 py-3 font-semibold text-black shadow-md transition transform hover:scale-105 hover:shadow-lg hover:bg-gray-100"
+            disabled={loading}
+            className="w-full rounded-lg bg-white px-4 py-3 font-semibold text-black shadow-md transition transform hover:scale-105 hover:shadow-lg hover:bg-gray-100 disabled:opacity-60 disabled:cursor-not-allowed"
           >
-            Login
+            {loading ? 'Loading...' : 'Login'}
           </button>
         </form>
         <p className="mt-6 text-center text-sm text-gray-300">

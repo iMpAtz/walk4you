@@ -1,9 +1,13 @@
-from fastapi import FastAPI, Depends
+from fastapi import FastAPI, Depends, HTTPException, status
 from fastapi.middleware.cors import CORSMiddleware
 from motor.motor_asyncio import AsyncIOMotorClient, AsyncIOMotorDatabase
-from pydantic import BaseModel
+from pydantic import BaseModel, EmailStr
 import os
 from dotenv import load_dotenv
+from datetime import datetime, timedelta
+from typing import Optional
+import hashlib
+import secrets
 
 
 load_dotenv()
@@ -60,6 +64,36 @@ class PingDoc(BaseModel):
     message: str
 
 
+# ===== Auth Models =====
+class UserRegister(BaseModel):
+    username: str
+    password: str
+    email: EmailStr
+    fullName: Optional[str] = None
+    phone: Optional[str] = None
+    gender: Optional[str] = "Male"
+    birthDay: Optional[str] = None  # YYYY-MM-DD format
+
+
+class UserLogin(BaseModel):
+    username: str
+    password: str
+
+
+class UserResponse(BaseModel):
+    id: str
+    username: str
+    email: str
+    role: str
+    registerDate: datetime
+
+
+class AuthResponse(BaseModel):
+    access_token: str
+    token_type: str
+    user: UserResponse
+
+
 @app.get("/db/ping")
 async def db_ping(db: AsyncIOMotorDatabase = Depends(get_db)):
     try:
@@ -84,4 +118,138 @@ async def db_status():
         return {"ok": True}
     except Exception as e:
         return {"ok": False, "error": str(e)}
+
+
+# ===== Auth Endpoints =====
+def hash_password(password: str) -> str:
+    """Hash password using SHA-256 with salt"""
+    salt = secrets.token_hex(16)
+    return f"{salt}:{hashlib.sha256((salt + password).encode()).hexdigest()}"
+
+
+def verify_password(password: str, hashed: str) -> bool:
+    """Verify password against hash"""
+    try:
+        salt, hash_value = hashed.split(":", 1)
+        return hashlib.sha256((salt + password).encode()).hexdigest() == hash_value
+    except:
+        return False
+
+
+def create_access_token(data: dict) -> str:
+    """Create simple JWT-like token (for demo)"""
+    import base64
+    import json
+    exp_dt = datetime.utcnow() + timedelta(hours=24)
+    payload = {
+        "sub": data.get("user_id"),
+        "username": data.get("username"),
+        # use unix timestamp to avoid datetime JSON serialization issue
+        "exp": int(exp_dt.timestamp()),
+    }
+    token = base64.b64encode(json.dumps(payload).encode()).decode()
+    return token
+
+
+@app.post("/auth/register", response_model=AuthResponse)
+async def register(user_data: UserRegister, db: AsyncIOMotorDatabase = Depends(get_db)):
+    try:
+        # Check if user already exists
+        existing_user = await db.User.find_one({
+            "$or": [
+                {"username": user_data.username},
+                {"email": user_data.email}
+            ]
+        })
+        
+        if existing_user:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Username or email already exists"
+            )
+        
+        # Create new user
+        hashed_password = hash_password(user_data.password)
+        user_doc = {
+            "username": user_data.username,
+            "password": hashed_password,
+            "email": user_data.email,
+            "phone": user_data.phone,
+            "role": "CUSTOMER",
+            "registerDate": datetime.utcnow()
+        }
+        
+        result = await db.User.insert_one(user_doc)
+        
+        # Create access token
+        access_token = create_access_token({
+            "user_id": str(result.inserted_id),
+            "username": user_data.username
+        })
+        
+        return AuthResponse(
+            access_token=access_token,
+            token_type="bearer",
+            user=UserResponse(
+                id=str(result.inserted_id),
+                username=user_data.username,
+                email=user_data.email,
+                role="CUSTOMER",
+                registerDate=user_doc["registerDate"]
+            )
+        )
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Registration failed: {str(e)}"
+        )
+
+
+@app.post("/auth/login", response_model=AuthResponse)
+async def login(login_data: UserLogin, db: AsyncIOMotorDatabase = Depends(get_db)):
+    try:
+        # Find user by username
+        user = await db.User.find_one({"username": login_data.username})
+        
+        if not user:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid username or password"
+            )
+        
+        # Verify password
+        if not verify_password(login_data.password, user["password"]):
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid username or password"
+            )
+        
+        # Create access token
+        access_token = create_access_token({
+            "user_id": str(user["_id"]),
+            "username": user["username"]
+        })
+        
+        return AuthResponse(
+            access_token=access_token,
+            token_type="bearer",
+            user=UserResponse(
+                id=str(user["_id"]),
+                username=user["username"],
+                email=user["email"],
+                role=user["role"],
+                registerDate=user["registerDate"]
+            )
+        )
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Login failed: {str(e)}"
+        )
 
