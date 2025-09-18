@@ -1,8 +1,7 @@
-import Image from "next/image";
-import LoginPage from "./login/LoginPage";
+import LoginPage from "../../login-page-project/src/components/LoginPage";
+
+
 
 export default function Home() {
-  return (
-    <LoginPage />
-  );
+  return <LoginPage />;
 }
