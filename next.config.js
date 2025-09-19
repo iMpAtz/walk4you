@@ -12,6 +12,14 @@ const nextConfig = {
   experimental: {
     appDir: true, // ถ้าใช้ App Router
   },
+  images: {
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: 'res.cloudinary.com',
+      },
+    ],
+  },
   // แนะนำใช้ package เช่น next-alias แทน webpack override
 };
 

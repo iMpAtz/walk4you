@@ -35,6 +35,19 @@ DATABASE_URL="mongodb+srv://<user>:<pass>@<cluster>/<db>?retryWrites=true&w=majo
 NEXT_PUBLIC_API_BASE=http://localhost:8000
 ```
 
+#### Cloudinary
+เพิ่มค่าต่อไปนี้ลงในไฟล์ `.env` (สร้างบัญชีที่ Cloudinary แล้วคัดลอกจาก Dashboard):
+```
+CLOUDINARY_CLOUD_NAME=your_cloud_name
+CLOUDINARY_API_KEY=your_api_key
+CLOUDINARY_API_SECRET=your_api_secret
+# ถ้ามี unsigned upload preset ที่ตั้งไว้ใน Cloudinary (ตัวเลือก)
+CLOUDINARY_UPLOAD_PRESET=your_unsigned_preset
+```
+
+การอัปโหลดแบบ “signed upload” ไม่จำเป็นต้องใช้ `CLOUDINARY_UPLOAD_PRESET` ก็ได้ (ปลอดภัยกว่าและยืดหยุ่นกว่า) โดยฝั่งเซิร์ฟเวอร์จะสร้าง `signature` และ `timestamp` ให้ใช้อัปโหลดจากฝั่ง client ตรงไปยัง Cloudinary
+
+
 ### ติดตั้ง Dependencies
 ```
 npm install
