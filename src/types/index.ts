@@ -21,6 +21,7 @@ export type UserProfile = {
     id: string;
     username: string;
     email: string;
+    phone?: string;
     role: string;
     registerDate: string;
     avatar?: {
@@ -33,4 +34,22 @@ export type UserProfile = {
         format?: string;
         updatedAt: string;
     };
+};
+
+export type Store = {
+    id: string;
+    ownerId: string;
+    storeName: string;
+    storeDescription?: string;
+    phoneNumber?: string;
+    buMail?: string;
+    registerDate: string;
+    status: string;
+};
+
+export type StoreCreate = {
+    storeName: string;
+    storeDescription?: string;
+    phoneNumber?: string;
+    buMail?: string;
 };

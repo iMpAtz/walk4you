@@ -326,3 +326,99 @@ async def get_my_profile(db: AsyncIOMotorDatabase = Depends(get_db), current_use
         avatar=current_user.get("avatar")
     )
 
+
+# ===== Store Endpoints =====
+class StoreCreate(BaseModel):
+    storeName: str
+    storeDescription: Optional[str] = None
+    phoneNumber: Optional[str] = None
+    buMail: Optional[str] = None
+
+
+class StoreResponse(BaseModel):
+    id: str
+    ownerId: str
+    storeName: str
+    storeDescription: Optional[str]
+    phoneNumber: Optional[str]
+    buMail: Optional[str]
+    registerDate: datetime
+    status: str
+
+
+@app.get("/users/me/store")
+async def get_my_store(db: AsyncIOMotorDatabase = Depends(get_db), current_user=Depends(get_current_user)):
+    """Get user's store if exists"""
+    user_id = current_user["_id"]
+    store = await db.Store.find_one({"ownerId": user_id})
+    
+    if not store:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Store not found"
+        )
+    
+    return StoreResponse(
+        id=str(store["_id"]),
+        ownerId=str(store["ownerId"]),
+        storeName=store["storeName"],
+        storeDescription=store.get("storeDescription"),
+        phoneNumber=store.get("phoneNumber"),
+        buMail=store.get("buMail"),
+        registerDate=store["registerDate"],
+        status=store["status"]
+    )
+
+
+@app.post("/users/me/store", response_model=StoreResponse)
+async def create_my_store(store_data: StoreCreate, db: AsyncIOMotorDatabase = Depends(get_db), current_user=Depends(get_current_user)):
+    """Create a new store for the current user"""
+    user_id = current_user["_id"]
+    
+    # Check if user already has a store
+    existing_store = await db.Store.find_one({"ownerId": user_id})
+    if existing_store:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="User already has a store"
+        )
+    
+    # Create new store
+    store_doc = {
+        "ownerId": user_id,
+        "storeName": store_data.storeName,
+        "storeDescription": store_data.storeDescription,
+        "phoneNumber": store_data.phoneNumber,
+        "buMail": store_data.buMail,
+        "registerDate": datetime.utcnow(),
+        "status": "ACTIVE"
+    }
+    
+    result = await db.Store.insert_one(store_doc)
+    
+    # Update user role to SELLER
+    await db.User.update_one(
+        {"_id": user_id},
+        {"$set": {"role": "SELLER"}}
+    )
+    
+    return StoreResponse(
+        id=str(result.inserted_id),
+        ownerId=str(store_doc["ownerId"]),
+        storeName=store_doc["storeName"],
+        storeDescription=store_doc["storeDescription"],
+        phoneNumber=store_doc["phoneNumber"],
+        buMail=store_doc["buMail"],
+        registerDate=store_doc["registerDate"],
+        status=store_doc["status"]
+    )
+
+
+@app.get("/users/me/has-store")
+async def check_has_store(db: AsyncIOMotorDatabase = Depends(get_db), current_user=Depends(get_current_user)):
+    """Check if user has a store"""
+    user_id = current_user["_id"]
+    store = await db.Store.find_one({"ownerId": user_id})
+    
+    return {"hasStore": store is not None}
+

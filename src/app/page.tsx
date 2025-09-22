@@ -15,19 +15,19 @@ export default function Home() {
       </div>
 
       {/* Hero and side banners */}
-      <div className="mx-auto grid max-w-[1200px] grid-cols-4 gap-4 px-4">
-        <div className="col-span-1 h-[140px] rounded bg-gray-200" />
-        <div className="col-span-2 h-[140px] rounded bg-gray-200" />
-        <div className="col-span-1 h-[140px] rounded bg-gray-200" />
-        <div className="col-span-3 h-[60px] rounded bg-gray-200" />
-        <div className="col-span-1 h-[60px] rounded bg-gray-200" />
+      <div className="mx-auto grid max-w-[1200px] grid-cols-1 md:grid-cols-4 gap-4 px-4">
+        <div className="col-span-1 h-[140px] rounded bg-gray-200 md:block hidden" />
+        <div className="col-span-1 md:col-span-2 h-[140px] rounded bg-gray-200" />
+        <div className="col-span-1 h-[140px] rounded bg-gray-200 md:block hidden" />
+        <div className="col-span-1 md:col-span-3 h-[60px] rounded bg-gray-200" />
+        <div className="col-span-1 h-[60px] rounded bg-gray-200 md:block hidden" />
       </div>
 
       {/* Featured products */}
       <div className="mx-auto max-w-[1200px] px-4 pt-6">
         <h2 className="mb-3 text-base font-semibold">สินค้าแนะนำ</h2>
         <div className="rounded border border-gray-200 p-4">
-          <div className="grid grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {[...Array(8)].map((_, i) => (
               <div key={i} className="h-[120px] rounded bg-gray-100">
                 <div className="flex h-full w-full items-end justify-between rounded bg-gradient-to-r from-gray-100 to-gray-200 p-2 text-xs text-gray-600">
@@ -44,12 +44,12 @@ export default function Home() {
       <div className="mx-auto max-w-[1200px] px-4 pt-6">
         <h2 className="mb-3 text-base font-semibold">หมวดหมู่</h2>
         <div className="relative rounded border border-gray-200 p-4">
-          <div className="grid grid-cols-5 gap-4">
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
             {[...Array(10)].map((_, i) => (
               <div key={i} className="h-[120px] rounded bg-gray-100" />
             ))}
           </div>
-          <button className="absolute right-3 top-1/2 -translate-y-1/2 rounded-full bg-black px-3 py-2 text-white">›</button>
+          <button className="absolute right-3 top-1/2 -translate-y-1/2 rounded-full bg-black px-3 py-2 text-white hidden md:block">›</button>
         </div>
       </div>
     </div>
