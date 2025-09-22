@@ -422,3 +422,162 @@ async def check_has_store(db: AsyncIOMotorDatabase = Depends(get_db), current_us
     
     return {"hasStore": store is not None}
 
+
+# ===== OTP Endpoints =====
+import random
+import smtplib
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
+import os
+
+class OTPRequest(BaseModel):
+    email: str
+
+class OTPVerify(BaseModel):
+    email: str
+    otp: str
+
+# Store OTP in memory (in production, use Redis or database)
+otp_storage = {}
+
+def generate_otp():
+    """Generate 6-digit OTP"""
+    return str(random.randint(100000, 999999))
+
+def send_email_otp(email: str, otp: str):
+    """Send OTP via email"""
+    try:
+        # Email configuration (you should use environment variables)
+        smtp_server = os.getenv("SMTP_SERVER")
+        smtp_port = int(os.getenv("SMTP_PORT"))
+        smtp_username = os.getenv("SMTP_USERNAME")
+        smtp_password = os.getenv("SMTP_PASSWORD")
+        
+        if not smtp_username or not smtp_password:
+            print("SMTP credentials not configured, using mock email")
+            return True
+        
+        # Create message
+        msg = MIMEMultipart()
+        msg['From'] = smtp_username
+        msg['To'] = email
+        msg['Subject'] = "Walk4You - Store Registration OTP"
+        
+        # Email body
+        body = f"""
+        <html>
+        <body>
+            <h2>Walk4You Store Registration</h2>
+            <p>Your OTP code is: <strong>{otp}</strong></p>
+            <p>This code will expire in 10 minutes.</p>
+            <p>If you didn't request this code, please ignore this email.</p>
+            <br>
+            <p>Best regards,<br>Walk4You Team</p>
+        </body>
+        </html>
+        """
+        
+        msg.attach(MIMEText(body, 'html'))
+        
+        # Send email
+        server = smtplib.SMTP(smtp_server, smtp_port)
+        server.starttls()
+        server.login(smtp_username, smtp_password)
+        text = msg.as_string()
+        server.sendmail(smtp_username, email, text)
+        server.quit()
+        
+        return True
+    except Exception as e:
+        print(f"Email sending failed: {e}")
+        return False
+
+@app.post("/auth/send-otp")
+async def send_otp(request: OTPRequest):
+    """Send OTP to email"""
+    email = request.email
+    
+    # Validate BU Mail format
+    if not email.endswith("@bumail.net"):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Only BU Mail addresses are allowed"
+        )
+    
+    # Generate OTP
+    otp = generate_otp()
+    
+    # Store OTP with expiration (10 minutes)
+    import time
+    otp_storage[email] = {
+        "otp": otp,
+        "expires_at": time.time() + 600,  # 10 minutes
+        "attempts": 0
+    }
+    
+    # Send email
+    email_sent = send_email_otp(email, otp)
+    
+    if email_sent:
+        return {
+            "success": True,
+            "message": "OTP sent to your email",
+            "email": email
+        }
+    else:
+        # For development, return OTP in response
+        return {
+            "success": True,
+            "message": "OTP sent to your email (development mode)",
+            "email": email,
+            "otp": otp  # Only for development
+        }
+
+@app.post("/auth/verify-otp")
+async def verify_otp(request: OTPVerify):
+    """Verify OTP"""
+    email = request.email
+    otp = request.otp
+    
+    # Check if OTP exists
+    if email not in otp_storage:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="OTP not found or expired"
+        )
+    
+    stored_data = otp_storage[email]
+    
+    # Check expiration
+    import time
+    if time.time() > stored_data["expires_at"]:
+        del otp_storage[email]
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="OTP expired"
+        )
+    
+    # Check attempts
+    if stored_data["attempts"] >= 3:
+        del otp_storage[email]
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Too many attempts"
+        )
+    
+    # Verify OTP
+    if stored_data["otp"] != otp:
+        stored_data["attempts"] += 1
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid OTP"
+        )
+    
+    # OTP verified successfully
+    del otp_storage[email]
+    
+    return {
+        "success": True,
+        "message": "OTP verified successfully"
+    }
+

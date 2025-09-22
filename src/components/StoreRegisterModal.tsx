@@ -20,6 +20,7 @@ export default function StoreRegisterModal({ isOpen, onClose, onSuccess }: Store
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [otpSent, setOtpSent] = useState(false);
+  const [sendingOTP, setSendingOTP] = useState(false);
 
   const handleSendOTP = async () => {
     if (!formData.buMail) {
@@ -27,9 +28,44 @@ export default function StoreRegisterModal({ isOpen, onClose, onSuccess }: Store
       return;
     }
     
-    // Simulate OTP sending
-    setOtpSent(true);
+    // Validate BU Mail format
+    if (!formData.buMail.endsWith('@bumail.net')) {
+      setError('Please enter a valid BU Mail address');
+      return;
+    }
+    
+    setSendingOTP(true);
     setError(null);
+    
+    try {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE || 'http://localhost:8000'}/auth/send-otp`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email: formData.buMail
+        }),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setOtpSent(true);
+        setError(null);
+        
+        // For development, show OTP in console
+        if (data.otp) {
+          console.log('Development OTP:', data.otp);
+        }
+      } else {
+        const errorData = await response.json();
+        setError(errorData.detail || 'Failed to send OTP');
+      }
+    } catch (error) {
+      setError('Network error occurred');
+    } finally {
+      setSendingOTP(false);
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -45,6 +81,26 @@ export default function StoreRegisterModal({ isOpen, onClose, onSuccess }: Store
     }
 
     try {
+      // First verify OTP
+      const otpResponse = await fetch(`${process.env.NEXT_PUBLIC_API_BASE || 'http://localhost:8000'}/auth/verify-otp`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email: formData.buMail,
+          otp: formData.otp
+        }),
+      });
+
+      if (!otpResponse.ok) {
+        const otpErrorData = await otpResponse.json();
+        setError(otpErrorData.detail || 'Invalid OTP');
+        setIsSubmitting(false);
+        return;
+      }
+
+      // OTP verified, now create store
       const token = localStorage.getItem('access_token');
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE || 'http://localhost:8000'}/users/me/store`, {
         method: 'POST',
@@ -181,11 +237,18 @@ export default function StoreRegisterModal({ isOpen, onClose, onSuccess }: Store
                   <button
                     type="button"
                     onClick={handleSendOTP}
-                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-blue-600 transition-colors p-1"
+                    disabled={sendingOTP || !formData.buMail}
+                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-blue-600 transition-colors p-1 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
-                    </svg>
+                    {sendingOTP ? (
+                      <svg className="w-5 h-5 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                      </svg>
+                    ) : (
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+                      </svg>
+                    )}
                   </button>
                 </div>
               </div>
@@ -209,7 +272,7 @@ export default function StoreRegisterModal({ isOpen, onClose, onSuccess }: Store
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                     </svg>
-                    <span>OTP sent to your email</span>
+                    <span>OTP sent to {formData.buMail}</span>
                   </div>
                 )}
               </div>
