@@ -11,6 +11,7 @@ export default function TopBar() {
   const router = useRouter();
   const [hasToken, setHasToken] = useState<boolean>(false);
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
+  const [hasStore, setHasStore] = useState<boolean>(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState<boolean>(false);
   const [isDesktop, setIsDesktop] = useState<boolean>(false);
 
@@ -48,9 +49,30 @@ export default function TopBar() {
       if (response.ok) {
         const profile = await response.json();
         setUserProfile(profile);
+        // Check if user has a store
+        await checkStoreStatus(token);
       }
     } catch (error) {
       console.error('Failed to fetch user profile:', error);
+    }
+  };
+
+  const checkStoreStatus = async (token: string) => {
+    try {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE || 'http://localhost:8000'}/users/me/has-store`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setHasStore(data.hasStore);
+      } else {
+        setHasStore(false);
+      }
+    } catch (error) {
+      console.error('Failed to check store status:', error);
+      setHasStore(false);
     }
   };
 
@@ -60,9 +82,30 @@ export default function TopBar() {
     } finally {
       setHasToken(false);
       setUserProfile(null);
+      setHasStore(false);
       router.push('/');
     }
   };
+
+  // Function to refresh store status (can be called from other components)
+  const refreshStoreStatus = async () => {
+    try {
+      const token = localStorage.getItem('access_token');
+      if (token) {
+        await checkStoreStatus(token);
+      }
+    } catch (error) {
+      console.error('Failed to refresh store status:', error);
+    }
+  };
+
+  // Expose refresh function globally for other components to use
+  useEffect(() => {
+    (window as any).refreshStoreStatus = refreshStoreStatus;
+    return () => {
+      delete (window as any).refreshStoreStatus;
+    };
+  }, []);
 
   return (
     <>
@@ -113,6 +156,7 @@ export default function TopBar() {
         userProfile={userProfile}
         onLogout={handleLogout}
         isDesktop={isDesktop}
+        hasStore={hasStore}
       />
     </>
   );

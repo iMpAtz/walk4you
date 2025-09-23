@@ -27,13 +27,6 @@ enum CommonStatus {
   BLOCKED
 }
 
-enum ProductStatus {
-  DRAFT
-  PUBLISHED
-  HIDDEN
-  OUT_OF_STOCK
-}
-
 enum OrderStatus {
   PENDING
   PAID
@@ -106,32 +99,24 @@ model Store {
   @@index([ownerId])
 }
 
-model Category {
-  id           String @id @default(auto()) @map("_id") @db.ObjectId
-  categoryName String @unique
-
-  products Product[]
-}
-
 model Product {
-  id          String        @id @default(auto()) @map("_id") @db.ObjectId
-  storeId     String        @db.ObjectId
-  productName String
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  storeId     String   @db.ObjectId
+  name        String
   description String?
-  // ใช้ Int เก็บราคาเป็นจำนวนเซ็นต์ แทน Decimal (MongoDB connector ไม่รองรับ Decimal)
-  price       Int
-  stock       Int           @default(0)
-  categoryId  String?       @db.ObjectId
-  createdAt   DateTime      @default(now())
-  status      ProductStatus @default(PUBLISHED)
+  price       Float
+  quantity    Int      @default(0)
+  image_url   String?
+  category    String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @default(now())
+  status      String   @default("ACTIVE")
 
   // Relations
   store      Store       @relation(fields: [storeId], references: [id])
-  category   Category?   @relation(fields: [categoryId], references: [id])
   orderItems OrderItem[]
 
   @@index([storeId])
-  @@index([categoryId])
 }
 
 model Order {

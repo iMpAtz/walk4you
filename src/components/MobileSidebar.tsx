@@ -11,9 +11,10 @@ interface MobileSidebarProps {
   userProfile: UserProfile | null;
   onLogout: () => void;
   isDesktop?: boolean;
+  hasStore?: boolean;
 }
 
-export default function MobileSidebar({ isOpen, onClose, userProfile, onLogout, isDesktop = false }: MobileSidebarProps) {
+export default function MobileSidebar({ isOpen, onClose, userProfile, onLogout, isDesktop = false, hasStore = false }: MobileSidebarProps) {
   const router = useRouter();
 
   // ป้องกันการ scroll ของ body เมื่อ sidebar เปิด (เฉพาะ mobile)
@@ -133,6 +134,24 @@ export default function MobileSidebar({ isOpen, onClose, userProfile, onLogout, 
               </div>
               <span className="font-medium text-gray-900">Profile</span>
             </button>
+
+            {/* Store Management - Only show if user has a store */}
+            {hasStore && (
+              <button 
+                onClick={() => {
+                  onClose();
+                  router.push('/store-management');
+                }}
+                className="w-full flex items-center gap-3 p-3 text-left hover:bg-gray-100 rounded-lg transition-colors"
+              >
+                <div className="w-8 h-8 bg-red-100 rounded-full flex items-center justify-center">
+                  <svg className="w-5 h-5 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                  </svg>
+                </div>
+                <span className="font-medium text-gray-900">ร้านค้าของฉัน</span>
+              </button>
+            )}
 
             
 

@@ -132,20 +132,17 @@ exports.Prisma.StoreScalarFieldEnum = {
   status: 'status'
 };
 
-exports.Prisma.CategoryScalarFieldEnum = {
-  id: 'id',
-  categoryName: 'categoryName'
-};
-
 exports.Prisma.ProductScalarFieldEnum = {
   id: 'id',
   storeId: 'storeId',
-  productName: 'productName',
+  name: 'name',
   description: 'description',
   price: 'price',
-  stock: 'stock',
-  categoryId: 'categoryId',
+  quantity: 'quantity',
+  image_url: 'image_url',
+  category: 'category',
   createdAt: 'createdAt',
+  updatedAt: 'updatedAt',
   status: 'status'
 };
 
@@ -230,13 +227,6 @@ exports.CommonStatus = exports.$Enums.CommonStatus = {
   BLOCKED: 'BLOCKED'
 };
 
-exports.ProductStatus = exports.$Enums.ProductStatus = {
-  DRAFT: 'DRAFT',
-  PUBLISHED: 'PUBLISHED',
-  HIDDEN: 'HIDDEN',
-  OUT_OF_STOCK: 'OUT_OF_STOCK'
-};
-
 exports.OrderStatus = exports.$Enums.OrderStatus = {
   PENDING: 'PENDING',
   PAID: 'PAID',
@@ -277,7 +267,6 @@ exports.ReportStatus = exports.$Enums.ReportStatus = {
 exports.Prisma.ModelName = {
   User: 'User',
   Store: 'Store',
-  Category: 'Category',
   Product: 'Product',
   Order: 'Order',
   SubOrder: 'SubOrder',

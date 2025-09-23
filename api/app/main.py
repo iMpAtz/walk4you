@@ -62,9 +62,69 @@ async def health_check():
     return {"ok": True}
 
 
+
+
 # ===== Sample endpoint using MongoDB =====
 class PingDoc(BaseModel):
     message: str
+
+
+class ProductResponse(BaseModel):
+    id: str
+    storeId: str
+    name: str
+    description: str
+    price: float
+    quantity: int
+    image_url: Optional[str] = None
+    category: Optional[str] = None
+    createdAt: datetime
+    updatedAt: datetime
+    status: str
+
+
+@app.get("/products/featured", response_model=list[ProductResponse])
+async def get_featured_products(
+    limit: int = 8,
+    db: AsyncIOMotorDatabase = Depends(get_db)
+):
+    """Get featured products (random selection from active products) - No authentication required"""
+    try:
+        # Get random active products
+        pipeline = [
+            {"$match": {"status": "ACTIVE"}},
+            {"$sample": {"size": limit}},
+            {"$lookup": {
+                "from": "Store",
+                "localField": "storeId",
+                "foreignField": "_id",
+                "as": "store"
+            }},
+            {"$unwind": "$store"},
+            {"$match": {"store.status": "ACTIVE"}}
+        ]
+        
+        products = await db.Product.aggregate(pipeline).to_list(None)
+        
+        return [
+            ProductResponse(
+                id=str(product["_id"]),
+                storeId=str(product["storeId"]),
+                name=product["name"],
+                description=product["description"],
+                price=product["price"],
+                quantity=product["quantity"],
+                image_url=product.get("image_url"),
+                category=product.get("category"),
+                createdAt=product["createdAt"],
+                updatedAt=product["updatedAt"],
+                status=product["status"]
+            )
+            for product in products
+        ]
+    except Exception as e:
+        print(f"Error getting featured products: {e}")
+        return []
 
 
 # ===== Auth Models =====
@@ -337,10 +397,10 @@ class StoreCreate(BaseModel):
 
 class StoreResponse(BaseModel):
     id: str
-    ownerId: str
+    ownerId: Optional[str] = None
     storeName: str
     storeDescription: Optional[str]
-    phoneNumber: Optional[str]
+    phoneNumber: Optional[str] = None
     buMail: Optional[str]
     registerDate: datetime
     status: str
@@ -389,12 +449,13 @@ async def create_my_store(store_data: StoreCreate, db: AsyncIOMotorDatabase = De
         "storeName": store_data.storeName,
         "storeDescription": store_data.storeDescription,
         "phoneNumber": store_data.phoneNumber,
-        "buMail": store_data.buMail,
+        "buMail": store_data.buMail,  # Use buMail from form data
         "registerDate": datetime.utcnow(),
         "status": "ACTIVE"
     }
     
     result = await db.Store.insert_one(store_doc)
+    store_doc["_id"] = result.inserted_id
     
     # Update user role to SELLER
     await db.User.update_one(
@@ -403,7 +464,7 @@ async def create_my_store(store_data: StoreCreate, db: AsyncIOMotorDatabase = De
     )
     
     return StoreResponse(
-        id=str(result.inserted_id),
+        id=str(store_doc["_id"]),
         ownerId=str(store_doc["ownerId"]),
         storeName=store_doc["storeName"],
         storeDescription=store_doc["storeDescription"],
@@ -580,4 +641,393 @@ async def verify_otp(request: OTPVerify):
         "success": True,
         "message": "OTP verified successfully"
     }
+
+
+# ===== Store Management Models =====
+class StoreUpdate(BaseModel):
+    storeName: str
+    storeDescription: Optional[str] = None
+
+
+class StoreResponse(BaseModel):
+    id: str
+    storeName: str
+    storeDescription: Optional[str] = None
+    buMail: Optional[str] = None
+    registerDate: datetime
+    status: str
+
+
+# ===== Product Models =====
+class ProductCreate(BaseModel):
+    name: str
+    description: str
+    price: float
+    quantity: int
+    image_url: Optional[str] = None
+    category: Optional[str] = None
+
+
+class ProductUpdate(BaseModel):
+    name: Optional[str] = None
+    description: Optional[str] = None
+    price: Optional[float] = None
+    quantity: Optional[int] = None
+    image_url: Optional[str] = None
+    category: Optional[str] = None
+
+
+# ===== Store Management Endpoints =====
+@app.get("/stores/my-store", response_model=StoreResponse)
+async def get_my_store(current_user: dict = Depends(get_current_user), db: AsyncIOMotorDatabase = Depends(get_db)):
+    """Get current user's store"""
+    user_id = current_user["id"]
+    
+    # Find store by owner
+    store = await db.stores.find_one({"ownerId": ObjectId(user_id)})
+    
+    if not store:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Store not found"
+        )
+    
+    return StoreResponse(
+        id=str(store["_id"]),
+        storeName=store["storeName"],
+        storeDescription=store.get("storeDescription"),
+        buMail=store.get("buMail"),
+        registerDate=store["registerDate"],
+        status=store["status"]
+    )
+
+
+@app.put("/stores/my-store", response_model=StoreResponse)
+async def update_my_store(
+    store_data: StoreUpdate,
+    current_user: dict = Depends(get_current_user),
+    db: AsyncIOMotorDatabase = Depends(get_db)
+):
+    """Update current user's store"""
+    user_id = current_user["id"]
+    
+    # Check if store exists
+    existing_store = await db.stores.find_one({"ownerId": ObjectId(user_id)})
+    
+    if not existing_store:
+        # Create new store if doesn't exist
+        store_doc = {
+            "ownerId": ObjectId(user_id),
+            "storeName": store_data.storeName,
+            "storeDescription": store_data.storeDescription,
+            "buMail": current_user["email"],  # Use user's email as buMail
+            "registerDate": datetime.now(),
+            "status": "ACTIVE"
+        }
+        result = await db.stores.insert_one(store_doc)
+        store_doc["_id"] = result.inserted_id
+    else:
+        # Update existing store
+        update_data = {
+            "storeName": store_data.storeName,
+            "storeDescription": store_data.storeDescription
+        }
+        
+        await db.stores.update_one(
+            {"ownerId": ObjectId(user_id)},
+            {"$set": update_data}
+        )
+        
+        # Get updated store
+        store_doc = await db.stores.find_one({"ownerId": ObjectId(user_id)})
+    
+    return StoreResponse(
+        id=str(store_doc["_id"]),
+        storeName=store_doc["storeName"],
+        storeDescription=store_doc.get("storeDescription"),
+        buMail=store_doc.get("buMail"),
+        registerDate=store_doc["registerDate"],
+        status=store_doc["status"]
+    )
+
+
+@app.post("/stores/my-store", response_model=StoreResponse)
+async def create_my_store(
+    store_data: StoreUpdate,
+    current_user: dict = Depends(get_current_user),
+    db: AsyncIOMotorDatabase = Depends(get_db)
+):
+    """Create a new store for current user"""
+    user_id = current_user["id"]
+    
+    # Check if store already exists
+    existing_store = await db.stores.find_one({"ownerId": ObjectId(user_id)})
+    
+    if existing_store:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Store already exists for this user"
+        )
+    
+    # Create new store
+    store_doc = {
+        "ownerId": ObjectId(user_id),
+        "storeName": store_data.storeName,
+        "storeDescription": store_data.storeDescription,
+        "buMail": current_user["email"],  # Use user's email as buMail
+        "registerDate": datetime.now(),
+        "status": "ACTIVE"
+    }
+    
+    result = await db.stores.insert_one(store_doc)
+    store_doc["_id"] = result.inserted_id
+    
+    return StoreResponse(
+        id=str(store_doc["_id"]),
+        storeName=store_doc["storeName"],
+        storeDescription=store_doc.get("storeDescription"),
+        buMail=store_doc.get("buMail"),
+        registerDate=store_doc["registerDate"],
+        status=store_doc["status"]
+    )
+
+
+# ===== Product Endpoints =====
+@app.get("/products/my-products", response_model=list[ProductResponse])
+async def get_my_products(
+    current_user: dict = Depends(get_current_user),
+    db: AsyncIOMotorDatabase = Depends(get_db)
+):
+    """Get all products for current user's store"""
+    user_id = current_user["_id"]
+    
+    # Find user's store
+    store = await db.Store.find_one({"ownerId": user_id})
+    if not store:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Store not found"
+        )
+    
+    # Get products for this store
+    products = await db.Product.find({"storeId": store["_id"], "status": "ACTIVE"}).to_list(None)
+    
+    return [
+        ProductResponse(
+            id=str(product["_id"]),
+            storeId=str(product["storeId"]),
+            name=product["name"],
+            description=product["description"],
+            price=product["price"],
+            quantity=product["quantity"],
+            image_url=product.get("image_url"),
+            category=product.get("category"),
+            createdAt=product["createdAt"],
+            updatedAt=product["updatedAt"],
+            status=product["status"]
+        )
+        for product in products
+    ]
+
+
+@app.post("/products", response_model=ProductResponse)
+async def create_product(
+    product_data: ProductCreate,
+    current_user: dict = Depends(get_current_user),
+    db: AsyncIOMotorDatabase = Depends(get_db)
+):
+    """Create a new product for current user's store"""
+    user_id = current_user["_id"]
+    
+    # Find user's store
+    store = await db.Store.find_one({"ownerId": user_id})
+    if not store:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Store not found"
+        )
+    
+    # Create new product
+    product_doc = {
+        "storeId": store["_id"],
+        "name": product_data.name,
+        "description": product_data.description,
+        "price": product_data.price,
+        "quantity": product_data.quantity,
+        "image_url": product_data.image_url,
+        "category": product_data.category,
+        "createdAt": datetime.utcnow(),
+        "updatedAt": datetime.utcnow(),
+        "status": "ACTIVE"
+    }
+    
+    result = await db.Product.insert_one(product_doc)
+    product_doc["_id"] = result.inserted_id
+    
+    return ProductResponse(
+        id=str(product_doc["_id"]),
+        storeId=str(product_doc["storeId"]),
+        name=product_doc["name"],
+        description=product_doc["description"],
+        price=product_doc["price"],
+        quantity=product_doc["quantity"],
+        image_url=product_doc.get("image_url"),
+        category=product_doc.get("category"),
+        createdAt=product_doc["createdAt"],
+        updatedAt=product_doc["updatedAt"],
+        status=product_doc["status"]
+    )
+
+
+@app.get("/products/{product_id}", response_model=ProductResponse)
+async def get_product(
+    product_id: str,
+    current_user: dict = Depends(get_current_user),
+    db: AsyncIOMotorDatabase = Depends(get_db)
+):
+    """Get a specific product by ID"""
+    user_id = current_user["_id"]
+    
+    # Find user's store
+    store = await db.Store.find_one({"ownerId": user_id})
+    if not store:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Store not found"
+        )
+    
+    # Find product
+    product = await db.Product.find_one({
+        "_id": ObjectId(product_id),
+        "storeId": store["_id"]
+    })
+    
+    if not product:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Product not found"
+        )
+    
+    return ProductResponse(
+        id=str(product["_id"]),
+        storeId=str(product["storeId"]),
+        name=product["name"],
+        description=product["description"],
+        price=product["price"],
+        quantity=product["quantity"],
+        image_url=product.get("image_url"),
+        category=product.get("category"),
+        createdAt=product["createdAt"],
+        updatedAt=product["updatedAt"],
+        status=product["status"]
+    )
+
+
+@app.put("/products/{product_id}", response_model=ProductResponse)
+async def update_product(
+    product_id: str,
+    product_data: ProductUpdate,
+    current_user: dict = Depends(get_current_user),
+    db: AsyncIOMotorDatabase = Depends(get_db)
+):
+    """Update a specific product by ID"""
+    user_id = current_user["_id"]
+    
+    # Find user's store
+    store = await db.Store.find_one({"ownerId": user_id})
+    if not store:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Store not found"
+        )
+    
+    # Find product
+    product = await db.Product.find_one({
+        "_id": ObjectId(product_id),
+        "storeId": store["_id"]
+    })
+    
+    if not product:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Product not found"
+        )
+    
+    # Update product
+    update_data = {
+        "updatedAt": datetime.utcnow()
+    }
+    
+    if product_data.name is not None:
+        update_data["name"] = product_data.name
+    if product_data.description is not None:
+        update_data["description"] = product_data.description
+    if product_data.price is not None:
+        update_data["price"] = product_data.price
+    if product_data.quantity is not None:
+        update_data["quantity"] = product_data.quantity
+    if product_data.image_url is not None:
+        update_data["image_url"] = product_data.image_url
+    if product_data.category is not None:
+        update_data["category"] = product_data.category
+    
+    await db.Product.update_one(
+        {"_id": ObjectId(product_id)},
+        {"$set": update_data}
+    )
+    
+    # Get updated product
+    updated_product = await db.Product.find_one({"_id": ObjectId(product_id)})
+    
+    return ProductResponse(
+        id=str(updated_product["_id"]),
+        storeId=str(updated_product["storeId"]),
+        name=updated_product["name"],
+        description=updated_product["description"],
+        price=updated_product["price"],
+        quantity=updated_product["quantity"],
+        image_url=updated_product.get("image_url"),
+        category=updated_product.get("category"),
+        createdAt=updated_product["createdAt"],
+        updatedAt=updated_product["updatedAt"],
+        status=updated_product["status"]
+    )
+
+
+@app.delete("/products/{product_id}")
+async def delete_product(
+    product_id: str,
+    current_user: dict = Depends(get_current_user),
+    db: AsyncIOMotorDatabase = Depends(get_db)
+):
+    """Delete a specific product by ID (soft delete)"""
+    user_id = current_user["_id"]
+    
+    # Find user's store
+    store = await db.Store.find_one({"ownerId": user_id})
+    if not store:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Store not found"
+        )
+    
+    # Find product
+    product = await db.Product.find_one({
+        "_id": ObjectId(product_id),
+        "storeId": store["_id"]
+    })
+    
+    if not product:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Product not found"
+        )
+    
+    # Soft delete (mark as inactive)
+    await db.Product.update_one(
+        {"_id": ObjectId(product_id)},
+        {"$set": {"status": "INACTIVE", "updatedAt": datetime.utcnow()}}
+    )
+    
+    return {"message": "Product deleted successfully"}
 
