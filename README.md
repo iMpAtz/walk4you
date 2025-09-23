@@ -57,8 +57,6 @@ npm i @prisma/client
 
 ### ตั้งค่า Prisma (MongoDB)
 ```
-npx prisma format
-npx prisma db push
 npx prisma generate
 # (ตัวเลือก)
 npx prisma studio
