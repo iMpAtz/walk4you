@@ -138,13 +138,17 @@ export default function ProfilePage() {
   const maskEmail = (email: string) => {
     if (!email) return '';
     const [username, domain] = email.split('@');
-    const maskedUsername = username.substring(0, 2) + '*'.repeat(username.length - 2);
+    if (!username || !domain) return email;
+    
+    const maskLength = Math.max(0, username.length - 2);
+    const maskedUsername = username.substring(0, 2) + '*'.repeat(maskLength);
     return `${maskedUsername}@${domain}`;
   };
 
   const maskPhone = (phone: string) => {
     if (!phone) return '';
-    return '*'.repeat(phone.length - 2) + phone.slice(-2);
+    const maskLength = Math.max(0, phone.length - 2);
+    return '*'.repeat(maskLength) + phone.slice(-2);
   };
 
   if (loading) {
