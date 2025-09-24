@@ -1000,7 +1000,7 @@ async def delete_product(
     current_user: dict = Depends(get_current_user),
     db: AsyncIOMotorDatabase = Depends(get_db)
 ):
-    """Delete a specific product by ID (soft delete)"""
+    """Delete a specific product by ID (permanent delete)"""
     user_id = current_user["_id"]
     
     # Find user's store
@@ -1023,11 +1023,8 @@ async def delete_product(
             detail="Product not found"
         )
     
-    # Soft delete (mark as inactive)
-    await db.Product.update_one(
-        {"_id": ObjectId(product_id)},
-        {"$set": {"status": "INACTIVE", "updatedAt": datetime.utcnow()}}
-    )
+    # Permanent delete (remove from database)
+    await db.Product.delete_one({"_id": ObjectId(product_id)})
     
     return {"message": "Product deleted successfully"}
 

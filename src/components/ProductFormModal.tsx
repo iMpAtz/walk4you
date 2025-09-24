@@ -345,16 +345,26 @@ export default function ProductFormModal({ isOpen, onClose, onSubmit }: ProductF
 
           {/* Category */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              หมวดหมู่สินค้า
-            </label>
-            <input
-              type="text"
-              value={formData.category || ''}
-              onChange={(e) => handleInputChange('category', e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
-              placeholder="กรอกหมวดหมู่สินค้า (ไม่บังคับ)"
-            />
+          <label htmlFor="category" className="block text-sm font-medium text-gray-700 mb-1">
+                หมวดหมู่
+              </label>
+              <select
+                id="category"
+                name="category"
+                value={formData.category}
+                onChange={(e) => handleInputChange('category', e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
+              >
+                <option value="">เลือกหมวดหมู่</option>
+                <option value="อาหาร">อาหาร</option>
+                <option value="เครื่องดื่ม">เครื่องดื่ม</option>
+                <option value="ของใช้">ของใช้</option>
+                <option value="เสื้อผ้า">เสื้อผ้า</option>
+                <option value="อิเล็กทรอนิกส์">อิเล็กทรอนิกส์</option>
+                <option value="หนังสือ">หนังสือ</option>
+                <option value="กีฬา">กีฬา</option>
+                <option value="อื่นๆ">อื่นๆ</option>
+              </select>
           </div>
 
           {/* Action Buttons */}

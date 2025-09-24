@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import ProductFormModal from '@/components/ProductFormModal';
+import ProductEditModal from '@/components/ProductEditModal';
 
 interface Product {
   id: string;
@@ -43,6 +44,12 @@ export default function MyProductsPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [hasToken, setHasToken] = useState(false);
   const [showProductModal, setShowProductModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editingProduct, setEditingProduct] = useState<Product | null>(null);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [deletingProductId, setDeletingProductId] = useState<string | null>(null);
+  const [editingPriceId, setEditingPriceId] = useState<string | null>(null);
+  const [tempPrice, setTempPrice] = useState<string>('');
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -178,8 +185,126 @@ export default function MyProductsPage() {
   };
 
   const handleEditProduct = (productId: string) => {
-    // TODO: Implement edit product functionality
-    alert(`แก้ไขสินค้า ID: ${productId} - ฟีเจอร์นี้จะพร้อมใช้งานเร็วๆ นี้`);
+    const product = products.find(p => p.id === productId);
+    if (product) {
+      setEditingProduct(product);
+      setShowEditModal(true);
+    }
+  };
+
+  const handleUpdateProduct = async (productId: string, updatedData: Partial<Product>) => {
+    try {
+      const token = localStorage.getItem('access_token');
+      if (!token) {
+        alert('กรุณาเข้าสู่ระบบใหม่');
+        router.push('/login');
+        return;
+      }
+
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE || 'http://localhost:8000'}/products/${productId}`, {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(updatedData),
+      });
+
+      if (response.ok) {
+        const updatedProduct = await response.json();
+        
+        // Update product in the list
+        setProducts(prev => prev.map(p => 
+          p.id === productId 
+            ? {
+                id: updatedProduct.id,
+                name: updatedProduct.name,
+                description: updatedProduct.description,
+                price: updatedProduct.price,
+                quantity: updatedProduct.quantity,
+                image: updatedProduct.image_url || '/placeholder-product.jpg',
+                category: updatedProduct.category || 'หมวดหมู่ทั่วไป'
+              }
+            : p
+        ));
+        
+        alert('อัปเดตสินค้าสำเร็จ!');
+      } else {
+        const errorData = await response.json();
+        throw new Error(errorData.detail || 'Failed to update product');
+      }
+    } catch (error) {
+      console.error('Failed to update product:', error);
+      alert('เกิดข้อผิดพลาดในการอัปเดตสินค้า กรุณาลองใหม่อีกครั้ง');
+    }
+  };
+
+  const handleDeleteProduct = (productId: string) => {
+    setDeletingProductId(productId);
+    setShowDeleteConfirm(true);
+  };
+
+  const confirmDeleteProduct = async () => {
+    if (!deletingProductId) return;
+
+    try {
+      const token = localStorage.getItem('access_token');
+      if (!token) {
+        alert('กรุณาเข้าสู่ระบบใหม่');
+        router.push('/login');
+        return;
+      }
+
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE || 'http://localhost:8000'}/products/${deletingProductId}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+
+      if (response.ok) {
+        // Remove product from the list
+        setProducts(prev => prev.filter(p => p.id !== deletingProductId));
+        alert('ลบสินค้าสำเร็จ!');
+      } else {
+        const errorData = await response.json();
+        throw new Error(errorData.detail || 'Failed to delete product');
+      }
+    } catch (error) {
+      console.error('Failed to delete product:', error);
+      alert('เกิดข้อผิดพลาดในการลบสินค้า กรุณาลองใหม่อีกครั้ง');
+    } finally {
+      setShowDeleteConfirm(false);
+      setDeletingProductId(null);
+    }
+  };
+
+
+  const handleQuickPriceUpdate = async (productId: string, newPrice: number) => {
+    if (newPrice < 0) return;
+    await handleUpdateProduct(productId, { price: newPrice });
+  };
+
+  const handleStartPriceEdit = (productId: string, currentPrice: number) => {
+    setEditingPriceId(productId);
+    setTempPrice(currentPrice.toString());
+  };
+
+  const handleSavePriceEdit = async (productId: string) => {
+    const newPrice = parseFloat(tempPrice);
+    if (isNaN(newPrice) || newPrice < 0) {
+      alert('กรุณาใส่ราคาที่ถูกต้อง');
+      return;
+    }
+    
+    await handleUpdateProduct(productId, { price: newPrice });
+    setEditingPriceId(null);
+    setTempPrice('');
+  };
+
+  const handleCancelPriceEdit = () => {
+    setEditingPriceId(null);
+    setTempPrice('');
   };
 
   if (!hasToken || isLoading) {
@@ -399,7 +524,45 @@ export default function MyProductsPage() {
                       {/* Price */}
                       <div className="text-center min-w-[120px]">
                         <div className="text-sm text-gray-500">ราคาต่อหน่วย</div>
-                        <div className="font-medium text-gray-900">{product.price} บาท</div>
+                        {editingPriceId === product.id ? (
+                          <div className="flex items-center gap-1">
+                            <input
+                              type="number"
+                              value={tempPrice}
+                              onChange={(e) => setTempPrice(e.target.value)}
+                              className="w-16 px-2 py-1 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-red-500 focus:border-transparent"
+                              min="0"
+                              step="0.01"
+                              autoFocus
+                            />
+                            <button
+                              onClick={() => handleSavePriceEdit(product.id)}
+                              className="p-1 text-green-600 hover:bg-green-50 rounded transition-colors"
+                              title="บันทึก"
+                            >
+                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                              </svg>
+                            </button>
+                            <button
+                              onClick={handleCancelPriceEdit}
+                              className="p-1 text-gray-600 hover:bg-gray-50 rounded transition-colors"
+                              title="ยกเลิก"
+                            >
+                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                              </svg>
+                            </button>
+                          </div>
+                        ) : (
+                          <div 
+                            className="font-medium text-gray-900 cursor-pointer hover:text-red-600 transition-colors"
+                            onClick={() => handleStartPriceEdit(product.id, product.price)}
+                            title="คลิกเพื่อแก้ไขราคา"
+                          >
+                            {product.price} บาท
+                          </div>
+                        )}
                       </div>
 
                       {/* Quantity */}
@@ -408,15 +571,30 @@ export default function MyProductsPage() {
                         <div className="font-medium text-gray-900">{product.quantity}</div>
                       </div>
 
-                      {/* Edit Button */}
-                      <button
-                        onClick={() => handleEditProduct(product.id)}
-                        className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                      >
-                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                        </svg>
-                      </button>
+                      {/* Action Buttons */}
+                      <div className="flex items-center gap-2">
+                        {/* Edit Button */}
+                        <button
+                          onClick={() => handleEditProduct(product.id)}
+                          className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                          title="แก้ไขสินค้า"
+                        >
+                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                          </svg>
+                        </button>
+
+                        {/* Delete Button */}
+                        <button
+                          onClick={() => handleDeleteProduct(product.id)}
+                          className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                          title="ลบสินค้า"
+                        >
+                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                          </svg>
+                        </button>
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -445,6 +623,56 @@ export default function MyProductsPage() {
         onClose={() => setShowProductModal(false)}
         onSubmit={handleProductSubmit}
       />
+
+      {/* Product Edit Modal */}
+      <ProductEditModal
+        isOpen={showEditModal}
+        onClose={() => {
+          setShowEditModal(false);
+          setEditingProduct(null);
+        }}
+        product={editingProduct}
+        onUpdate={handleUpdateProduct}
+      />
+
+      {/* Delete Confirmation Modal */}
+      {showDeleteConfirm && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg max-w-md w-full p-6">
+            <div className="flex items-center gap-4 mb-4">
+              <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center">
+                <svg className="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                </svg>
+              </div>
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900">ยืนยันการลบสินค้า</h3>
+                <p className="text-gray-600">การกระทำนี้ไม่สามารถย้อนกลับได้</p>
+              </div>
+            </div>
+            <p className="text-gray-700 mb-6">
+              คุณแน่ใจหรือไม่ว่าต้องการลบสินค้านี้? สินค้าจะถูกทำเครื่องหมายว่าไม่ใช้งาน
+            </p>
+            <div className="flex gap-3">
+              <button
+                onClick={() => {
+                  setShowDeleteConfirm(false);
+                  setDeletingProductId(null);
+                }}
+                className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+              >
+                ยกเลิก
+              </button>
+              <button
+                onClick={confirmDeleteProduct}
+                className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+              >
+                ลบสินค้า
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
