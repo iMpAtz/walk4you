@@ -12,7 +12,16 @@ export async function GET(req: NextRequest) {
   }
 
   const { searchParams } = new URL(req.url);
-  const folder = searchParams.get('folder') || 'uploads';
+  const username = searchParams.get('username');
+  const type = searchParams.get('type'); // 'avatar' or 'product'
+  
+  // Create folder structure: user/username/type
+  let folder = 'uploads'; // default fallback
+  if (username && type) {
+    folder = `user/${username}/${type}`;
+  } else if (username) {
+    folder = `user/${username}`;
+  }
 
   const timestamp = Math.floor(Date.now() / 1000);
 

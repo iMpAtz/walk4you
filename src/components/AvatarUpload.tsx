@@ -6,9 +6,10 @@ import Image from 'next/image';
 interface AvatarUploadProps {
   currentAvatar?: string;
   onAvatarUpdate: (avatarData: any) => void;
+  username?: string;
 }
 
-export default function AvatarUpload({ currentAvatar, onAvatarUpdate }: AvatarUploadProps) {
+export default function AvatarUpload({ currentAvatar, onAvatarUpdate, username }: AvatarUploadProps) {
   const [isUploading, setIsUploading] = useState(false);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
 
@@ -26,9 +27,14 @@ export default function AvatarUpload({ currentAvatar, onAvatarUpdate }: AvatarUp
     // Upload to Cloudinary
     setIsUploading(true);
     try {
-      // Get Cloudinary signature
-      const signatureResponse = await fetch('/api/uploads/cloudinary-sign');
+      // Get Cloudinary signature with username and type
+      const signatureUrl = username 
+        ? `/api/uploads/cloudinary-sign?username=${encodeURIComponent(username)}&type=avatar`
+        : '/api/uploads/cloudinary-sign?type=avatar';
+      const signatureResponse = await fetch(signatureUrl);
       const { timestamp, signature, apiKey, cloudName, folder } = await signatureResponse.json();
+      
+      console.log('Avatar upload folder:', folder); // Debug log
 
       // Create form data
       const formData = new FormData();
@@ -36,7 +42,7 @@ export default function AvatarUpload({ currentAvatar, onAvatarUpdate }: AvatarUp
       formData.append('api_key', apiKey);
       formData.append('timestamp', timestamp.toString());
       formData.append('signature', signature);
-      formData.append('folder', folder || 'avatars');
+      formData.append('folder', folder);
 
       // Upload to Cloudinary
       const uploadResponse = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/image/upload`, {

@@ -18,9 +18,10 @@ interface ProductFormModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSubmit: (data: ProductFormData) => Promise<void>;
+  username?: string;
 }
 
-export default function ProductFormModal({ isOpen, onClose, onSubmit }: ProductFormModalProps) {
+export default function ProductFormModal({ isOpen, onClose, onSubmit, username }: ProductFormModalProps) {
   const [formData, setFormData] = useState<ProductFormData>({
     name: '',
     description: '',
@@ -69,9 +70,14 @@ export default function ProductFormModal({ isOpen, onClose, onSubmit }: ProductF
     // Upload to Cloudinary
     setIsSubmitting(true);
     try {
-      // Get Cloudinary signature
-      const signatureResponse = await fetch('/api/uploads/cloudinary-sign');
+      // Get Cloudinary signature with username and type
+      const signatureUrl = username 
+        ? `/api/uploads/cloudinary-sign?username=${encodeURIComponent(username)}&type=product`
+        : '/api/uploads/cloudinary-sign?type=product';
+      const signatureResponse = await fetch(signatureUrl);
       const { timestamp, signature, apiKey, cloudName, folder } = await signatureResponse.json();
+      
+      console.log('Upload folder:', folder); // Debug log
 
       // Create form data
       const formData = new FormData();
@@ -79,7 +85,7 @@ export default function ProductFormModal({ isOpen, onClose, onSubmit }: ProductF
       formData.append('api_key', apiKey);
       formData.append('timestamp', timestamp.toString());
       formData.append('signature', signature);
-      formData.append('folder', folder || 'products');
+      formData.append('folder', folder);
 
       // Upload to Cloudinary
       const uploadResponse = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/image/upload`, {

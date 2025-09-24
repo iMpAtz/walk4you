@@ -622,6 +622,7 @@ export default function MyProductsPage() {
         isOpen={showProductModal}
         onClose={() => setShowProductModal(false)}
         onSubmit={handleProductSubmit}
+        username={userData?.username}
       />
 
       {/* Product Edit Modal */}

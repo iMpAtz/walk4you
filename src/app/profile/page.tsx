@@ -270,6 +270,7 @@ export default function ProfilePage() {
             <AvatarUpload 
               currentAvatar={userProfile?.avatar?.url}
               onAvatarUpdate={handleAvatarUpdate}
+              username={userProfile?.username}
             />
             <div>
               <h3 className="text-lg font-semibold text-gray-900">
@@ -687,6 +688,7 @@ export default function ProfilePage() {
                 <AvatarUpload 
                   currentAvatar={userProfile?.avatar?.url}
                   onAvatarUpdate={handleAvatarUpdate}
+                  username={userProfile?.username}
                 />
                 <h3 className="text-lg font-semibold text-gray-900 mb-1 mt-4">
                   {userProfile?.username || 'User'}
