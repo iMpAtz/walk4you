@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import TopBar from "@/components/TopBar";
+import { useRouter } from "next/navigation";
 
 interface Product {
   id: string;
@@ -15,6 +16,7 @@ interface Product {
 }
 
 export default function Home() {
+  const router = useRouter();
   const [featuredProducts, setFeaturedProducts] = useState<Product[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -59,20 +61,7 @@ export default function Home() {
         <div className="col-span-1 h-[60px] rounded bg-gray-200 md:block hidden" />
       </div>
 
-      {/* Categories carousel mock */}
-      <div className="mx-auto max-w-[1200px] px-4 pt-6">
-        <h2 className="mb-3 text-base font-semibold">หมวดหมู่</h2>
-        <div className="relative rounded border border-gray-200 p-4">
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-            {[...Array(10)].map((_, i) => (
-              <div key={i} className="h-[120px] rounded bg-gray-100" />
-            ))}
-          </div>
-          <button className="absolute right-3 top-1/2 -translate-y-1/2 rounded-full bg-black px-3 py-2 text-white hidden md:block">›</button>
-        </div>
-      </div>
-
-      {/* Featured products */}
+      {/* ====== Featured products ====== */}
       <div className="mx-auto max-w-[1200px] px-4 pt-6">
         <h2 className="mb-3 text-base font-semibold">สินค้าแนะนำ</h2>
         <div className="rounded border border-gray-200 p-4">
@@ -85,11 +74,15 @@ export default function Home() {
           ) : featuredProducts.length > 0 ? (
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               {featuredProducts.map((product) => (
-                <div key={product.id} className="h-[120px] rounded bg-gray-100 overflow-hidden cursor-pointer hover:shadow-md transition-shadow">
+                <div
+                  key={product.id}
+                  className="h-[120px] rounded bg-gray-100 overflow-hidden cursor-pointer hover:shadow-md transition-shadow"
+                  onClick={() => router.push(`/product/${product.id}`)}
+                >
                   <div className="relative h-full">
                     {product.image_url ? (
-                      <img 
-                        src={product.image_url} 
+                      <img
+                        src={product.image_url}
                         alt={product.name}
                         className="w-full h-full object-cover"
                       />
@@ -111,6 +104,19 @@ export default function Home() {
               <p>ไม่มีสินค้าแนะนำในขณะนี้</p>
             </div>
           )}
+        </div>
+      </div>
+
+      {/* ====== Categories carousel ====== */}
+      <div className="mx-auto max-w-[1200px] px-4 pt-6">
+        <h2 className="mb-3 text-base font-semibold">หมวดหมู่</h2>
+        <div className="relative rounded border border-gray-200 p-4">
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+            {[...Array(10)].map((_, i) => (
+              <div key={i} className="h-[120px] rounded bg-gray-100" />
+            ))}
+          </div>
+          <button className="absolute right-3 top-1/2 -translate-y-1/2 rounded-full bg-black px-3 py-2 text-white hidden md:block">›</button>
         </div>
       </div>
     </div>

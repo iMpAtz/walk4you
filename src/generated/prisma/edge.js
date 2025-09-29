@@ -259,7 +259,7 @@ const config = {
       "value": "prisma-client-js"
     },
     "output": {
-      "value": "C:\\Users\\patku\\Desktop\\walk4you project\\walk4you\\src\\generated\\prisma",
+      "value": "D:\\Walk4U\\walk4you\\src\\generated\\prisma",
       "fromEnvVar": null
     },
     "config": {
@@ -273,7 +273,7 @@ const config = {
       }
     ],
     "previewFeatures": [],
-    "sourceFilePath": "C:\\Users\\patku\\Desktop\\walk4you project\\walk4you\\prisma\\schema.prisma",
+    "sourceFilePath": "D:\\Walk4U\\walk4you\\prisma\\schema.prisma",
     "isCustomOutput": true
   },
   "relativeEnvPaths": {
