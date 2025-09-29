@@ -127,6 +127,260 @@ async def get_featured_products(
         return []
 
 
+@app.get("/products/search", response_model=list[ProductResponse])
+async def search_products(
+    q: str,
+    limit: int = 20,
+    fuzzy: bool = True,
+    db: AsyncIOMotorDatabase = Depends(get_db)
+):
+    """Search products by name or description with fuzzy matching - No authentication required"""
+    try:
+        # Clean and prepare search query
+        search_terms = q.strip().split()
+        
+        if fuzzy:
+            # Create fuzzy search query using multiple strategies
+            search_conditions = []
+            
+            # 1. Exact matches (highest priority)
+            exact_query = {
+                "$and": [
+                    {"status": "ACTIVE"},
+                    {
+                        "$or": [
+                            {"name": {"$regex": q, "$options": "i"}},
+                            {"description": {"$regex": q, "$options": "i"}},
+                            {"category": {"$regex": q, "$options": "i"}}
+                        ]
+                    }
+                ]
+            }
+            
+            # 2. Individual word matches
+            word_matches = []
+            for term in search_terms:
+                if len(term) > 2:  # Only search for terms longer than 2 characters
+                    word_matches.extend([
+                        {"name": {"$regex": term, "$options": "i"}},
+                        {"description": {"$regex": term, "$options": "i"}},
+                        {"category": {"$regex": term, "$options": "i"}}
+                    ])
+            
+            # 3. Partial word matches (for typos and similar words)
+            partial_matches = []
+            for term in search_terms:
+                if len(term) > 3:  # Only for longer terms
+                    # Create regex patterns for common typos and variations
+                    patterns = [
+                        term,  # Original term
+                        term[:-1] if len(term) > 3 else term,  # Missing last character
+                        term + ".*",  # Starts with term
+                        ".*" + term,  # Ends with term
+                    ]
+                    
+                    for pattern in patterns:
+                        partial_matches.extend([
+                            {"name": {"$regex": pattern, "$options": "i"}},
+                            {"description": {"$regex": pattern, "$options": "i"}},
+                            {"category": {"$regex": pattern, "$options": "i"}}
+                        ])
+            
+            # Combine all search conditions
+            all_conditions = []
+            if word_matches:
+                all_conditions.append({"$or": word_matches})
+            if partial_matches:
+                all_conditions.append({"$or": partial_matches})
+            
+            if all_conditions:
+                search_query = {
+                    "$and": [
+                        {"status": "ACTIVE"},
+                        {"$or": all_conditions}
+                    ]
+                }
+            else:
+                search_query = exact_query
+        else:
+            # Original exact search
+            search_query = {
+                "$and": [
+                    {"status": "ACTIVE"},
+                    {
+                        "$or": [
+                            {"name": {"$regex": q, "$options": "i"}},
+                            {"description": {"$regex": q, "$options": "i"}},
+                            {"category": {"$regex": q, "$options": "i"}}
+                        ]
+                    }
+                ]
+            }
+        
+        # Get products with store information and add scoring
+        pipeline = [
+            {"$match": search_query},
+            {"$lookup": {
+                "from": "Store",
+                "localField": "storeId",
+                "foreignField": "_id",
+                "as": "store"
+            }},
+            {"$unwind": "$store"},
+            {"$match": {"store.status": "ACTIVE"}},
+            {"$addFields": {
+                "score": {
+                    "$add": [
+                        # Exact name match gets highest score
+                        {"$cond": [
+                            {"$regexMatch": {"input": "$name", "regex": q, "options": "i"}},
+                            10, 0
+                        ]},
+                        # Exact description match
+                        {"$cond": [
+                            {"$regexMatch": {"input": "$description", "regex": q, "options": "i"}},
+                            5, 0
+                        ]},
+                        # Exact category match
+                        {"$cond": [
+                            {"$regexMatch": {"input": "$category", "regex": q, "options": "i"}},
+                            3, 0
+                        ]},
+                        # Word matches in name
+                        {"$cond": [
+                            {"$gt": [{"$size": {"$filter": {
+                                "input": search_terms,
+                                "cond": {"$regexMatch": {"input": "$name", "regex": "$$this", "options": "i"}}
+                            }}}, 0]},
+                            2, 0
+                        ]},
+                        # Word matches in description
+                        {"$cond": [
+                            {"$gt": [{"$size": {"$filter": {
+                                "input": search_terms,
+                                "cond": {"$regexMatch": {"input": "$description", "regex": "$$this", "options": "i"}}
+                            }}}, 0]},
+                            1, 0
+                        ]}
+                    ]
+                }
+            }},
+            {"$sort": {"score": -1, "createdAt": -1}},  # Sort by score, then by newest
+            {"$limit": limit}
+        ]
+        
+        products = await db.Product.aggregate(pipeline).to_list(None)
+        
+        return [
+            ProductResponse(
+                id=str(product["_id"]),
+                storeId=str(product["storeId"]),
+                name=product["name"],
+                description=product["description"],
+                price=product["price"],
+                quantity=product["quantity"],
+                image_url=product.get("image_url"),
+                category=product.get("category"),
+                createdAt=product["createdAt"],
+                updatedAt=product["updatedAt"],
+                status=product["status"]
+            )
+            for product in products
+        ]
+    except Exception as e:
+        print(f"Error searching products: {e}")
+        return []
+
+
+@app.get("/products/search/suggestions")
+async def get_search_suggestions(
+    q: str,
+    limit: int = 5,
+    db: AsyncIOMotorDatabase = Depends(get_db)
+):
+    """Get search suggestions based on product names and categories - No authentication required"""
+    try:
+        if len(q.strip()) < 2:
+            return []
+        
+        # Get suggestions from product names and categories
+        pipeline = [
+            {"$match": {
+                "status": "ACTIVE",
+                "$or": [
+                    {"name": {"$regex": q, "$options": "i"}},
+                    {"category": {"$regex": q, "$options": "i"}}
+                ]
+            }},
+            {"$lookup": {
+                "from": "Store",
+                "localField": "storeId",
+                "foreignField": "_id",
+                "as": "store"
+            }},
+            {"$unwind": "$store"},
+            {"$match": {"store.status": "ACTIVE"}},
+            {"$group": {
+                "_id": "$name",
+                "count": {"$sum": 1},
+                "category": {"$first": "$category"}
+            }},
+            {"$sort": {"count": -1}},
+            {"$limit": limit}
+        ]
+        
+        name_suggestions = await db.Product.aggregate(pipeline).to_list(None)
+        
+        # Get category suggestions
+        category_pipeline = [
+            {"$match": {
+                "status": "ACTIVE",
+                "category": {"$regex": q, "$options": "i"}
+            }},
+            {"$lookup": {
+                "from": "Store",
+                "localField": "storeId",
+                "foreignField": "_id",
+                "as": "store"
+            }},
+            {"$unwind": "$store"},
+            {"$match": {"store.status": "ACTIVE"}},
+            {"$group": {
+                "_id": "$category",
+                "count": {"$sum": 1}
+            }},
+            {"$sort": {"count": -1}},
+            {"$limit": 3}
+        ]
+        
+        category_suggestions = await db.Product.aggregate(category_pipeline).to_list(None)
+        
+        # Combine suggestions
+        suggestions = []
+        
+        # Add name suggestions
+        for suggestion in name_suggestions:
+            suggestions.append({
+                "text": suggestion["_id"],
+                "type": "product",
+                "count": suggestion["count"]
+            })
+        
+        # Add category suggestions
+        for suggestion in category_suggestions:
+            suggestions.append({
+                "text": suggestion["_id"],
+                "type": "category", 
+                "count": suggestion["count"]
+            })
+        
+        return suggestions[:limit]
+        
+    except Exception as e:
+        print(f"Error getting search suggestions: {e}")
+        return []
+
+
 # ===== Auth Models =====
 class UserRegister(BaseModel):
     username: str
