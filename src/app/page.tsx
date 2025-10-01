@@ -3,7 +3,10 @@
 import { useState, useEffect } from 'react';
 import TopBar from "@/components/TopBar";
 import { useRouter } from "next/navigation";
-import { ChevronLeft, ChevronRight, Tag, Smartphone, Laptop, Shirt, Home as HomeIcon, Book, Gift, Utensils, Dumbbell } from "lucide-react";
+import { ChevronLeft, ChevronRight } from "lucide-react";
+import { categories as baseCategories, useCategoriesWithCounts } from '@/constants/categories';
+import NotificationBell from '@/components/NotificationBell';
+import CartIcon from '@/components/CartIcon';
 
 interface Product {
   id: string;
@@ -38,11 +41,16 @@ interface Category {
   count: number;
 }
 
+interface CategoryWithCount {
+  category: string;
+  count: number;
+}
+
 const banners: Banner[] = [
   {
     id: 1,
-    title: "ลดสูงสุด 50%",
-    subtitle: "สินค้าอิเล็กทรอนิกส์",
+    title: "สินค้าอิเล็กทรอนิกส์",
+    subtitle: "ที่หลากหลาย",
     image: "https://images.unsplash.com/photo-1607082348824-0a96f2a4b9da?w=800&h=400&fit=crop",
     color: "from-blue-600 to-purple-600"
   },
@@ -62,18 +70,6 @@ const banners: Banner[] = [
   }
 ];
 
-const categories: Category[] = [
-  { id: "electronics", name: "อิเล็กทรอนิกส์", icon: Smartphone, color: "from-blue-500 to-cyan-500", count: 1234 },
-  { id: "computers", name: "คอมพิวเตอร์", icon: Laptop, color: "from-purple-500 to-pink-500", count: 856 },
-  { id: "fashion", name: "แฟชั่น", icon: Shirt, color: "from-pink-500 to-rose-500", count: 2341 },
-  { id: "home", name: "บ้านและสวน", icon: HomeIcon, color: "from-green-500 to-emerald-500", count: 567 },
-  { id: "books", name: "หนังสือ", icon: Book, color: "from-amber-500 to-orange-500", count: 789 },
-  { id: "gifts", name: "ของขวัญ", icon: Gift, color: "from-red-500 to-pink-500", count: 432 },
-  { id: "food", name: "อาหารและเครื่องดื่ม", icon: Utensils, color: "from-yellow-500 to-amber-500", count: 654 },
-  { id: "sports", name: "กีฬา", icon: Dumbbell, color: "from-indigo-500 to-blue-500", count: 321 },
-  { id: "beauty", name: "ความงาม", icon: Tag, color: "from-fuchsia-500 to-purple-500", count: 987 },
-  { id: "toys", name: "ของเล่น", icon: Gift, color: "from-cyan-500 to-blue-500", count: 543 }
-];
 
 export default function Home() {
   const router = useRouter();
@@ -87,6 +83,9 @@ export default function Home() {
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [currentBanner, setCurrentBanner] = useState(0);
   const [categoryScroll, setCategoryScroll] = useState(0);
+  
+  // Use custom hook for categories with counts
+  const { categories: categoriesWithCounts, isLoading: categoriesLoading, error: categoriesError } = useCategoriesWithCounts();
 
   useEffect(() => {
     fetchFeaturedProducts();
@@ -205,8 +204,11 @@ export default function Home() {
   };
 
   const handleCategoryClick = (categoryId: string) => {
-    setSearchQuery(categories.find(c => c.id === categoryId)?.name || '');
-    handleSearch();
+    const category = baseCategories.find(c => c.id === categoryId);
+    if (category) {
+      setSearchQuery(category.name);
+      handleSearch();
+    }
   };
 
   return (
@@ -405,22 +407,51 @@ export default function Home() {
           className="flex gap-4 overflow-x-auto scrollbar-hide scroll-smooth pb-4"
           style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
         >
-          {categories.map((category) => {
-            const Icon = category.icon;
-            return (
-              <div
-                key={category.id}
-                onClick={() => handleCategoryClick(category.id)}
-                className="flex-shrink-0 w-[140px] cursor-pointer group"
-              >
-                <div className={`bg-gradient-to-br ${category.color} rounded-2xl p-6 h-[140px] flex flex-col items-center justify-center text-white shadow-lg hover:shadow-xl transform hover:scale-105 transition-all`}>
-                  <Icon className="w-10 h-10 mb-2" />
-                  <span className="text-sm font-semibold text-center">{category.name}</span>
-                  <span className="text-xs opacity-90 mt-1">{category.count} รายการ</span>
+          {categoriesLoading ? (
+            // Loading skeleton for categories
+            [...Array(5)].map((_, i) => (
+              <div key={i} className="flex-shrink-0 w-[140px]">
+                <div className="bg-gray-200 rounded-2xl p-6 h-[140px] flex flex-col items-center justify-center animate-pulse">
+                  <div className="w-10 h-10 bg-gray-300 rounded mb-2"></div>
+                  <div className="w-16 h-4 bg-gray-300 rounded"></div>
                 </div>
               </div>
-            );
-          })}
+            ))
+          ) : categoriesError ? (
+            // Error state - show base categories
+            baseCategories.map((category) => {
+              const Icon = category.icon;
+              return (
+                <div
+                  key={category.id}
+                  onClick={() => handleCategoryClick(category.id)}
+                  className="flex-shrink-0 w-[140px] cursor-pointer group"
+                >
+                  <div className={`bg-gradient-to-br ${category.color} rounded-2xl p-6 h-[140px] flex flex-col items-center justify-center text-white shadow-lg hover:shadow-xl transform hover:scale-105 transition-all`}>
+                    <Icon className="w-10 h-10 mb-2" />
+                    <span className="text-sm font-semibold text-center">{category.name}</span>
+                  </div>
+                </div>
+              );
+            })
+          ) : (
+            // Normal state with real counts
+            categoriesWithCounts.map((category) => {
+              const Icon = category.icon;
+              return (
+                <div
+                  key={category.id}
+                  onClick={() => handleCategoryClick(category.id)}
+                  className="flex-shrink-0 w-[140px] cursor-pointer group"
+                >
+                  <div className={`bg-gradient-to-br ${category.color} rounded-2xl p-6 h-[140px] flex flex-col items-center justify-center text-white shadow-lg hover:shadow-xl transform hover:scale-105 transition-all`}>
+                    <Icon className="w-10 h-10 mb-2" />
+                    <span className="text-sm font-semibold text-center">{category.name}</span>
+                  </div>
+                </div>
+              );
+            })
+          )}
         </div>
       </div>
 

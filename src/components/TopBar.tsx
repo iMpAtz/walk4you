@@ -6,6 +6,8 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import type { UserProfile } from '@/types';
 import MobileSidebar from './MobileSidebar';
+import NotificationBell from './NotificationBell';
+import CartIcon from './CartIcon';
 
 export default function TopBar() {
   const router = useRouter();
@@ -111,27 +113,31 @@ export default function TopBar() {
     <>
       <div className="w-full bg-black text-white text-sm">
         <div className="mx-auto flex max-w-[1200px] items-center justify-between px-4 py-2">
-          {/* Profile button - moved to left side when logged in */}
+          {/* Profile button and notifications - moved to left side when logged in */}
           {hasToken && (
-            <button 
-              onClick={() => setIsSidebarOpen(true)}
-              className="flex items-center gap-2 hover:bg-gray-800 rounded-lg px-2 py-1 transition-colors"
-            >
-              {userProfile?.avatar?.url ? (
-                <Image 
-                  src={userProfile.avatar.url} 
-                  alt="Profile" 
-                  width={24} 
-                  height={24} 
-                  className="rounded-full object-cover w-6 h-6"
-                />
-              ) : (
-                <div className="w-6 h-6 bg-gray-500 rounded-full flex items-center justify-center text-xs">
-                  {userProfile?.username?.charAt(0).toUpperCase() || 'U'}
-                </div>
-              )}
-              <span className="text-sm">{userProfile?.username || 'User'}</span>
-            </button>
+            <div className="flex items-center gap-3">
+              <NotificationBell />
+              <CartIcon />
+              <button 
+                onClick={() => setIsSidebarOpen(true)}
+                className="flex items-center gap-2 hover:bg-gray-800 rounded-lg px-2 py-1 transition-colors"
+              >
+                {userProfile?.avatar?.url ? (
+                  <Image 
+                    src={userProfile.avatar.url} 
+                    alt="Profile" 
+                    width={24} 
+                    height={24} 
+                    className="rounded-full object-cover w-6 h-6"
+                  />
+                ) : (
+                  <div className="w-6 h-6 bg-gray-500 rounded-full flex items-center justify-center text-xs">
+                    {userProfile?.username?.charAt(0).toUpperCase() || 'U'}
+                  </div>
+                )}
+                <span className="text-sm">{userProfile?.username || 'User'}</span>
+              </button>
+            </div>
           )}
 
           {/* Logo/Brand - show when not logged in */}

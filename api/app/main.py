@@ -145,9 +145,13 @@ async def get_featured_products(
                 "status": 1
             }}
         ]
+
         
+
         products = await db.Product.aggregate(pipeline).to_list(limit)
+
         
+
         return [
             ProductResponse(
                 id=str(product["_id"]),
@@ -249,9 +253,13 @@ async def search_products(
                 }
             }
         ]
+
         
+
         products = await db.Product.aggregate(pipeline).to_list(limit)
+
         
+
         return [
             ProductResponse(
                 id=str(p["_id"]),
@@ -295,9 +303,13 @@ async def search_products(
                 {"$match": {"store.status": "ACTIVE"}},
                 {"$limit": limit}
             ]
+
             
+
             products = await db.Product.aggregate(pipeline).to_list(limit)
+
             
+
             return [
                 ProductResponse(
                     id=str(p["_id"]),
@@ -334,8 +346,8 @@ async def get_search_suggestions(
         pipeline = [
             {
                 "$match": {
-                    "status": "ACTIVE",
-                    "$or": [
+                "status": "ACTIVE",
+                "$or": [
                         {"name": {"$regex": f"^{q}", "$options": "i"}},
                         {"category": {"$regex": f"^{q}", "$options": "i"}}
                     ]
@@ -343,8 +355,8 @@ async def get_search_suggestions(
             },
             {
                 "$group": {
-                    "_id": "$name",
-                    "category": {"$first": "$category"}
+                "_id": "$name",
+                "category": {"$first": "$category"}
                 }
             },
             {"$limit": limit}
@@ -363,6 +375,37 @@ async def get_search_suggestions(
         
     except Exception as e:
         logger.error(f"Error getting suggestions: {e}")
+        return []
+
+
+@app.get("/products/category-counts")
+async def get_category_counts(db: AsyncIOMotorDatabase = Depends(get_db)):
+    """Get product counts by category - OPTIMIZED"""
+    try:
+        # Aggregate pipeline to count products by category
+        pipeline = [
+            {"$match": {"status": "ACTIVE"}},
+            {
+                "$group": {
+                    "_id": "$category",
+                    "count": {"$sum": 1}
+                }
+            },
+            {"$sort": {"count": -1}}
+        ]
+        
+        results = await db.Product.aggregate(pipeline).to_list(None)
+        
+        return [
+            {
+                "category": result["_id"] or "uncategorized",
+                "count": result["count"]
+            }
+            for result in results
+        ]
+        
+    except Exception as e:
+        logger.error(f"Error getting category counts: {e}")
         return []
 
 
@@ -1237,3 +1280,795 @@ async def delete_product(
     await db.Product.delete_one({"_id": ObjectId(product_id)})
     
     return {"message": "Product deleted successfully"}
+
+
+# ===== Review Models =====
+class ReviewCreate(BaseModel):
+    rating: int
+    comment: str
+
+
+class ReviewResponse(BaseModel):
+    id: str
+    productId: str
+    userId: str
+    username: str
+    rating: int
+    comment: str
+    createdAt: datetime
+    updatedAt: datetime
+
+
+# ===== Review Endpoints =====
+@app.get("/products/{product_id}/reviews", response_model=list[ReviewResponse])
+async def get_product_reviews(
+    product_id: str,
+    db: AsyncIOMotorDatabase = Depends(get_db)
+):
+    """Get all reviews for a product"""
+    try:
+        # Verify product exists
+        product = await db.Product.find_one({"_id": ObjectId(product_id), "status": "ACTIVE"})
+        if not product:
+            raise HTTPException(status_code=404, detail="Product not found")
+        
+        # Get reviews with user information
+        pipeline = [
+            {"$match": {"productId": ObjectId(product_id)}},
+            {
+                "$lookup": {
+                    "from": "User",
+                    "localField": "userId",
+                    "foreignField": "_id",
+                    "as": "user"
+                }
+            },
+            {"$unwind": "$user"},
+            {
+                "$project": {
+                    "_id": 1,
+                    "productId": 1,
+                    "userId": 1,
+                    "username": "$user.username",
+                    "rating": 1,
+                    "comment": 1,
+                    "createdAt": 1,
+                    "updatedAt": 1
+                }
+            },
+            {"$sort": {"createdAt": -1}}
+        ]
+        
+        reviews = await db.Review.aggregate(pipeline).to_list(None)
+        
+        return [
+            ReviewResponse(
+                id=str(review["_id"]),
+                productId=str(review["productId"]),
+                userId=str(review["userId"]),
+                username=review["username"],
+                rating=review["rating"],
+                comment=review["comment"],
+                createdAt=review["createdAt"],
+                updatedAt=review["updatedAt"]
+            )
+            for review in reviews
+        ]
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error getting product reviews: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error")
+
+
+@app.post("/products/{product_id}/reviews", response_model=ReviewResponse)
+async def create_product_review(
+    product_id: str,
+    review_data: ReviewCreate,
+    current_user: dict = Depends(get_current_user),
+    db: AsyncIOMotorDatabase = Depends(get_db)
+):
+    """Create a new review for a product"""
+    try:
+        # Verify product exists
+        product = await db.Product.find_one({"_id": ObjectId(product_id), "status": "ACTIVE"})
+        if not product:
+            raise HTTPException(status_code=404, detail="Product not found")
+        
+        # Check if user already reviewed this product
+        existing_review = await db.Review.find_one({
+            "productId": ObjectId(product_id),
+            "userId": current_user["_id"]
+        })
+        
+        if existing_review:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="You have already reviewed this product"
+            )
+        
+        # Validate rating
+        if review_data.rating < 1 or review_data.rating > 5:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Rating must be between 1 and 5"
+            )
+        
+        # Create review
+        review_doc = {
+            "productId": ObjectId(product_id),
+            "userId": current_user["_id"],
+            "rating": review_data.rating,
+            "comment": review_data.comment,
+            "createdAt": datetime.utcnow(),
+            "updatedAt": datetime.utcnow()
+        }
+        
+        result = await db.Review.insert_one(review_doc)
+        review_doc["_id"] = result.inserted_id
+        
+        # Create notification for store owner
+        store = await db.Store.find_one({"_id": product["storeId"]})
+        if store:
+            await create_notification(
+                db=db,
+                user_id=store["ownerId"],
+                notification_type="review",
+                title="มีรีวิวใหม่",
+                message=f"มีรีวิวใหม่สำหรับสินค้า {product['name']} จาก {current_user['username']}",
+                data={"productId": product_id, "reviewId": str(review_doc["_id"])}
+            )
+        
+        return ReviewResponse(
+            id=str(review_doc["_id"]),
+            productId=str(review_doc["productId"]),
+            userId=str(review_doc["userId"]),
+            username=current_user["username"],
+            rating=review_doc["rating"],
+            comment=review_doc["comment"],
+            createdAt=review_doc["createdAt"],
+            updatedAt=review_doc["updatedAt"]
+        )
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error creating review: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error")
+
+
+# ===== Notification Models =====
+class NotificationCreate(BaseModel):
+    type: str  # "review", "order", "message"
+    title: str
+    message: str
+    data: Optional[dict] = None
+
+
+class NotificationResponse(BaseModel):
+    id: str
+    userId: str
+    type: str
+    title: str
+    message: str
+    data: Optional[dict] = None
+    isRead: bool
+    createdAt: datetime
+
+
+# ===== Order Models =====
+class OrderItem(BaseModel):
+    productId: str
+    quantity: int
+    price: float
+
+
+class OrderCreate(BaseModel):
+    items: list[OrderItem]
+    shippingAddress: str
+    phoneNumber: str
+    notes: Optional[str] = None
+
+
+class OrderResponse(BaseModel):
+    id: str
+    userId: str
+    storeId: str
+    items: list[dict]
+    totalAmount: float
+    status: str
+    shippingAddress: str
+    phoneNumber: str
+    notes: Optional[str] = None
+    createdAt: datetime
+    updatedAt: datetime
+
+
+# ===== Notification Endpoints =====
+@app.get("/notifications", response_model=list[NotificationResponse])
+async def get_user_notifications(
+    current_user: dict = Depends(get_current_user),
+    db: AsyncIOMotorDatabase = Depends(get_db)
+):
+    """Get all notifications for current user"""
+    try:
+        notifications = await db.Notification.find(
+            {"userId": current_user["_id"]}
+        ).sort("createdAt", -1).to_list(None)
+        
+        return [
+            NotificationResponse(
+                id=str(notification["_id"]),
+                userId=str(notification["userId"]),
+                type=notification["type"],
+                title=notification["title"],
+                message=notification["message"],
+                data=notification.get("data"),
+                isRead=notification["isRead"],
+                createdAt=notification["createdAt"]
+            )
+            for notification in notifications
+        ]
+    except Exception as e:
+        logger.error(f"Error getting notifications: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error")
+
+
+@app.put("/notifications/{notification_id}/read")
+async def mark_notification_read(
+    notification_id: str,
+    current_user: dict = Depends(get_current_user),
+    db: AsyncIOMotorDatabase = Depends(get_db)
+):
+    """Mark notification as read"""
+    try:
+        result = await db.Notification.update_one(
+            {"_id": ObjectId(notification_id), "userId": current_user["_id"]},
+            {"$set": {"isRead": True}}
+        )
+        
+        if result.matched_count == 0:
+            raise HTTPException(status_code=404, detail="Notification not found")
+        
+        return {"message": "Notification marked as read"}
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error marking notification as read: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error")
+
+
+@app.get("/notifications/unread-count")
+async def get_unread_count(
+    current_user: dict = Depends(get_current_user),
+    db: AsyncIOMotorDatabase = Depends(get_db)
+):
+    """Get count of unread notifications"""
+    try:
+        count = await db.Notification.count_documents({
+            "userId": current_user["_id"],
+            "isRead": False
+        })
+        
+        return {"unreadCount": count}
+    except Exception as e:
+        logger.error(f"Error getting unread count: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error")
+
+
+# ===== Order Endpoints =====
+@app.post("/orders", response_model=OrderResponse)
+async def create_order(
+    order_data: OrderCreate,
+    current_user: dict = Depends(get_current_user),
+    db: AsyncIOMotorDatabase = Depends(get_db)
+):
+    """Create a new order"""
+    try:
+        # Validate products and calculate total
+        total_amount = 0
+        validated_items = []
+        
+        for item in order_data.items:
+            product = await db.Product.find_one({
+                "_id": ObjectId(item.productId),
+                "status": "ACTIVE"
+            })
+            
+            if not product:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail=f"Product {item.productId} not found"
+                )
+            
+            if product["quantity"] < item.quantity:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail=f"Insufficient quantity for product {product['name']}"
+                )
+            
+            item_total = product["price"] * item.quantity
+            total_amount += item_total
+            
+            validated_items.append({
+                "productId": item.productId,
+                "productName": product["name"],
+                "quantity": item.quantity,
+                "price": product["price"],
+                "total": item_total
+            })
+        
+        # Get store ID from first product
+        first_product = await db.Product.find_one({"_id": ObjectId(order_data.items[0].productId)})
+        store_id = first_product["storeId"]
+        
+        # Create order
+        order_doc = {
+            "userId": current_user["_id"],
+            "storeId": store_id,
+            "items": validated_items,
+            "totalAmount": total_amount,
+            "status": "PENDING",
+            "shippingAddress": order_data.shippingAddress,
+            "phoneNumber": order_data.phoneNumber,
+            "notes": order_data.notes,
+            "createdAt": datetime.utcnow(),
+            "updatedAt": datetime.utcnow()
+        }
+        
+        result = await db.Order.insert_one(order_doc)
+        order_doc["_id"] = result.inserted_id
+        
+        # Create notification for store owner
+        store = await db.Store.find_one({"_id": store_id})
+        if store:
+            await create_notification(
+                db=db,
+                user_id=store["ownerId"],
+                notification_type="order",
+                title="มีคำสั่งซื้อใหม่",
+                message=f"มีคำสั่งซื้อใหม่จาก {current_user['username']} มูลค่า {total_amount:,.2f} บาท",
+                data={"orderId": str(order_doc["_id"])}
+            )
+        
+        return OrderResponse(
+            id=str(order_doc["_id"]),
+            userId=str(order_doc["userId"]),
+            storeId=str(order_doc["storeId"]),
+            items=order_doc["items"],
+            totalAmount=order_doc["totalAmount"],
+            status=order_doc["status"],
+            shippingAddress=order_doc["shippingAddress"],
+            phoneNumber=order_doc["phoneNumber"],
+            notes=order_doc["notes"],
+            createdAt=order_doc["createdAt"],
+            updatedAt=order_doc["updatedAt"]
+        )
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error creating order: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error")
+
+
+# ===== Helper Functions =====
+async def create_notification(
+    db: AsyncIOMotorDatabase,
+    user_id: ObjectId,
+    notification_type: str,
+    title: str,
+    message: str,
+    data: Optional[dict] = None
+):
+    """Helper function to create notification"""
+    try:
+        notification_doc = {
+            "userId": user_id,
+            "type": notification_type,
+            "title": title,
+            "message": message,
+            "data": data,
+            "isRead": False,
+            "createdAt": datetime.utcnow()
+        }
+        
+        await db.Notification.insert_one(notification_doc)
+    except Exception as e:
+        logger.error(f"Error creating notification: {e}")
+
+
+# ===== Cart Models =====
+class CartItemCreate(BaseModel):
+    productId: str
+    quantity: int
+
+
+class CartItemUpdate(BaseModel):
+    quantity: int
+
+
+class CartItemResponse(BaseModel):
+    id: str
+    productId: str
+    productName: str
+    productPrice: float
+    productImage: Optional[str] = None
+    quantity: int
+    totalPrice: float
+    createdAt: datetime
+    updatedAt: datetime
+
+
+class CartResponse(BaseModel):
+    id: str
+    userId: str
+    items: list[CartItemResponse]
+    totalItems: int
+    totalAmount: float
+    createdAt: datetime
+    updatedAt: datetime
+
+
+# ===== Cart Endpoints =====
+@app.get("/cart", response_model=CartResponse)
+async def get_cart(
+    current_user: dict = Depends(get_current_user),
+    db: AsyncIOMotorDatabase = Depends(get_db)
+):
+    """Get user's cart"""
+    try:
+        # Find user's cart
+        cart = await db.Cart.find_one({"userId": current_user["_id"]})
+        
+        if not cart:
+            # Create empty cart if doesn't exist
+            cart_doc = {
+                "userId": current_user["_id"],
+                "items": [],
+                "totalItems": 0,
+                "totalAmount": 0.0,
+                "createdAt": datetime.utcnow(),
+                "updatedAt": datetime.utcnow()
+            }
+            result = await db.Cart.insert_one(cart_doc)
+            cart_doc["_id"] = result.inserted_id
+            cart = cart_doc
+        
+        # Get product details for each cart item
+        cart_items = []
+        for item in cart["items"]:
+            product = await db.Product.find_one({"_id": ObjectId(item["productId"])})
+            if product:
+                cart_items.append(CartItemResponse(
+                    id=str(item["_id"]),
+                    productId=str(item["productId"]),
+                    productName=product["name"],
+                    productPrice=product["price"],
+                    productImage=product.get("image_url"),
+                    quantity=item["quantity"],
+                    totalPrice=product["price"] * item["quantity"],
+                    createdAt=item["createdAt"],
+                    updatedAt=item["updatedAt"]
+                ))
+        
+        return CartResponse(
+            id=str(cart["_id"]),
+            userId=str(cart["userId"]),
+            items=cart_items,
+            totalItems=cart["totalItems"],
+            totalAmount=cart["totalAmount"],
+            createdAt=cart["createdAt"],
+            updatedAt=cart["updatedAt"]
+        )
+        
+    except Exception as e:
+        logger.error(f"Error getting cart: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error")
+
+
+@app.post("/cart/items", response_model=CartItemResponse)
+async def add_to_cart(
+    item_data: CartItemCreate,
+    current_user: dict = Depends(get_current_user),
+    db: AsyncIOMotorDatabase = Depends(get_db)
+):
+    """Add item to cart"""
+    try:
+        # Verify product exists and is active
+        product = await db.Product.find_one({
+            "_id": ObjectId(item_data.productId),
+            "status": "ACTIVE"
+        })
+        
+        if not product:
+            raise HTTPException(status_code=404, detail="Product not found")
+        
+        # Check if product has enough quantity
+        if product["quantity"] < item_data.quantity:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Insufficient quantity. Available: {product['quantity']}"
+            )
+        
+        # Find user's cart
+        cart = await db.Cart.find_one({"userId": current_user["_id"]})
+        
+        if not cart:
+            # Create new cart
+            cart_doc = {
+                "userId": current_user["_id"],
+                "items": [],
+                "totalItems": 0,
+                "totalAmount": 0.0,
+                "createdAt": datetime.utcnow(),
+                "updatedAt": datetime.utcnow()
+            }
+            result = await db.Cart.insert_one(cart_doc)
+            cart_doc["_id"] = result.inserted_id
+            cart = cart_doc
+        
+        # Check if item already exists in cart
+        existing_item = None
+        for item in cart["items"]:
+            if str(item["productId"]) == item_data.productId:
+                existing_item = item
+                break
+        
+        if existing_item:
+            # Update existing item quantity
+            existing_item["quantity"] += item_data.quantity
+            existing_item["updatedAt"] = datetime.utcnow()
+        else:
+            # Add new item to cart
+            new_item = {
+                "_id": ObjectId(),
+                "productId": ObjectId(item_data.productId),
+                "quantity": item_data.quantity,
+                "createdAt": datetime.utcnow(),
+                "updatedAt": datetime.utcnow()
+            }
+            cart["items"].append(new_item)
+        
+        # Recalculate totals
+        total_items = sum(item["quantity"] for item in cart["items"])
+        total_amount = 0.0
+        
+        for item in cart["items"]:
+            product = await db.Product.find_one({"_id": item["productId"]})
+            if product:
+                total_amount += product["price"] * item["quantity"]
+        
+        # Update cart
+        await db.Cart.update_one(
+            {"_id": cart["_id"]},
+            {
+                "$set": {
+                    "items": cart["items"],
+                    "totalItems": total_items,
+                    "totalAmount": total_amount,
+                    "updatedAt": datetime.utcnow()
+                }
+            }
+        )
+        
+        # Return the added/updated item
+        target_item = existing_item if existing_item else cart["items"][-1]
+        return CartItemResponse(
+            id=str(target_item["_id"]),
+            productId=str(target_item["productId"]),
+            productName=product["name"],
+            productPrice=product["price"],
+            productImage=product.get("image_url"),
+            quantity=target_item["quantity"],
+            totalPrice=product["price"] * target_item["quantity"],
+            createdAt=target_item["createdAt"],
+            updatedAt=target_item["updatedAt"]
+        )
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error adding to cart: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error")
+
+
+@app.put("/cart/items/{item_id}", response_model=CartItemResponse)
+async def update_cart_item(
+    item_id: str,
+    item_data: CartItemUpdate,
+    current_user: dict = Depends(get_current_user),
+    db: AsyncIOMotorDatabase = Depends(get_db)
+):
+    """Update cart item quantity"""
+    try:
+        # Find user's cart
+        cart = await db.Cart.find_one({"userId": current_user["_id"]})
+        
+        if not cart:
+            raise HTTPException(status_code=404, detail="Cart not found")
+        
+        # Find the item in cart
+        item_found = None
+        for item in cart["items"]:
+            if str(item["_id"]) == item_id:
+                item_found = item
+                break
+        
+        if not item_found:
+            raise HTTPException(status_code=404, detail="Cart item not found")
+        
+        # Verify product still exists and has enough quantity
+        product = await db.Product.find_one({
+            "_id": item_found["productId"],
+            "status": "ACTIVE"
+        })
+        
+        if not product:
+            raise HTTPException(status_code=404, detail="Product not found")
+        
+        if product["quantity"] < item_data.quantity:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Insufficient quantity. Available: {product['quantity']}"
+            )
+        
+        # Update item quantity
+        item_found["quantity"] = item_data.quantity
+        item_found["updatedAt"] = datetime.utcnow()
+        
+        # Recalculate totals
+        total_items = sum(item["quantity"] for item in cart["items"])
+        total_amount = 0.0
+        
+        for item in cart["items"]:
+            product = await db.Product.find_one({"_id": item["productId"]})
+            if product:
+                total_amount += product["price"] * item["quantity"]
+        
+        # Update cart
+        await db.Cart.update_one(
+            {"_id": cart["_id"]},
+            {
+                "$set": {
+                    "items": cart["items"],
+                    "totalItems": total_items,
+                    "totalAmount": total_amount,
+                    "updatedAt": datetime.utcnow()
+                }
+            }
+        )
+        
+        return CartItemResponse(
+            id=str(item_found["_id"]),
+            productId=str(item_found["productId"]),
+            productName=product["name"],
+            productPrice=product["price"],
+            productImage=product.get("image_url"),
+            quantity=item_found["quantity"],
+            totalPrice=product["price"] * item_found["quantity"],
+            createdAt=item_found["createdAt"],
+            updatedAt=item_found["updatedAt"]
+        )
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error updating cart item: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error")
+
+
+@app.delete("/cart/items/{item_id}")
+async def remove_from_cart(
+    item_id: str,
+    current_user: dict = Depends(get_current_user),
+    db: AsyncIOMotorDatabase = Depends(get_db)
+):
+    """Remove item from cart"""
+    try:
+        # Find user's cart
+        cart = await db.Cart.find_one({"userId": current_user["_id"]})
+        
+        if not cart:
+            raise HTTPException(status_code=404, detail="Cart not found")
+        
+        # Remove item from cart
+        cart["items"] = [item for item in cart["items"] if str(item["_id"]) != item_id]
+        
+        # Recalculate totals
+        total_items = sum(item["quantity"] for item in cart["items"])
+        total_amount = 0.0
+        
+        for item in cart["items"]:
+            product = await db.Product.find_one({"_id": item["productId"]})
+            if product:
+                total_amount += product["price"] * item["quantity"]
+        
+        # Update cart
+        await db.Cart.update_one(
+            {"_id": cart["_id"]},
+            {
+                "$set": {
+                    "items": cart["items"],
+                    "totalItems": total_items,
+                    "totalAmount": total_amount,
+                    "updatedAt": datetime.utcnow()
+                }
+            }
+        )
+        
+        return {"message": "Item removed from cart"}
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error removing from cart: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error")
+
+
+@app.delete("/cart")
+async def clear_cart(
+    current_user: dict = Depends(get_current_user),
+    db: AsyncIOMotorDatabase = Depends(get_db)
+):
+    """Clear entire cart"""
+    try:
+        # Find user's cart
+        cart = await db.Cart.find_one({"userId": current_user["_id"]})
+        
+        if not cart:
+            raise HTTPException(status_code=404, detail="Cart not found")
+        
+        # Clear cart items
+        await db.Cart.update_one(
+            {"_id": cart["_id"]},
+            {
+                "$set": {
+                    "items": [],
+                    "totalItems": 0,
+                    "totalAmount": 0.0,
+                    "updatedAt": datetime.utcnow()
+                }
+            }
+        )
+        
+        return {"message": "Cart cleared"}
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error clearing cart: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error")
+
+
+# ===== Public Store Endpoints =====
+@app.get("/stores/{store_id}")
+async def get_public_store(
+    store_id: str,
+    db: AsyncIOMotorDatabase = Depends(get_db)
+):
+    """Get public store information by ID"""
+    try:
+        store = await db.Store.find_one({
+            "_id": ObjectId(store_id),
+            "status": "ACTIVE"
+        })
+        
+        if not store:
+            raise HTTPException(status_code=404, detail="Store not found")
+        
+        return {
+            "id": str(store["_id"]),
+            "storeName": store["storeName"],
+            "storeDescription": store.get("storeDescription"),
+            "phoneNumber": store.get("phoneNumber"),
+            "buMail": store.get("buMail"),
+            "registerDate": store["registerDate"],
+            "status": store["status"]
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error getting store: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error")

@@ -5,6 +5,8 @@ import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import ProductFormModal from '@/components/ProductFormModal';
 import ProductEditModal from '@/components/ProductEditModal';
+import NotificationBell from '@/components/NotificationBell';
+import CartIcon from '@/components/CartIcon';
 
 interface Product {
   id: string;
@@ -356,11 +358,9 @@ export default function MyProductsPage() {
             {/* Right side icons */}
             <div className="flex items-center space-x-4">
               {/* Notifications */}
-              <button className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
-                <svg className="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-5 5v-5zM4.5 5.5L9 10l4.5-4.5L9 1 4.5 5.5z" />
-                </svg>
-              </button>
+              <NotificationBell />
+              {/* Cart */}
+              <CartIcon />
 
               {/* User */}
               <button className="flex items-center gap-2 p-2 hover:bg-gray-100 rounded-lg transition-colors">

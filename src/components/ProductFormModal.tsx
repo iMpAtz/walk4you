@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import Image from 'next/image';
+import { getCategoryOptions } from '@/constants/categories';
 
 interface ProductFormData {
   name: string;
@@ -31,6 +32,8 @@ export default function ProductFormModal({ isOpen, onClose, onSubmit, username }
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errors, setErrors] = useState<Partial<ProductFormData>>({});
+  
+  const categoryOptions = getCategoryOptions();
 
   const handleInputChange = (field: keyof ProductFormData, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
@@ -362,14 +365,11 @@ export default function ProductFormModal({ isOpen, onClose, onSubmit, username }
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
               >
                 <option value="">เลือกหมวดหมู่</option>
-                <option value="อาหาร">อาหาร</option>
-                <option value="เครื่องดื่ม">เครื่องดื่ม</option>
-                <option value="ของใช้">ของใช้</option>
-                <option value="เสื้อผ้า">เสื้อผ้า</option>
-                <option value="อิเล็กทรอนิกส์">อิเล็กทรอนิกส์</option>
-                <option value="หนังสือ">หนังสือ</option>
-                <option value="กีฬา">กีฬา</option>
-                <option value="อื่นๆ">อื่นๆ</option>
+                {categoryOptions.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
               </select>
           </div>
 

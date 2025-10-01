@@ -2,8 +2,11 @@
 
 import useSWR from "swr";
 import { useParams } from "next/navigation";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { ShoppingCart, Heart, Share2, Star, Package, Shield, Truck, Bell, User, ThumbsUp, MessageCircle } from "lucide-react";
+import NotificationBell from "@/components/NotificationBell";
+import { useCart } from "@/contexts/CartContext";
+import CartIcon from "@/components/CartIcon";
 
 interface Product {
   id: string;
@@ -16,74 +19,88 @@ interface Product {
   storeId: string;
 }
 
-// Mock data for recommended products
-const recommendedProducts = [
-  {
-    id: "R001",
-    name: "สินค้าแนะนำ 1",
-    price: 899,
-    image_url: "https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=400&h=300&fit=crop",
-    rating: 4.8
-  },
-  {
-    id: "R002",
-    name: "สินค้าแนะนำ 2",
-    price: 1499,
-    image_url: "https://images.unsplash.com/photo-1572635196237-14b3f281503f?w=400&h=300&fit=crop",
-    rating: 4.7
-  },
-  {
-    id: "R003",
-    name: "สินค้าแนะนำ 3",
-    price: 2199,
-    image_url: "https://images.unsplash.com/photo-1560343090-f0409e92791a?w=400&h=300&fit=crop",
-    rating: 4.9
-  },
-  {
-    id: "R004",
-    name: "สินค้าแนะนำ 4",
-    price: 1299,
-    image_url: "https://images.unsplash.com/photo-1546868871-7041f2a55e12?w=400&h=300&fit=crop",
-    rating: 4.6
-  }
-];
+interface RecommendedProduct {
+  id: string;
+  name: string;
+  price: number;
+  image_url?: string;
+  category?: string;
+  storeId: string;
+  createdAt: string;
+  updatedAt: string;
+  status: string;
+}
 
-// Mock data for reviews
-const reviews = [
-  {
-    id: "REV001",
-    userName: "สมชาย ใจดี",
-    rating: 5,
-    date: "2025-09-15",
-    comment: "สินค้าดีมาก คุณภาพเยี่ยม ส่งไวมาก แพคเกจสวยงาม จะกลับมาซื้ออีกแน่นอนครับ",
-    likes: 24,
-    images: ["https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=200&h=200&fit=crop"]
-  },
-  {
-    id: "REV002",
-    userName: "สมหญิง รักสวย",
-    rating: 4,
-    date: "2025-09-10",
-    comment: "โอเคดีค่ะ ตรงตามที่โฆษณา แต่ส่งช้าไปนิดนึง",
-    likes: 12,
-    images: []
-  },
-  {
-    id: "REV003",
-    userName: "วิทยา มีสติ",
-    rating: 5,
-    date: "2025-09-05",
-    comment: "สุดยอด ของดีมีคุณภาพ ราคาคุ้มค่า ร้านบริการดีมากครับ ขอบคุณครับ",
-    likes: 18,
-    images: []
-  }
-];
+interface Store {
+  id: string;
+  storeName: string;
+  storeDescription?: string;
+  phoneNumber?: string;
+  buMail?: string;
+  registerDate: string;
+  status: string;
+}
+
+interface User {
+  id: string;
+  username: string;
+  email: string;
+  role: string;
+  registerDate: string;
+  avatar?: {
+    url?: string;
+  };
+}
+
+interface Review {
+  id: string;
+  productId: string;
+  userId: string;
+  username: string;
+  rating: number;
+  comment: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+interface ReviewForm {
+  rating: number;
+  comment: string;
+}
+
+
 
 const fetcher = async (url: string): Promise<Product> => {
   const res = await fetch(url);
   if (!res.ok) throw new Error(`Failed to fetch: ${res.status}`);
   const data = await res.json();
   return data.product ?? data;
+};
+
+const storeFetcher = async (url: string): Promise<Store> => {
+  const res = await fetch(url);
+  if (!res.ok) throw new Error(`Failed to fetch: ${res.status}`);
+  return res.json();
+};
+
+const recommendedFetcher = async (url: string): Promise<RecommendedProduct[]> => {
+  const res = await fetch(url);
+  if (!res.ok) throw new Error(`Failed to fetch: ${res.status}`);
+  return res.json();
+};
+
+const userFetcher = async (url: string): Promise<User> => {
+  const token = localStorage.getItem('access_token');
+  if (!token) throw new Error('No access token');
+  
+  const res = await fetch(url, {
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json',
+    },
+  });
+  if (!res.ok) throw new Error(`Failed to fetch: ${res.status}`);
+  return res.json();
 };
 
 export default function ProductPage() {
@@ -94,11 +111,63 @@ export default function ProductPage() {
   const [activeTab, setActiveTab] = useState<'description' | 'reviews'>('description');
   const [newComment, setNewComment] = useState('');
   const [newRating, setNewRating] = useState(5);
+  const [reviews, setReviews] = useState<Review[]>([]);
+  const [isSubmittingReview, setIsSubmittingReview] = useState(false);
+  const [reviewsLoading, setReviewsLoading] = useState(false);
+  const [isAddingToCart, setIsAddingToCart] = useState(false);
+  
+  const { addToCart } = useCart();
 
   const { data: product, error, isLoading } = useSWR<Product>(
     id ? `${process.env.NEXT_PUBLIC_API_BASE || "http://localhost:8000"}/public/products/${id}` : null,
     fetcher
   );
+
+  // Fetch store information
+  const { data: store, error: storeError } = useSWR<Store>(
+    product?.storeId ? `${process.env.NEXT_PUBLIC_API_BASE || "http://localhost:8000"}/stores/${product.storeId}` : null,
+    storeFetcher
+  );
+
+  const { data: recommendedProducts, error: recommendedError } = useSWR<RecommendedProduct[]>(
+    `${process.env.NEXT_PUBLIC_API_BASE || "http://localhost:8000"}/products/featured?limit=4`,
+    recommendedFetcher
+  );
+
+  const { data: currentUser, error: userError } = useSWR<User>(
+    typeof window !== 'undefined' && localStorage.getItem('access_token') 
+      ? `${process.env.NEXT_PUBLIC_API_BASE || "http://localhost:8000"}/users/me`
+      : null,
+    userFetcher
+  );
+
+  // Fetch reviews when product is loaded
+  useEffect(() => {
+    if (id) {
+      fetchReviews();
+    }
+  }, [id]);
+
+  const fetchReviews = async () => {
+    if (!id) return;
+    
+    try {
+      setReviewsLoading(true);
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE || "http://localhost:8000"}/products/${id}/reviews`);
+      if (response.ok) {
+        const reviewsData = await response.json();
+        setReviews(reviewsData);
+      } else {
+        console.error('Failed to fetch reviews');
+        setReviews([]);
+      }
+    } catch (error) {
+      console.error('Error fetching reviews:', error);
+      setReviews([]);
+    } finally {
+      setReviewsLoading(false);
+    }
+  };
 
   if (isLoading) {
     return (
@@ -125,9 +194,20 @@ export default function ProductPage() {
 
   const inStock = (product.quantity ?? 0) > 0;
 
-  const handleAddToCart = () => {
-    if (!inStock) return;
-    console.log(`Added ${quantity} of ${product.name} to cart`);
+  const handleAddToCart = async () => {
+    if (!inStock || !product || !id) return;
+    
+    try {
+      setIsAddingToCart(true);
+      await addToCart(id, quantity);
+      alert('เพิ่มสินค้าเข้าตระกร้าสำเร็จ!');
+    } catch (error) {
+      console.error('Failed to add to cart:', error);
+      const errorMessage = error instanceof Error ? error.message : 'เกิดข้อผิดพลาดในการเพิ่มสินค้าเข้าตระกร้า';
+      alert(errorMessage);
+    } finally {
+      setIsAddingToCart(false);
+    }
   };
 
   const handleBuyNow = () => {
@@ -135,11 +215,62 @@ export default function ProductPage() {
     console.log(`Buying ${quantity} of ${product.name}`);
   };
 
+  const submitReview = async (reviewData: ReviewForm) => {
+    if (!id || !currentUser) return;
+    
+    try {
+      setIsSubmittingReview(true);
+      const token = localStorage.getItem('access_token');
+      if (!token) {
+        alert('กรุณาเข้าสู่ระบบก่อนเขียนรีวิว');
+        return;
+      }
+
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE || "http://localhost:8000"}/products/${id}/reviews`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          rating: reviewData.rating,
+          comment: reviewData.comment,
+        }),
+      });
+
+      if (response.ok) {
+        const newReview = await response.json();
+        setReviews(prev => [newReview, ...prev]);
+        setNewComment('');
+        setNewRating(5);
+        alert('ส่งรีวิวสำเร็จ!');
+      } else {
+        const errorData = await response.json();
+        throw new Error(errorData.detail || 'Failed to submit review');
+      }
+    } catch (error) {
+      console.error('Failed to submit review:', error);
+      alert('เกิดข้อผิดพลาดในการส่งรีวิว กรุณาลองใหม่อีกครั้ง');
+    } finally {
+      setIsSubmittingReview(false);
+    }
+  };
+
   const handleSubmitReview = () => {
-    if (!newComment.trim()) return;
-    console.log('New review:', { rating: newRating, comment: newComment });
-    setNewComment('');
-    setNewRating(5);
+    if (!newComment.trim()) {
+      alert('กรุณาใส่ความคิดเห็น');
+      return;
+    }
+    
+    if (!currentUser) {
+      alert('กรุณาเข้าสู่ระบบก่อนเขียนรีวิว');
+      return;
+    }
+
+    submitReview({
+      rating: newRating,
+      comment: newComment.trim(),
+    });
   };
 
   return (
@@ -154,20 +285,23 @@ export default function ProductPage() {
             ShopLogo
           </a>
           <div className="flex items-center gap-3 lg:gap-6">
-            <button className="p-2 hover:bg-gray-100 rounded-full transition" aria-label="Notifications">
-              <Bell className="w-5 h-5 lg:w-6 lg:h-6 text-gray-700" />
-            </button>
-            <button className="p-2 hover:bg-gray-100 rounded-full transition relative" aria-label="Cart">
-              <ShoppingCart className="w-5 h-5 lg:w-6 lg:h-6 text-gray-700" />
-              <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
-                0
-              </span>
-            </button>
+            <NotificationBell />
+            <CartIcon />
             <div className="flex items-center gap-2 lg:gap-3 px-3 lg:px-4 py-2 hover:bg-gray-100 rounded-full transition cursor-pointer">
-              <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-500 rounded-full flex items-center justify-center">
-                <User className="w-5 h-5 text-white" />
-              </div>
-              <span className="hidden sm:block font-medium text-gray-700">Username</span>
+              {currentUser?.avatar?.url ? (
+                <img
+                  src={currentUser.avatar.url}
+                  alt={currentUser.username}
+                  className="w-8 h-8 rounded-full object-cover"
+                />
+              ) : (
+                <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-500 rounded-full flex items-center justify-center">
+                  <User className="w-5 h-5 text-white" />
+                </div>
+              )}
+              <span className="hidden sm:block font-medium text-gray-700">
+                {currentUser ? currentUser.username : 'Guest'}
+              </span>
             </div>
           </div>
         </div>
@@ -247,10 +381,7 @@ export default function ProductPage() {
                 </div>
 
                 <div className="grid grid-cols-3 gap-2 lg:gap-3 mb-6">
-                  <div className="flex flex-col items-center p-2 lg:p-3 bg-gray-50 rounded-lg">
-                    <Truck className="w-5 h-5 lg:w-6 lg:h-6 text-blue-600 mb-1 lg:mb-2" />
-                    <span className="text-xs text-gray-600 text-center">จัดส่งฟรี</span>
-                  </div>
+                  
                   <div className="flex flex-col items-center p-2 lg:p-3 bg-gray-50 rounded-lg">
                     <Shield className="w-5 h-5 lg:w-6 lg:h-6 text-green-600 mb-1 lg:mb-2" />
                     <span className="text-xs text-gray-600 text-center">รับประกัน</span>
@@ -294,11 +425,20 @@ export default function ProductPage() {
                 <div className="flex flex-col sm:flex-row gap-3 lg:gap-4 mb-6">
                   <button
                     onClick={handleAddToCart}
-                    disabled={!inStock}
+                    disabled={!inStock || isAddingToCart}
                     className="flex-1 bg-gradient-to-r from-yellow-400 to-orange-400 hover:from-yellow-500 hover:to-orange-500 text-white font-semibold px-4 lg:px-6 py-3 lg:py-4 rounded-xl transition transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none flex items-center justify-center gap-2 text-sm lg:text-base"
                   >
-                    <ShoppingCart className="w-4 h-4 lg:w-5 lg:h-5" />
-                    เพิ่มลงตะกร้า
+                    {isAddingToCart ? (
+                      <>
+                        <div className="w-4 h-4 lg:w-5 lg:h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                        กำลังเพิ่ม...
+                      </>
+                    ) : (
+                      <>
+                        <ShoppingCart className="w-4 h-4 lg:w-5 lg:h-5" />
+                        เพิ่มลงตะกร้า
+                      </>
+                    )}
                   </button>
                   <button
                     onClick={handleBuyNow}
@@ -350,8 +490,8 @@ export default function ProductPage() {
                     <span className="font-medium text-gray-900">{product.category || "-"}</span>
                   </div>
                   <div className="flex justify-between p-4 bg-gray-50 rounded-lg">
-                    <span className="text-gray-600">รหัสร้าน:</span>
-                    <span className="font-medium text-gray-900">{product.storeId}</span>
+                    <span className="text-gray-600">ร้านค้า:</span>
+                    <span className="font-medium text-gray-900">{store?.storeName || product.storeId}</span>
                   </div>
                   <div className="flex justify-between p-4 bg-gray-50 rounded-lg">
                     <span className="text-gray-600">รหัสสินค้า:</span>
@@ -407,59 +547,64 @@ export default function ProductPage() {
                   </div>
                   <button
                     onClick={handleSubmitReview}
-                    className="bg-gradient-to-r from-blue-500 to-indigo-500 hover:from-blue-600 hover:to-indigo-600 text-white font-semibold px-6 py-3 rounded-lg transition"
+                    disabled={isSubmittingReview}
+                    className="bg-gradient-to-r from-blue-500 to-indigo-500 hover:from-blue-600 hover:to-indigo-600 text-white font-semibold px-6 py-3 rounded-lg transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
                   >
-                    ส่งรีวิว
+                    {isSubmittingReview ? (
+                      <>
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                        กำลังส่ง...
+                      </>
+                    ) : (
+                      'ส่งรีวิว'
+                    )}
                   </button>
                 </div>
 
                 {/* Reviews List */}
                 <div className="space-y-4">
                   <h3 className="text-lg font-semibold text-gray-900">รีวิวจากลูกค้า</h3>
-                  {reviews.map((review) => (
-                    <div key={review.id} className="p-6 border border-gray-200 rounded-xl hover:shadow-md transition">
-                      <div className="flex items-start justify-between mb-3">
-                        <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-500 rounded-full flex items-center justify-center">
-                            <User className="w-6 h-6 text-white" />
-                          </div>
-                          <div>
-                            <p className="font-semibold text-gray-900">{review.userName}</p>
-                            <p className="text-sm text-gray-500">{review.date}</p>
-                          </div>
-                        </div>
-                        <div className="flex">
-                          {[...Array(5)].map((_, i) => (
-                            <Star
-                              key={i}
-                              className={`w-4 h-4 ${
-                                i < review.rating
-                                  ? 'fill-yellow-400 text-yellow-400'
-                                  : 'text-gray-300'
-                              }`}
-                            />
-                          ))}
-                        </div>
-                      </div>
-                      <p className="text-gray-700 mb-3">{review.comment}</p>
-                      {review.images.length > 0 && (
-                        <div className="flex gap-2 mb-3">
-                          {review.images.map((img, idx) => (
-                            <img
-                              key={idx}
-                              src={img}
-                              alt={`Review ${idx + 1}`}
-                              className="w-20 h-20 object-cover rounded-lg"
-                            />
-                          ))}
-                        </div>
-                      )}
-                      <button className="flex items-center gap-2 text-gray-600 hover:text-blue-600 transition">
-                        <ThumbsUp className="w-4 h-4" />
-                        <span className="text-sm">มีประโยชน์ ({review.likes})</span>
-                      </button>
+                  {reviewsLoading ? (
+                    <div className="text-center py-8">
+                      <div className="w-8 h-8 border-2 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+                      <p className="text-gray-500">กำลังโหลดรีวิว...</p>
                     </div>
-                  ))}
+                  ) : reviews.length === 0 ? (
+                    <div className="text-center py-8">
+                      <p className="text-gray-500">ยังไม่มีรีวิวสำหรับสินค้านี้</p>
+                    </div>
+                  ) : (
+                    reviews.map((review) => (
+                      <div key={review.id} className="p-6 border border-gray-200 rounded-xl hover:shadow-md transition">
+                        <div className="flex items-start justify-between mb-3">
+                          <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-500 rounded-full flex items-center justify-center">
+                              <User className="w-6 h-6 text-white" />
+                            </div>
+                            <div>
+                              <p className="font-semibold text-gray-900">{review.username}</p>
+                              <p className="text-sm text-gray-500">
+                                {new Date(review.createdAt).toLocaleDateString('th-TH')}
+                              </p>
+                            </div>
+                          </div>
+                          <div className="flex">
+                            {[...Array(5)].map((_, i) => (
+                              <Star
+                                key={i}
+                                className={`w-4 h-4 ${
+                                  i < review.rating
+                                    ? 'fill-yellow-400 text-yellow-400'
+                                    : 'text-gray-300'
+                                }`}
+                              />
+                            ))}
+                          </div>
+                        </div>
+                        <p className="text-gray-700 mb-3">{review.comment}</p>
+                      </div>
+                    ))
+                  )}
                 </div>
               </div>
             )}
@@ -469,35 +614,56 @@ export default function ProductPage() {
         {/* Recommended Products */}
         <div className="bg-white rounded-2xl shadow-xl overflow-hidden p-6 lg:p-8">
           <h2 className="text-2xl font-bold text-gray-900 mb-6">สินค้าแนะนำ</h2>
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6">
-            {recommendedProducts.map((item) => (
-              <div
-                key={item.id}
-                className="group cursor-pointer border border-gray-200 rounded-xl overflow-hidden hover:shadow-lg transition"
-              >
-                <div className="relative overflow-hidden bg-gray-50">
-                  <img
-                    src={item.image_url}
-                    alt={item.name}
-                    className="w-full h-48 object-cover group-hover:scale-110 transition duration-300"
-                  />
-                  <button className="absolute top-2 right-2 p-2 bg-white rounded-full shadow-md opacity-0 group-hover:opacity-100 transition">
-                    <Heart className="w-4 h-4 text-gray-700" />
-                  </button>
-                </div>
-                <div className="p-4">
-                  <h3 className="font-semibold text-gray-900 mb-2 line-clamp-2">{item.name}</h3>
-                  <div className="flex items-center gap-1 mb-2">
-                    <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
-                    <span className="text-sm text-gray-600">{item.rating}</span>
+          {recommendedError ? (
+            <div className="text-center py-8">
+              <p className="text-gray-500">ไม่สามารถโหลดสินค้าแนะนำได้</p>
+            </div>
+          ) : !recommendedProducts ? (
+            <div className="text-center py-8">
+              <div className="w-8 h-8 border-2 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+              <p className="text-gray-500">กำลังโหลดสินค้าแนะนำ...</p>
+            </div>
+          ) : recommendedProducts?.length === 0 ? (
+            <div className="text-center py-8">
+              <p className="text-gray-500">ไม่มีสินค้าแนะนำในขณะนี้</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6">
+              {recommendedProducts?.map((item) => (
+                <div
+                  key={item.id}
+                  className="group cursor-pointer border border-gray-200 rounded-xl overflow-hidden hover:shadow-lg transition"
+                >
+                  <div className="relative overflow-hidden bg-gray-50">
+                    {item.image_url ? (
+                      <img
+                        src={item.image_url}
+                        alt={item.name}
+                        className="w-full h-48 object-cover group-hover:scale-110 transition duration-300"
+                      />
+                    ) : (
+                      <div className="w-full h-48 flex flex-col items-center justify-center bg-gradient-to-br from-gray-100 to-gray-200 text-gray-400">
+                        <Package className="w-12 h-12 mb-2" />
+                        <p className="text-sm">ไม่มีรูปภาพ</p>
+                      </div>
+                    )}
+                    <button className="absolute top-2 right-2 p-2 bg-white rounded-full shadow-md opacity-0 group-hover:opacity-100 transition">
+                      <Heart className="w-4 h-4 text-gray-700" />
+                    </button>
                   </div>
-                  <p className="text-lg font-bold text-green-700">
-                    ฿{item.price.toLocaleString()}
-                  </p>
+                  <div className="p-4">
+                    <h3 className="font-semibold text-gray-900 mb-2 line-clamp-2">{item.name}</h3>
+                    {item.category && (
+                      <p className="text-xs text-blue-600 mb-2">{item.category}</p>
+                    )}
+                    <p className="text-lg font-bold text-green-700">
+                      {(item.price || 0).toLocaleString("th-TH", { style: "currency", currency: "THB" })}
+                    </p>
+                  </div>
                 </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
         </div>
       </div>
     </div>
