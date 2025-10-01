@@ -53,6 +53,7 @@ CLOUDINARY_UPLOAD_PRESET=your_unsigned_preset
 npm install
 npm i -D prisma
 npm i @prisma/client
+npm install lucide-react
 ```
 
 ### ตั้งค่า Prisma (MongoDB)
