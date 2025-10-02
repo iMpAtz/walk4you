@@ -354,21 +354,25 @@ export default function Home() {
           ))}
           
           {/* Banner Controls */}
-          <button
-            onClick={prevBanner}
-            className="absolute left-4 top-1/2 -translate-y-1/2 bg-white bg-opacity-50 hover:bg-opacity-100 rounded-full p-2 transition"
-          >
-            <ChevronLeft className="w-6 h-6" />
-          </button>
-          <button
-            onClick={nextBanner}
-            className="absolute right-4 top-1/2 -translate-y-1/2 bg-white bg-opacity-50 hover:bg-opacity-100 rounded-full p-2 transition"
-          >
-            <ChevronRight className="w-6 h-6" />
-          </button>
+          <div className="absolute left-0 top-1/2 -translate-y-1/2">
+            <button
+              onClick={prevBanner}
+              className="bg-white bg-opacity-50 hover:bg-opacity-100 rounded-full p-2 transition"
+            >
+              <ChevronLeft className="w-6 h-6" />
+            </button>
+          </div>
+          <div className="absolute right-0 top-1/2 -translate-y-1/2">
+            <button
+              onClick={nextBanner}
+              className="bg-white bg-opacity-50 hover:bg-opacity-100 rounded-full p-2 transition"
+            >
+              <ChevronRight className="w-6 h-6" />
+            </button>
+          </div>
           
           {/* Banner Indicators */}
-          <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2">
+          <div className="absolute bottom-4 right-4 flex gap-2">
             {banners.map((_, index) => (
               <button
                 key={index}
