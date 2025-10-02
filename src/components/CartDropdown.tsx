@@ -176,18 +176,18 @@ export default function CartDropdown({ isOpen, onClose }: CartDropdownProps) {
             <div className="flex gap-2">
               <button
                 onClick={handleClearCart}
-                className="flex-1 text-sm text-red-600 hover:text-red-700 font-medium py-2 px-3 border border-red-200 rounded-lg hover:bg-red-50 transition-colors"
+                className="text-sm text-red-600 hover:text-red-700 font-medium py-2 px-3 border border-red-200 rounded-lg hover:bg-red-50 transition-colors"
               >
                 ลบทั้งหมด
               </button>
               <button
                 onClick={() => {
-                  // Navigate to checkout page
-                  window.location.href = '/checkout';
+                  onClose();
+                  window.location.href = '/cart';
                 }}
                 className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-3 rounded-lg transition-colors"
               >
-                ชำระเงิน
+                ดูตระกร้า
               </button>
             </div>
           </div>

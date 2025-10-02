@@ -1696,6 +1696,8 @@ class CartItemResponse(BaseModel):
     productImage: Optional[str] = None
     quantity: int
     totalPrice: float
+    storeId: str
+    storeName: str
     createdAt: datetime
     updatedAt: datetime
 
@@ -1740,6 +1742,10 @@ async def get_cart(
         for item in cart["items"]:
             product = await db.Product.find_one({"_id": ObjectId(item["productId"])})
             if product:
+                # Get store information
+                store = await db.Store.find_one({"_id": product["storeId"]})
+                store_name = store["storeName"] if store else "Unknown Store"
+                
                 cart_items.append(CartItemResponse(
                     id=str(item["_id"]),
                     productId=str(item["productId"]),
@@ -1748,6 +1754,8 @@ async def get_cart(
                     productImage=product.get("image_url"),
                     quantity=item["quantity"],
                     totalPrice=product["price"] * item["quantity"],
+                    storeId=str(product["storeId"]),
+                    storeName=store_name,
                     createdAt=item["createdAt"],
                     updatedAt=item["updatedAt"]
                 ))
@@ -1854,6 +1862,11 @@ async def add_to_cart(
         
         # Return the added/updated item
         target_item = existing_item if existing_item else cart["items"][-1]
+        
+        # Get store information
+        store = await db.Store.find_one({"_id": product["storeId"]})
+        store_name = store["storeName"] if store else "Unknown Store"
+        
         return CartItemResponse(
             id=str(target_item["_id"]),
             productId=str(target_item["productId"]),
@@ -1862,6 +1875,8 @@ async def add_to_cart(
             productImage=product.get("image_url"),
             quantity=target_item["quantity"],
             totalPrice=product["price"] * target_item["quantity"],
+            storeId=str(product["storeId"]),
+            storeName=store_name,
             createdAt=target_item["createdAt"],
             updatedAt=target_item["updatedAt"]
         )
@@ -1939,6 +1954,10 @@ async def update_cart_item(
             }
         )
         
+        # Get store information
+        store = await db.Store.find_one({"_id": product["storeId"]})
+        store_name = store["storeName"] if store else "Unknown Store"
+        
         return CartItemResponse(
             id=str(item_found["_id"]),
             productId=str(item_found["productId"]),
@@ -1947,6 +1966,8 @@ async def update_cart_item(
             productImage=product.get("image_url"),
             quantity=item_found["quantity"],
             totalPrice=product["price"] * item_found["quantity"],
+            storeId=str(product["storeId"]),
+            storeName=store_name,
             createdAt=item_found["createdAt"],
             updatedAt=item_found["updatedAt"]
         )

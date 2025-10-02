@@ -3,7 +3,10 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
+import { ShoppingCart, Bell } from 'lucide-react';
 import type { UserProfile } from '@/types';
+import { useCart } from '@/contexts/CartContext';
+import { useNotifications } from '@/hooks/useNotifications';
 
 interface MobileSidebarProps {
   isOpen: boolean;
@@ -16,6 +19,10 @@ interface MobileSidebarProps {
 
 export default function MobileSidebar({ isOpen, onClose, userProfile, onLogout, isDesktop = false, hasStore = false }: MobileSidebarProps) {
   const router = useRouter();
+  const { cart } = useCart();
+  const { unreadCount } = useNotifications();
+  
+  const itemCount = cart?.totalItems || 0;
 
   // ป้องกันการ scroll ของ body เมื่อ sidebar เปิด (เฉพาะ mobile)
   useEffect(() => {
@@ -101,22 +108,48 @@ export default function MobileSidebar({ isOpen, onClose, userProfile, onLogout, 
           <nav className="space-y-2">
             {/* Notifications */}
             <button className="w-full flex items-center gap-3 p-3 text-left hover:bg-gray-100 rounded-lg transition-colors">
-              <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
-                <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-5 5v-5zM4.5 5.5L9 10l4.5-4.5L9 1 4.5 5.5z" />
-                </svg>
+              <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center relative">
+                <Bell className="w-5 h-5 text-blue-600" />
+                {unreadCount > 0 && (
+                  <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-4 w-4 flex items-center justify-center font-medium text-[10px]">
+                    {unreadCount > 99 ? '99+' : unreadCount}
+                  </span>
+                )}
               </div>
-              <span className="font-medium text-gray-900">Notifications</span>
+              <div className="flex items-center justify-between flex-1">
+                <span className="font-medium text-gray-900">การแจ้งเตือน</span>
+                {unreadCount > 0 && (
+                  <span className="text-sm text-gray-500">
+                    {unreadCount} รายการ
+                  </span>
+                )}
+              </div>
             </button>
 
             {/* Cart */}
-            <button className="w-full flex items-center gap-3 p-3 text-left hover:bg-gray-100 rounded-lg transition-colors">
-              <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
-                <svg className="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3h2l.4 2M7 13h10l4-8H5.4m0 0L7 13m0 0l-2.5 5M7 13l2.5 5m6-5v6a2 2 0 01-2 2H9a2 2 0 01-2-2v-6m8 0V9a2 2 0 00-2-2H9a2 2 0 00-2 2v4.01" />
-                </svg>
+            <button 
+              onClick={() => {
+                onClose();
+                router.push('/cart');
+              }}
+              className="w-full flex items-center gap-3 p-3 text-left hover:bg-gray-100 rounded-lg transition-colors"
+            >
+              <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center relative">
+                <ShoppingCart className="w-5 h-5 text-green-600" />
+                {itemCount > 0 && (
+                  <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-4 w-4 flex items-center justify-center font-medium text-[10px]">
+                    {itemCount > 99 ? '99+' : itemCount}
+                  </span>
+                )}
               </div>
-              <span className="font-medium text-gray-900">Cart</span>
+              <div className="flex items-center justify-between flex-1">
+                <span className="font-medium text-gray-900">ตระกร้าสินค้า</span>
+                {itemCount > 0 && (
+                  <span className="text-sm text-gray-500">
+                    {itemCount} รายการ
+                  </span>
+                )}
+              </div>
             </button>
 
             {/* Profile */}

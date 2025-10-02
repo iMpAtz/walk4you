@@ -3,6 +3,21 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
+import { 
+  ArrowLeft, 
+  Search, 
+  Bell, 
+  ShoppingCart, 
+  Building2, 
+  User, 
+  Clipboard, 
+  BarChart3, 
+  Edit3, 
+  Save, 
+  X 
+} from 'lucide-react';
+import NotificationBell from '@/components/NotificationBell';
+import CartIcon from '@/components/CartIcon';
 
 interface StoreData {
   id: string;
@@ -50,80 +65,39 @@ export default function StoreManagementLayout({ storeData, userData, onSave }: S
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <div className="bg-white shadow-sm border-b">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16">
-            {/* Logo */}
-            <div className="flex items-center">
-              <button 
-                onClick={() => router.back()}
-                className="mr-4 p-2 hover:bg-gray-100 rounded-lg transition-colors"
-              >
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                </svg>
-              </button>
-              <h1 className="text-xl font-semibold text-gray-900">Logo</h1>
-            </div>
-
-            {/* Right side icons */}
-            <div className="flex items-center space-x-4">
-              {/* Notifications */}
-              <button className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
-                <svg className="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-5 5v-5zM4.5 5.5L9 10l4.5-4.5L9 1 4.5 5.5z" />
-                </svg>
-              </button>
-
-              {/* User */}
-              <button className="flex items-center gap-2 p-2 hover:bg-gray-100 rounded-lg transition-colors">
-                {userData?.avatar?.url ? (
-                  <Image 
-                    src={userData.avatar.url} 
-                    alt="Profile" 
-                    width={24} 
-                    height={24} 
-                    className="rounded-full object-cover w-6 h-6"
-                  />
-                ) : (
-                  <div className="w-6 h-6 bg-gray-500 rounded-full flex items-center justify-center text-xs text-white">
-                    {userData?.username?.charAt(0).toUpperCase() || 'U'}
-                  </div>
-                )}
-                <span className="text-sm font-medium text-gray-700">
-                  {userData?.username || 'User'}
-                </span>
-              </button>
-
-              {/* Cart */}
-              <button className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
-                <svg className="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3h2l.4 2M7 13h10l4-8H5.4m0 0L7 13m0 0l-2.5 5M7 13l2.5 5m6-5v6a2 2 0 01-2 2H9a2 2 0 01-2-2v-6m8 0V9a2 2 0 00-2-2H9a2 2 0 00-2 2v4.01" />
-                </svg>
-              </button>
+      {/* Navbar */}
+      <nav className="bg-white border-b border-gray-200 px-6 lg:px-8 py-4 shadow-sm sticky top-0 z-50 backdrop-blur-lg bg-opacity-95">
+        <div className="max-w-7xl mx-auto flex justify-between items-center">
+          <a 
+            href="/" 
+            className="text-2xl lg:text-3xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent hover:opacity-80 transition cursor-pointer"
+          >
+            ShopLogo
+          </a>
+          <div className="flex items-center gap-3 lg:gap-6">
+            <NotificationBell />
+            <CartIcon />
+            <div className="flex items-center gap-2 lg:gap-3">
+              {userData?.avatar?.url ? (
+                <Image 
+                  src={userData.avatar.url} 
+                  alt="Profile" 
+                  width={32} 
+                  height={32} 
+                  className="rounded-full object-cover w-8 h-8"
+                />
+              ) : (
+                <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-500 rounded-full flex items-center justify-center">
+                  <User className="w-5 h-5 text-white" />
+                </div>
+              )}
+              <span className="hidden sm:block font-medium text-gray-700">
+                {userData?.username || 'User'}
+              </span>
             </div>
           </div>
         </div>
-      </div>
-
-      {/* Search Bar */}
-      <div className="bg-white border-b">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <div className="relative">
-            <input
-              type="text"
-              placeholder="ค้นหา..."
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
-            />
-            <button className="absolute right-3 top-1/2 transform -translate-y-1/2">
-              <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-              </svg>
-            </button>
-          </div>
-        </div>
-      </div>
+      </nav>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
         <div className="flex flex-col lg:flex-row gap-6">
@@ -142,9 +116,7 @@ export default function StoreManagementLayout({ storeData, userData, onSave }: S
                   />
                 ) : (
                   <div className="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center">
-                    <svg className="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-                    </svg>
+                    <Building2 className="w-6 h-6 text-red-600" />
                   </div>
                 )}
                 <div>
@@ -161,9 +133,7 @@ export default function StoreManagementLayout({ storeData, userData, onSave }: S
               <nav className="space-y-2">
                 <button className="w-full flex items-center gap-3 p-3 text-left bg-red-50 text-red-600 rounded-lg">
                   <div className="w-8 h-8 bg-red-100 rounded-full flex items-center justify-center">
-                    <svg className="w-5 h-5 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                    </svg>
+                    <User className="w-5 h-5 text-red-600" />
                   </div>
                   <span className="font-medium">ร้านค้าของฉัน</span>
                 </button>
@@ -173,18 +143,14 @@ export default function StoreManagementLayout({ storeData, userData, onSave }: S
                   className="w-full flex items-center gap-3 p-3 text-left hover:bg-gray-100 rounded-lg transition-colors"
                 >
                   <div className="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center">
-                    <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-                    </svg>
+                    <Clipboard className="w-5 h-5 text-gray-600" />
                   </div>
                   <span className="font-medium text-gray-900">สินค้าของฉัน</span>
                 </button>
 
                 <button className="w-full flex items-center gap-3 p-3 text-left hover:bg-gray-100 rounded-lg transition-colors">
                   <div className="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center">
-                    <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-                    </svg>
+                    <BarChart3 className="w-5 h-5 text-gray-600" />
                   </div>
                   <span className="font-medium text-gray-900">ยอดขายของฉัน</span>
                 </button>

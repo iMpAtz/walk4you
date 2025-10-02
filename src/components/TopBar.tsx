@@ -113,11 +113,9 @@ export default function TopBar() {
     <>
       <div className="w-full bg-black text-white text-sm">
         <div className="mx-auto flex max-w-[1200px] items-center justify-between px-4 py-2">
-          {/* Profile button and notifications - moved to left side when logged in */}
+          {/* User profile - left side when logged in */}
           {hasToken && (
-            <div className="flex items-center gap-3">
-              <NotificationBell />
-              <CartIcon />
+            <div className="flex items-center">
               <button 
                 onClick={() => setIsSidebarOpen(true)}
                 className="flex items-center gap-2 hover:bg-gray-800 rounded-lg px-2 py-1 transition-colors"
@@ -137,6 +135,14 @@ export default function TopBar() {
                 )}
                 <span className="text-sm">{userProfile?.username || 'User'}</span>
               </button>
+            </div>
+          )}
+
+          {/* Notifications and Cart - right side when logged in */}
+          {hasToken && (
+            <div className="flex items-center gap-3">
+              <NotificationBell />
+              <CartIcon />
             </div>
           )}
 

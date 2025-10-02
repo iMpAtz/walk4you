@@ -3,9 +3,28 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
+import { 
+  Search, 
+  Bell, 
+  ShoppingCart, 
+  Lock, 
+  MapPin, 
+  Shield, 
+  Info, 
+  Building2, 
+  Plus, 
+  FileText,
+  User,
+  Edit3,
+  Trash2,
+  Check,
+  X
+} from 'lucide-react';
 import type { UserProfile, Store } from '@/types';
 import AvatarUpload from '@/components/AvatarUpload';
 import StoreRegisterModal from '@/components/StoreRegisterModal';
+import NotificationBell from '@/components/NotificationBell';
+import CartIcon from '@/components/CartIcon';
 
 export default function ProfilePage() {
   const router = useRouter();
@@ -161,106 +180,39 @@ export default function ProfilePage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Mobile Header */}
-      <div className="bg-white shadow-sm border-b md:hidden">
-        <div className="flex items-center justify-between px-4 py-3">
-          <button 
-            onClick={() => router.push('/')}
-            className="text-lg font-semibold text-gray-900 hover:text-blue-600 transition-colors"
+      {/* Navbar */}
+      <nav className="bg-white border-b border-gray-200 px-6 lg:px-8 py-4 shadow-sm sticky top-0 z-50 backdrop-blur-lg bg-opacity-95">
+        <div className="max-w-7xl mx-auto flex justify-between items-center">
+          <a 
+            href="/" 
+            className="text-2xl lg:text-3xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent hover:opacity-80 transition cursor-pointer"
           >
-            Logo
-          </button>
-          
-          <div className="flex items-center space-x-3">
-            {userProfile?.avatar?.url ? (
-              <Image 
-                src={userProfile.avatar.url} 
-                alt="Profile" 
-                width={32} 
-                height={32} 
-                className="rounded-full object-cover w-8 h-8"
-              />
-            ) : (
-              <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center">
-                <span className="text-white text-sm font-medium">
-                  {userProfile?.username?.charAt(0).toUpperCase() || 'U'}
-                </span>
-              </div>
-            )}
-            <span className="text-sm font-medium text-gray-700">{userProfile?.username || 'User'}</span>
-          </div>
-        </div>
-      </div>
-
-      {/* Desktop Header */}
-      <div className="bg-white shadow-sm border-b hidden md:block">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            <div className="flex items-center">
-              <button 
-                onClick={() => router.push('/')}
-                className="text-xl font-semibold text-gray-900 hover:text-blue-600 transition-colors"
-              >
-                Logo
-              </button>
-            </div>
-            
-            <div className="flex items-center space-x-4">
-              {/* Search Bar */}
-              <div className="relative">
-                <input
-                  type="text"
-                  placeholder="Search..."
-                  className="w-64 pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            ShopLogo
+          </a>
+          <div className="flex items-center gap-3 lg:gap-6">
+            <NotificationBell />
+            <CartIcon />
+            <div className="flex items-center gap-2 lg:gap-3">
+              {userProfile?.avatar?.url ? (
+                <Image 
+                  src={userProfile.avatar.url} 
+                  alt="Profile" 
+                  width={32} 
+                  height={32} 
+                  className="rounded-full object-cover w-8 h-8"
                 />
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <svg className="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                  </svg>
+              ) : (
+                <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-500 rounded-full flex items-center justify-center">
+                  <User className="w-5 h-5 text-white" />
                 </div>
-              </div>
-
-              {/* Notifications */}
-              <button className="p-2 text-gray-400 hover:text-gray-600">
-                <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-5 5v-5zM4.5 5.5L9 10l4.5-4.5L9 1 4.5 5.5z" />
-                </svg>
-              </button>
-
-              {/* User Info */}
-              <div className="flex items-center space-x-2">
-                {userProfile?.avatar?.url ? (
-                  <Image 
-                    src={userProfile.avatar.url} 
-                    alt="Profile" 
-                    width={32} 
-                    height={32} 
-                    className="rounded-full object-cover w-8 h-8"
-                    onError={(e) => {
-                      console.log('Top nav image load error:', e);
-                    }}
-                  />
-                ) : (
-                  <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center">
-                    <span className="text-white text-sm font-medium">
-                      {userProfile?.username?.charAt(0).toUpperCase() || 'U'}
-                    </span>
-                  </div>
-                )}
-                <span className="text-sm font-medium text-gray-700">{userProfile?.username || 'User'}</span>
-              </div>
-
-              {/* Cart */}
-              <button className="flex items-center space-x-1 text-gray-400 hover:text-gray-600">
-                <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3h2l.4 2M7 13h10l4-8H5.4m0 0L7 13m0 0l-2.5 5M7 13l2.5 5m6-5v6a2 2 0 01-2 2H9a2 2 0 01-2-2v-6m8 0V9a2 2 0 00-2-2H9a2 2 0 00-2 2v4.01" />
-                </svg>
-                <span className="text-sm">Cart</span>
-              </button>
+              )}
+              <span className="hidden sm:block font-medium text-gray-700">
+                {userProfile?.username || 'User'}
+              </span>
             </div>
           </div>
         </div>
-      </div>
+      </nav>
 
       {/* Mobile Layout */}
       <div className="md:hidden">
@@ -524,9 +476,7 @@ export default function ProfilePage() {
               <div className="space-y-6">
                 <div className="text-center py-12">
                   <div className="w-16 h-16 mx-auto mb-4 bg-gray-100 rounded-full flex items-center justify-center">
-                    <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-                    </svg>
+                    <Lock className="w-8 h-8 text-gray-400" />
                   </div>
                   <h3 className="text-lg font-medium text-gray-900 mb-2">Change Password</h3>
                   <p className="text-gray-600">This feature will be available soon.</p>
@@ -538,10 +488,7 @@ export default function ProfilePage() {
               <div className="space-y-6">
                 <div className="text-center py-12">
                   <div className="w-16 h-16 mx-auto mb-4 bg-gray-100 rounded-full flex items-center justify-center">
-                    <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-                    </svg>
+                    <MapPin className="w-8 h-8 text-gray-400" />
                   </div>
                   <h3 className="text-lg font-medium text-gray-900 mb-2">Address Management</h3>
                   <p className="text-gray-600">This feature will be available soon.</p>
@@ -553,9 +500,7 @@ export default function ProfilePage() {
               <div className="space-y-6">
                 <div className="text-center py-12">
                   <div className="w-16 h-16 mx-auto mb-4 bg-gray-100 rounded-full flex items-center justify-center">
-                    <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
-                    </svg>
+                    <Shield className="w-8 h-8 text-gray-400" />
                   </div>
                   <h3 className="text-lg font-medium text-gray-900 mb-2">Privacy Settings</h3>
                   <p className="text-gray-600">This feature will be available soon.</p>
@@ -631,9 +576,7 @@ export default function ProfilePage() {
                     
                     <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
                       <div className="flex items-center">
-                        <svg className="w-5 h-5 text-blue-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                        </svg>
+                        <Info className="w-5 h-5 text-blue-600 mr-2" />
                         <div>
                           <h4 className="text-sm font-medium text-blue-900">Store Management</h4>
                           <p className="text-sm text-blue-700">Manage your products, orders, and store settings.</p>
@@ -644,9 +587,7 @@ export default function ProfilePage() {
                 ) : (
                   <div className="text-center py-12">
                     <div className="w-16 h-16 mx-auto mb-4 bg-gray-100 rounded-full flex items-center justify-center">
-                      <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-                      </svg>
+                      <Building2 className="w-8 h-8 text-gray-400" />
                     </div>
                     <h3 className="text-lg font-medium text-gray-900 mb-2">No Store Found</h3>
                     <p className="text-gray-600 mb-4">You don't have a store yet. Register your store to start selling.</p>
@@ -665,9 +606,7 @@ export default function ProfilePage() {
               <div className="space-y-6">
                 <div className="text-center py-12">
                   <div className="w-16 h-16 mx-auto mb-4 bg-gray-100 rounded-full flex items-center justify-center">
-                    <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                    </svg>
+                    <FileText className="w-8 h-8 text-gray-400" />
                   </div>
                   <h3 className="text-lg font-medium text-gray-900 mb-2">My Purchase</h3>
                   <p className="text-gray-600">This feature will be available soon.</p>
@@ -760,9 +699,7 @@ export default function ProfilePage() {
                         : 'text-gray-700 hover:bg-gray-50'
                     }`}
                   >
-                    <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-                    </svg>
+                    <Building2 className="w-4 h-4 mr-2" />
                     My Store
                   </button>
                 ) : (
@@ -770,9 +707,7 @@ export default function ProfilePage() {
                     onClick={() => setShowStoreModal(true)}
                     className="w-full flex items-center px-3 py-2 text-sm rounded-lg transition-colors bg-green-50 text-green-600 hover:bg-green-100 font-medium"
                   >
-                    <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                    </svg>
+                    <Plus className="w-4 h-4 mr-2" />
                     Store Register
                   </button>
                 )}
@@ -785,9 +720,7 @@ export default function ProfilePage() {
                       : 'text-gray-700 hover:bg-gray-50'
                   }`}
                 >
-                  <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                  </svg>
+                  <FileText className="w-4 h-4 mr-2" />
                   My Purchase
                 </button>
               </nav>
@@ -956,9 +889,7 @@ export default function ProfilePage() {
                 <div className="space-y-6">
                   <div className="text-center py-12">
                     <div className="w-16 h-16 mx-auto mb-4 bg-gray-100 rounded-full flex items-center justify-center">
-                      <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-                      </svg>
+                      <Lock className="w-8 h-8 text-gray-400" />
                     </div>
                     <h3 className="text-lg font-medium text-gray-900 mb-2">Change Password</h3>
                     <p className="text-gray-600">This feature will be available soon.</p>
@@ -970,10 +901,7 @@ export default function ProfilePage() {
                 <div className="space-y-6">
                   <div className="text-center py-12">
                     <div className="w-16 h-16 mx-auto mb-4 bg-gray-100 rounded-full flex items-center justify-center">
-                      <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-                      </svg>
+                      <MapPin className="w-8 h-8 text-gray-400" />
                     </div>
                     <h3 className="text-lg font-medium text-gray-900 mb-2">Address Management</h3>
                     <p className="text-gray-600">This feature will be available soon.</p>
