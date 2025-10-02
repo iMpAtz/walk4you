@@ -3,6 +3,9 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
+import { User } from 'lucide-react';
+import NotificationBell from '@/components/NotificationBell';
+import CartIcon from '@/components/CartIcon';
 
 interface CheckoutItem {
   id: string;
@@ -32,7 +35,33 @@ interface CheckoutData {
 export default function CheckoutPage() {
   const [checkoutData, setCheckoutData] = useState<CheckoutData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [userProfile, setUserProfile] = useState<any>(null);
   const router = useRouter();
+
+  // Fetch user profile
+  useEffect(() => {
+    const fetchUserProfile = async () => {
+      try {
+        const token = localStorage.getItem('access_token');
+        if (!token) return;
+
+        const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE || 'http://localhost:8000'}/users/me`, {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+          },
+        });
+
+        if (response.ok) {
+          const profile = await response.json();
+          setUserProfile(profile);
+        }
+      } catch (error) {
+        console.error('Failed to fetch user profile:', error);
+      }
+    };
+
+    fetchUserProfile();
+  }, []);
 
   useEffect(() => {
     // Get checkout data from sessionStorage
@@ -92,6 +121,40 @@ export default function CheckoutPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
+      {/* Navbar */}
+      <nav className="bg-white border-b border-gray-200 px-6 lg:px-8 py-4 shadow-sm sticky top-0 z-50 backdrop-blur-lg bg-opacity-95">
+        <div className="max-w-7xl mx-auto flex justify-between items-center">
+          <a 
+            href="/" 
+            className="text-2xl lg:text-3xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent hover:opacity-80 transition cursor-pointer"
+          >
+            ShopLogo
+          </a>
+          <div className="flex items-center gap-3 lg:gap-6">
+            <NotificationBell />
+            <CartIcon />
+            <div className="flex items-center gap-2 lg:gap-3">
+              {userProfile?.avatar?.url ? (
+                <Image 
+                  src={userProfile.avatar.url} 
+                  alt="Profile" 
+                  width={32} 
+                  height={32} 
+                  className="rounded-full object-cover w-8 h-8"
+                />
+              ) : (
+                <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-500 rounded-full flex items-center justify-center">
+                  <User className="w-5 h-5 text-white" />
+                </div>
+              )}
+              <span className="hidden sm:block font-medium text-gray-700">
+                {userProfile?.username || 'User'}
+              </span>
+            </div>
+          </div>
+        </div>
+      </nav>
+
       <div className="max-w-4xl mx-auto px-4 py-8">
         {/* Header */}
         <div className="mb-8">
