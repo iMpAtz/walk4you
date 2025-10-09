@@ -17,7 +17,6 @@ walk4you/
 ├─ package.json               # Next.js scripts
 ├─ tsconfig.json
 ├─ next.config.ts
-└─ .env                        # DATABASE_URL (MongoDB)
 ```
 
 ### เตรียมเครื่องมือ
