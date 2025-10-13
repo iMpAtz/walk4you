@@ -616,6 +616,7 @@ class StoreResponse(BaseModel):
     storeDescription: Optional[str]
     phoneNumber: Optional[str] = None
     buMail: Optional[str]
+    qrUrl: Optional[str] = None
     registerDate: datetime
     status: str
 
@@ -639,6 +640,7 @@ async def get_my_store(db: AsyncIOMotorDatabase = Depends(get_db), current_user=
         storeDescription=store.get("storeDescription"),
         phoneNumber=store.get("phoneNumber"),
         buMail=store.get("buMail"),
+        qrUrl=store.get("qrUrl"),
         registerDate=store["registerDate"],
         status=store["status"]
     )
@@ -684,6 +686,7 @@ async def create_my_store(store_data: StoreCreate, db: AsyncIOMotorDatabase = De
         storeDescription=store_doc["storeDescription"],
         phoneNumber=store_doc["phoneNumber"],
         buMail=store_doc["buMail"],
+        qrUrl=store_doc.get("qrUrl"),
         registerDate=store_doc["registerDate"],
         status=store_doc["status"]
     )
@@ -868,6 +871,7 @@ class StoreResponse(BaseModel):
     storeName: str
     storeDescription: Optional[str] = None
     buMail: Optional[str] = None
+    qrUrl: Optional[str] = None
     registerDate: datetime
     status: str
 
@@ -911,6 +915,7 @@ async def get_my_store(current_user: dict = Depends(get_current_user), db: Async
         storeName=store["storeName"],
         storeDescription=store.get("storeDescription"),
         buMail=store.get("buMail"),
+        qrUrl=store.get("qrUrl"),
         registerDate=store["registerDate"],
         status=store["status"]
     )
@@ -960,6 +965,7 @@ async def update_my_store(
         storeName=store_doc["storeName"],
         storeDescription=store_doc.get("storeDescription"),
         buMail=store_doc.get("buMail"),
+        qrUrl=store_doc.get("qrUrl"),
         registerDate=store_doc["registerDate"],
         status=store_doc["status"]
     )
@@ -1468,6 +1474,7 @@ class OrderCreate(BaseModel):
     shippingAddress: str
     phoneNumber: str
     notes: Optional[str] = None
+    paymentProofUrl: Optional[str] = None
 
 
 class OrderResponse(BaseModel):
@@ -1480,8 +1487,13 @@ class OrderResponse(BaseModel):
     shippingAddress: str
     phoneNumber: str
     notes: Optional[str] = None
+    paymentProofUrl: Optional[str] = None
     createdAt: datetime
     updatedAt: datetime
+
+
+class OrderStatusUpdate(BaseModel):
+    status: str
 
 
 # ===== Notification Endpoints =====
@@ -1612,6 +1624,7 @@ async def create_order(
             "shippingAddress": order_data.shippingAddress,
             "phoneNumber": order_data.phoneNumber,
             "notes": order_data.notes,
+            "paymentProofUrl": getattr(order_data, 'paymentProofUrl', None),
             "createdAt": datetime.utcnow(),
             "updatedAt": datetime.utcnow()
         }
@@ -1641,6 +1654,7 @@ async def create_order(
             shippingAddress=order_doc["shippingAddress"],
             phoneNumber=order_doc["phoneNumber"],
             notes=order_doc["notes"],
+            paymentProofUrl=order_doc.get("paymentProofUrl"),
             createdAt=order_doc["createdAt"],
             updatedAt=order_doc["updatedAt"]
         )
@@ -1649,6 +1663,86 @@ async def create_order(
         raise
     except Exception as e:
         logger.error(f"Error creating order: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error")
+
+
+@app.get("/orders/my-store")
+async def get_orders_for_store(current_user: dict = Depends(get_current_user), db: AsyncIOMotorDatabase = Depends(get_db)):
+    """Get orders for the current user's store (owner)"""
+    try:
+        # Find user's store
+        # current_user is the user document returned by get_current_user; its "_id" is already an ObjectId
+        store = await db.Store.find_one({"ownerId": current_user["_id"]})
+        if not store:
+            raise HTTPException(status_code=404, detail="Store not found")
+
+        orders = await db.Order.find({"storeId": store["_id"]}).sort("createdAt", -1).to_list(None)
+
+        return [
+            {
+                "id": str(o["_id"]),
+                "userId": str(o["userId"]),
+                "storeId": str(o["storeId"]),
+                "items": o["items"],
+                "totalAmount": o["totalAmount"],
+                "status": o.get("status"),
+                "shippingAddress": o.get("shippingAddress"),
+                "phoneNumber": o.get("phoneNumber"),
+                "notes": o.get("notes"),
+                "paymentProofUrl": o.get("paymentProofUrl"),
+                "createdAt": o.get("createdAt"),
+                "updatedAt": o.get("updatedAt")
+            }
+            for o in orders
+        ]
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error fetching orders for store: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error")
+
+
+@app.put("/orders/{order_id}/status")
+async def update_order_status(order_id: str, status_update: OrderStatusUpdate, current_user: dict = Depends(get_current_user), db: AsyncIOMotorDatabase = Depends(get_db)):
+    """Update order status (store owner only)"""
+    try:
+        # Find store owned by current user
+        # Use the user's _id field (already an ObjectId) provided by get_current_user
+        store = await db.Store.find_one({"ownerId": current_user["_id"]})
+        if not store:
+            raise HTTPException(status_code=404, detail="Store not found")
+
+        # Verify order belongs to this store
+        order = await db.Order.find_one({"_id": ObjectId(order_id), "storeId": store["_id"]})
+        if not order:
+            raise HTTPException(status_code=404, detail="Order not found for this store")
+
+        # Allowed statuses (you can expand as needed)
+        allowed = ["PENDING", "APPROVED", "REJECTED", "SHIPPED", "CANCELLED"]
+        new_status = status_update.status.upper()
+        if new_status not in allowed:
+            raise HTTPException(status_code=400, detail=f"Invalid status. Allowed: {allowed}")
+
+        await db.Order.update_one({"_id": ObjectId(order_id)}, {"$set": {"status": new_status, "updatedAt": datetime.utcnow()}})
+
+        # Notify user
+        try:
+            await create_notification(
+                db=db,
+                user_id=order["userId"],
+                notification_type="order",
+                title="สถานะคำสั่งซื้อเปลี่ยนแปลง",
+                message=f"คำสั่งซื้อของคุณ (ID: {str(order["_id"])}) ถูกเปลี่ยนสถานะเป็น {new_status}",
+                data={"orderId": str(order["_id"]) }
+            )
+        except Exception:
+            pass
+
+        return {"message": "Order status updated", "status": new_status}
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error updating order status: {e}")
         raise HTTPException(status_code=500, detail="Internal server error")
 
 
@@ -2084,6 +2178,7 @@ async def get_public_store(
             "storeDescription": store.get("storeDescription"),
             "phoneNumber": store.get("phoneNumber"),
             "buMail": store.get("buMail"),
+            "qrUrl": store.get("qrUrl"),
             "registerDate": store["registerDate"],
             "status": store["status"]
         }
@@ -2093,3 +2188,33 @@ async def get_public_store(
     except Exception as e:
         logger.error(f"Error getting store: {e}")
         raise HTTPException(status_code=500, detail="Internal server error")
+# ===== Store QR Upload Endpoint =====
+class StoreQRUpdate(BaseModel):
+    qrUrl: str
+
+@app.get("/stores/{store_id}/qr")
+async def get_store_qr(store_id: str, db: AsyncIOMotorDatabase = Depends(get_db)):
+    """Return QR URL for a store (public)"""
+    try:
+        store = await db.Store.find_one({"_id": ObjectId(store_id)})
+        if not store:
+            raise HTTPException(status_code=404, detail="Store not found")
+        return {"qrUrl": store.get("qrUrl")}
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error getting store QR: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error")
+
+@app.put("/stores/{store_id}/qr")
+async def update_store_qr(store_id: str, data: StoreQRUpdate, db: AsyncIOMotorDatabase = Depends(get_db), current_user=Depends(get_current_user)):
+    """Update QR URL for a store (owner only)"""
+    # Find store by ID and owner
+    store = await db.Store.find_one({"_id": ObjectId(store_id), "ownerId": current_user["_id"]})
+    if not store:
+        raise HTTPException(status_code=404, detail="Store not found or permission denied")
+    # Update QR URL
+    result = await db.Store.update_one({"_id": ObjectId(store_id)}, {"$set": {"qrUrl": data.qrUrl}})
+    if result.modified_count == 1:
+        return {"message": "QR URL updated"}
+    raise HTTPException(status_code=500, detail="Failed to update QR URL")

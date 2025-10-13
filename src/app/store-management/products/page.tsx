@@ -436,7 +436,15 @@ export default function MyProductsPage() {
                   </div>
                   <span className="font-medium">สินค้าของฉัน</span>
                 </button>
-
+                <button 
+                  onClick={() => router.push('/store-management/orders')}
+                  className="w-full flex items-center gap-3 p-3 text-left hover:bg-gray-100 rounded-lg transition-colors"
+                >
+                  <div className="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center">
+                    <Clipboard className="w-5 h-5 text-gray-600" />
+                  </div>
+                  <span className="font-medium text-gray-900">รายการสั่งซื้อ</span>
+                </button>
                 <button className="w-full flex items-center gap-3 p-3 text-left hover:bg-gray-100 rounded-lg transition-colors">
                   <div className="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center">
                     <BarChart3 className="w-5 h-5 text-gray-600" />

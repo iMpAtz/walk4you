@@ -56,4 +56,57 @@ export async function GET(req: NextRequest) {
   });
 }
 
+// POST: รับไฟล์ QR, อัปโหลดไป Cloudinary, คืน URL
+export const config = {
+  api: {
+    bodyParser: false,
+  },
+};
+
+export async function POST(req: NextRequest) {
+  const formData = await req.formData();
+  const file = formData.get('qr') as File;
+  const username = formData.get('username') as string;
+  const type = formData.get('type') as string;
+
+  if (!file) {
+    return NextResponse.json({ error: 'No file uploaded' }, { status: 400 });
+  }
+
+  // Convert file to buffer
+  const arrayBuffer = await file.arrayBuffer();
+  const buffer = Buffer.from(arrayBuffer);
+
+  // Upload to Cloudinary
+  let folder = 'uploads/qr';
+  if (username && type) folder = `user/${username}/${type}`;
+  else if (username) folder = `user/${username}`;
+
+  try {
+    return await new Promise((resolve) => {
+      cloudinary.v2.uploader.upload_stream(
+        { folder },
+        (error, result) => {
+          if (error || !result) {
+            resolve(NextResponse.json({ error: 'Cloudinary upload failed' }, { status: 500 }));
+          } else {
+            resolve(NextResponse.json({ qrUrl: result.secure_url }));
+          }
+        }
+      ).end(buffer);
+    });
+  } catch (e) {
+    return NextResponse.json({ error: 'Cloudinary upload failed' }, { status: 500 });
+  }
+}
+
+
+import cloudinary from 'cloudinary';
+
+// Configure Cloudinary
+cloudinary.v2.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET,
+});
 

@@ -1,11 +1,15 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+'use client';
+
+import { useState, useEffect, Suspense } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { User } from 'lucide-react';
-import NotificationBell from '@/components/NotificationBell';
-import CartIcon from '@/components/CartIcon';
+import NotificationBell from '../../components/NotificationBell';
+import CartIcon from '../../components/CartIcon';
+
+
 
 interface CheckoutItem {
   id: string;
@@ -36,6 +40,9 @@ export default function CheckoutPage() {
   const [checkoutData, setCheckoutData] = useState<CheckoutData | null>(null);
   const [loading, setLoading] = useState(true);
   const [userProfile, setUserProfile] = useState<any>(null);
+  const [storePayments, setStorePayments] = useState<Record<string, { qrUrl?: string }>>({});
+  const [selectedPayment, setSelectedPayment] = useState<Record<string, string>>({});
+  const [selectedShipping, setSelectedShipping] = useState<Record<string, string>>({});
   const router = useRouter();
 
   // Fetch user profile
@@ -70,6 +77,27 @@ export default function CheckoutPage() {
       try {
         const data = JSON.parse(storedData);
         setCheckoutData(data);
+          // Fetch QR PromptPay for each store
+          const fetchStorePayments = async () => {
+            const payments: Record<string, { qrUrl?: string }> = {};
+            await Promise.all(
+              data.stores.map(async (store: CheckoutStore) => {
+                try {
+                  const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE || 'http://localhost:8000'}/stores/${store.storeId}/qr`);
+                  if (res.ok) {
+                    const paymentData = await res.json();
+                    payments[store.storeId] = { qrUrl: paymentData.qrUrl };
+                  } else {
+                    payments[store.storeId] = {};
+                  }
+                } catch {
+                  payments[store.storeId] = {};
+                }
+              })
+            );
+            setStorePayments(payments);
+          };
+          fetchStorePayments();
       } catch (error) {
         console.error('Error parsing checkout data:', error);
         router.push('/cart');
@@ -84,12 +112,15 @@ export default function CheckoutPage() {
   const handlePlaceOrder = async () => {
     if (!checkoutData) return;
 
-    // Here you would implement the actual order placement logic
-    alert('ฟีเจอร์การสั่งซื้อจะพัฒนาต่อไป');
-    
-    // Clear checkout data and redirect
-    sessionStorage.removeItem('checkoutData');
-    router.push('/main');
+    // Save current selections so confirm page can show QR or address
+    const selections = {
+      selectedPayment,
+      selectedShipping,
+    };
+    sessionStorage.setItem('checkoutSelection', JSON.stringify(selections));
+
+    // Keep checkoutData in sessionStorage (already present) and navigate to confirm page
+    router.push('/checkout/confirm');
   };
 
   if (loading) {
@@ -120,7 +151,7 @@ export default function CheckoutPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+  <div className="min-h-screen bg-gray-50">
       {/* Navbar */}
       <nav className="bg-white border-b border-gray-200 px-6 lg:px-8 py-4 shadow-sm sticky top-0 z-50 backdrop-blur-lg bg-opacity-95">
         <div className="max-w-7xl mx-auto flex justify-between items-center">
@@ -216,6 +247,62 @@ export default function CheckoutPage() {
                       </div>
                     </div>
                   ))}
+                </div>
+
+                {/* Payment & Shipping Options */}
+                <div className="border-t p-4">
+                  <div className="mb-4">
+                    <label className="block font-medium mb-2">วิธีชำระเงิน</label>
+                    <div className="space-y-2">
+                      <label className="flex items-center gap-2">
+                        <input
+                          type="radio"
+                          name={`payment-${store.storeId}`}
+                          value="cod"
+                          checked={selectedPayment[store.storeId] === 'cod'}
+                          onChange={() => setSelectedPayment({ ...selectedPayment, [store.storeId]: 'cod' })}
+                        />
+                        <span>เก็บเงินปลายทาง</span>
+                      </label>
+                      {storePayments[store.storeId]?.qrUrl && (
+                        <label className="flex items-center gap-2">
+                          <input
+                            type="radio"
+                            name={`payment-${store.storeId}`}
+                            value="qr"
+                            checked={selectedPayment[store.storeId] === 'qr'}
+                            onChange={() => setSelectedPayment({ ...selectedPayment, [store.storeId]: 'qr' })}
+                          />
+                          <span>QR PromptPay</span>
+                        </label>
+                      )}
+                    </div>
+                  </div>
+                  <div className="mb-2">
+                    <label className="block font-medium mb-2">วิธีจัดส่ง</label>
+                    <div className="space-y-2">
+                      <label className="flex items-center gap-2">
+                        <input
+                          type="radio"
+                          name={`shipping-${store.storeId}`}
+                          value="post"
+                          checked={selectedShipping[store.storeId] === 'post'}
+                          onChange={() => setSelectedShipping({ ...selectedShipping, [store.storeId]: 'post' })}
+                        />
+                        <span>ส่งไปรษณีย์</span>
+                      </label>
+                      <label className="flex items-center gap-2">
+                        <input
+                          type="radio"
+                          name={`shipping-${store.storeId}`}
+                          value="meet"
+                          checked={selectedShipping[store.storeId] === 'meet'}
+                          onChange={() => setSelectedShipping({ ...selectedShipping, [store.storeId]: 'meet' })}
+                        />
+                        <span>นัดรับ</span>
+                      </label>
+                    </div>
+                  </div>
                 </div>
               </div>
             ))}

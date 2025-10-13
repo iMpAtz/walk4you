@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { 
@@ -27,6 +27,7 @@ interface StoreData {
   buMail?: string;
   registerDate: string;
   status: string;
+  qrUrl?: string | null;
 }
 
 interface UserData {
@@ -46,20 +47,97 @@ interface StoreManagementLayoutProps {
 }
 
 export default function StoreManagementLayout({ storeData, userData, onSave }: StoreManagementLayoutProps) {
+  // ดึง QR จาก backend เมื่อโหลดหน้า
+  useEffect(() => {
+    const fetchQr = async () => {
+      if (!storeData?.id) return;
+      try {
+        const token = localStorage.getItem('access_token');
+        const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE || 'http://localhost:8000'}/stores/${storeData.id}`, {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+        });
+        if (res.ok) {
+          const data = await res.json();
+          if (data.qrUrl) setQrPreview(data.qrUrl);
+        }
+      } catch {}
+    };
+    fetchQr();
+  }, [storeData?.id]);
+  // ...existing code...
+  const handleSave = async () => {
+    await onSave(formData);
+    setIsEditing(false);
+  };
   const router = useRouter();
   const [formData, setFormData] = useState({
     storeName: storeData?.storeName || '',
     storeDescription: storeData?.storeDescription || '',
   });
   const [isEditing, setIsEditing] = useState(false);
+  const [qrFile, setQrFile] = useState<File | null>(null);
+  const [qrPreview, setQrPreview] = useState<string | null>(storeData?.qrUrl || null);
+  const [uploading, setUploading] = useState(false);
 
   const handleInputChange = (field: string, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
-  const handleSave = async () => {
-    await onSave(formData);
-    setIsEditing(false);
+  const handleQrChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0] || null;
+    setQrFile(file);
+    if (file) {
+      setQrPreview(URL.createObjectURL(file));
+    }
+  };
+
+  const handleUploadQr = async () => {
+    if (!qrFile || !storeData?.id) return;
+    setUploading(true);
+    const formData = new FormData();
+    formData.append('qr', qrFile);
+    try {
+      // 1. Upload QR to Cloudinary
+      const res = await fetch('/api/uploads/cloudinary-sign', {
+        method: 'POST',
+        body: formData,
+      });
+      if (res.ok) {
+        const data = await res.json();
+        const qrUrl = data.qrUrl;
+        // 2. Save QR URL to backend
+        const token = localStorage.getItem('access_token');
+        const saveRes = await fetch(`${process.env.NEXT_PUBLIC_API_BASE || 'http://localhost:8000'}/stores/${storeData.id}/qr`, {
+          method: 'PUT',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ qrUrl }),
+        });
+        if (saveRes.ok) {
+          setQrPreview(qrUrl);
+          setQrFile(null);
+        } else {
+          alert('บันทึก QR URL ไม่สำเร็จ');
+        }
+      } else {
+        alert('อัปโหลด QR ไม่สำเร็จ');
+      }
+    } catch {
+      alert('เกิดข้อผิดพลาดในการอัปโหลด QR');
+    }
+    setUploading(false);
+  };
+
+  const handleRemoveQr = () => {
+    setQrPreview(null);
+    setQrFile(null);
+    // TODO: call API to remove QR if needed
   };
 
 
@@ -147,7 +225,15 @@ export default function StoreManagementLayout({ storeData, userData, onSave }: S
                   </div>
                   <span className="font-medium text-gray-900">สินค้าของฉัน</span>
                 </button>
-
+                <button 
+                  onClick={() => router.push('/store-management/orders')}
+                  className="w-full flex items-center gap-3 p-3 text-left hover:bg-gray-100 rounded-lg transition-colors"
+                >
+                  <div className="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center">
+                    <Clipboard className="w-5 h-5 text-gray-600" />
+                  </div>
+                  <span className="font-medium text-gray-900">รายการสั่งซื้อ</span>
+                </button>
                 <button className="w-full flex items-center gap-3 p-3 text-left hover:bg-gray-100 rounded-lg transition-colors">
                   <div className="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center">
                     <BarChart3 className="w-5 h-5 text-gray-600" />
@@ -224,6 +310,40 @@ export default function StoreManagementLayout({ storeData, userData, onSave }: S
                     <div className="text-sm text-gray-500 mt-1">
                       เบอร์ติดต่อที่ใช้ในการสมัครเปิดร้านค้า
                     </div>
+                  </div>
+
+                  {/* QR PromptPay Upload */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      ช่องทางชำระเงิน QR PromptPay
+                    </label>
+                    <div className="flex items-center gap-4">
+                      {qrPreview ? (
+                        <div className="relative">
+                          <Image src={qrPreview} alt="QR PromptPay" width={96} height={96} className="rounded border" />
+                        </div>
+                      ) : (
+                        <>
+                          <div className="w-24 h-24 bg-gray-100 rounded flex items-center justify-center text-gray-400 border">
+                            ไม่มี QR
+                          </div>
+                          <div>
+                            <input type="file" accept="image/*" onChange={handleQrChange} className="mb-2" />
+                            {qrFile && (
+                              <button
+                                type="button"
+                                onClick={handleUploadQr}
+                                disabled={uploading}
+                                className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700"
+                              >
+                                {uploading ? 'กำลังอัปโหลด...' : 'อัปโหลด QR'}
+                              </button>
+                            )}
+                          </div>
+                        </>
+                      )}
+                    </div>
+                    <div className="text-sm text-gray-500 mt-1">อัปโหลด QR PromptPay เพื่อให้ลูกค้าชำระเงินผ่านแอปธนาคาร</div>
                   </div>
                 </div>
 
