@@ -34,16 +34,19 @@ export default function CheckoutConfirmPage() {
   const [checkoutData, setCheckoutData] = useState<CheckoutData | null>(null);
   const [selection, setSelection] = useState<any>(null);
   const [address, setAddress] = useState('');
+  const [phoneNumber, setPhoneNumber] = useState('');
 
   useEffect(() => {
     const stored = sessionStorage.getItem('checkoutData');
     const sel = sessionStorage.getItem('checkoutSelection');
+    const phone = sessionStorage.getItem('checkoutPhoneNumber') || '';
     if (!stored) {
       router.push('/cart');
       return;
     }
     setCheckoutData(JSON.parse(stored));
     setSelection(sel ? JSON.parse(sel) : null);
+    setPhoneNumber(phone);
   }, [router]);
 
   const [showUpload, setShowUpload] = useState(false);
@@ -107,7 +110,7 @@ export default function CheckoutConfirmPage() {
       const body = {
         items,
         shippingAddress: address,
-        phoneNumber: '',
+        phoneNumber,
         notes: JSON.stringify({ selection }),
         paymentProofUrl
       };
@@ -175,8 +178,18 @@ export default function CheckoutConfirmPage() {
               className="w-full p-2 border rounded"
               placeholder="กรอกที่อยู่จัดส่งของผู้รับ"
             />
+          <div className="mt-3">
+            <label className="block text-sm font-medium mb-1">เบอร์โทรผู้รับ</label>
+            <input
+              type="tel"
+              value={phoneNumber}
+              onChange={(e) => setPhoneNumber(e.target.value)}
+              className="w-full p-2 border rounded"
+              placeholder="กรอกเบอร์โทร"
+            />
           </div>
-
+          </div>
+        
           <div className="flex gap-3 justify-end">
             <button onClick={() => router.back()} className="px-4 py-2 border rounded">ย้อนกลับ</button>
             <button onClick={handleConfirm} className="px-4 py-2 bg-green-600 text-white rounded">ยืนยันและชำระเงิน</button>

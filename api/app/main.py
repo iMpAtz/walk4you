@@ -1496,6 +1496,12 @@ class OrderStatusUpdate(BaseModel):
     status: str
 
 
+class ShippingInfoUpdate(BaseModel):
+    shippingMethod: Optional[str] = None
+    shippingCarrier: Optional[str] = None
+    shippingId: Optional[str] = None
+
+
 # ===== Notification Endpoints =====
 @app.get("/notifications", response_model=list[NotificationResponse])
 async def get_user_notifications(
@@ -1617,6 +1623,7 @@ async def create_order(
         # Create order
         order_doc = {
             "userId": current_user["_id"],
+            "username": current_user["username"],
             "storeId": store_id,
             "items": validated_items,
             "totalAmount": total_amount,
@@ -1681,6 +1688,7 @@ async def get_orders_for_store(current_user: dict = Depends(get_current_user), d
         return [
             {
                 "id": str(o["_id"]),
+                "username": o.get("username"),
                 "userId": str(o["userId"]),
                 "storeId": str(o["storeId"]),
                 "items": o["items"],
@@ -1743,6 +1751,119 @@ async def update_order_status(order_id: str, status_update: OrderStatusUpdate, c
         raise
     except Exception as e:
         logger.error(f"Error updating order status: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error")
+
+
+@app.put("/orders/{order_id}/complete")
+async def confirm_order_received(order_id: str, current_user: dict = Depends(get_current_user), db: AsyncIOMotorDatabase = Depends(get_db)):
+    """Buyer confirms receipt; mark order as COMPLETED"""
+    try:
+        order = await db.Order.find_one({"_id": ObjectId(order_id), "userId": current_user["_id"]})
+        if not order:
+            raise HTTPException(status_code=404, detail="Order not found")
+
+        # Only allow confirming if order is at least shipped/approved
+        current_status = order.get("status", "PENDING")
+        if current_status in ["COMPLETED", "CANCELLED"]:
+            return {"message": "No change", "status": current_status}
+
+        await db.Order.update_one({"_id": ObjectId(order_id)}, {"$set": {"status": "COMPLETED", "updatedAt": datetime.utcnow()}})
+
+        # Notify store owner
+        try:
+            store = await db.Store.find_one({"_id": order["storeId"]})
+            if store:
+                await create_notification(
+                    db=db,
+                    user_id=store["ownerId"],
+                    notification_type="order",
+                    title="ลูกค้ายืนยันได้รับสินค้า",
+                    message=f"คำสั่งซื้อ {str(order['_id'])} ถูกยืนยันว่าได้รับสินค้าแล้ว",
+                    data={"orderId": str(order["_id"]) }
+                )
+        except Exception:
+            pass
+
+        return {"message": "Order marked as COMPLETED", "status": "COMPLETED"}
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error confirming order received: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error")
+
+
+@app.put("/orders/{order_id}/shipping")
+async def update_order_shipping(order_id: str, shipping_update: ShippingInfoUpdate, current_user: dict = Depends(get_current_user), db: AsyncIOMotorDatabase = Depends(get_db)):
+    """Update shipping info for an order (store owner only)"""
+    try:
+        store = await db.Store.find_one({"ownerId": current_user["_id"]})
+        if not store:
+            raise HTTPException(status_code=404, detail="Store not found")
+
+        order = await db.Order.find_one({"_id": ObjectId(order_id), "storeId": store["_id"]})
+        if not order:
+            raise HTTPException(status_code=404, detail="Order not found for this store")
+
+        update_fields = {k: v for k, v in {
+            "shippingMethod": shipping_update.shippingMethod,
+            "shippingCarrier": shipping_update.shippingCarrier,
+            "shippingId": shipping_update.shippingId,
+            "updatedAt": datetime.utcnow()
+        }.items() if v is not None}
+
+        if not update_fields:
+            raise HTTPException(status_code=400, detail="No shipping fields provided")
+
+        await db.Order.update_one({"_id": ObjectId(order_id)}, {"$set": update_fields})
+
+        # Notify buyer that shipping info updated
+        try:
+            await create_notification(
+                db=db,
+                user_id=order["userId"],
+                notification_type="order",
+                title="อัปเดตข้อมูลการจัดส่ง",
+                message=f"คำสั่งซื้อของคุณ (ID: {str(order['_id'])}) มีการอัปเดตข้อมูลการจัดส่ง",
+                data={"orderId": str(order["_id"]) }
+            )
+        except Exception:
+            pass
+
+        return {"message": "Shipping info updated"}
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error updating order shipping: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error")
+
+
+@app.get("/orders/my")
+async def get_my_orders(current_user: dict = Depends(get_current_user), db: AsyncIOMotorDatabase = Depends(get_db)):
+    """Get orders placed by the current user"""
+    try:
+        orders = await db.Order.find({"userId": current_user["_id"]}).sort("createdAt", -1).to_list(None)
+        return [
+            {
+                "id": str(o["_id"]),
+                "userId": str(o["userId"]),
+                "storeId": str(o["storeId"]),
+                "items": o["items"],
+                "totalAmount": o["totalAmount"],
+                "status": o.get("status"),
+                "shippingAddress": o.get("shippingAddress"),
+                "phoneNumber": o.get("phoneNumber"),
+                "notes": o.get("notes"),
+                "paymentProofUrl": o.get("paymentProofUrl"),
+                "shippingMethod": o.get("shippingMethod"),
+                "shippingCarrier": o.get("shippingCarrier"),
+                "shippingId": o.get("shippingId"),
+                "createdAt": o.get("createdAt"),
+                "updatedAt": o.get("updatedAt")
+            }
+            for o in orders
+        ]
+    except Exception as e:
+        logger.error(f"Error fetching my orders: {e}")
         raise HTTPException(status_code=500, detail="Internal server error")
 
 

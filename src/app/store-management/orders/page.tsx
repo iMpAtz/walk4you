@@ -25,6 +25,7 @@ interface OrderItem {
 
 interface Order {
   id: string;
+  username?: string;
   userId: string;
   storeId: string;
   items: OrderItem[];
@@ -35,6 +36,9 @@ interface Order {
   notes?: string;
   paymentProofUrl?: string;
   createdAt?: string;
+  shippingMethod?: string;
+  shippingCarrier?: string;
+  shippingId?: string;
 }
 
 interface UserData {
@@ -54,6 +58,7 @@ export default function StoreOrdersPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [hasToken, setHasToken] = useState(false);
   const [showStatusError, setShowStatusError] = useState<string | null>(null);
+  const [shippingDrafts, setShippingDrafts] = useState<Record<string, { shippingMethod: string; shippingCarrier: string; shippingId: string }>>({});
 
   useEffect(() => {
     const init = async () => {
@@ -135,6 +140,31 @@ export default function StoreOrdersPage() {
     } catch (e: any) {
       console.error(e);
       setShowStatusError(e?.message || 'อัปเดตสถานะล้มเหลว');
+    }
+  };
+
+  const updateOrderShipping = async (
+    orderId: string,
+    payload: { shippingMethod?: string; shippingCarrier?: string; shippingId?: string }
+  ) => {
+    try {
+      const token = localStorage.getItem('access_token');
+      if (!token) return;
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE || 'http://localhost:8000'}/orders/${orderId}/shipping`, {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(payload)
+      });
+      if (!res.ok) {
+        const txt = await res.text();
+        throw new Error(txt || 'Failed');
+      }
+      await fetchOrders(token);
+    } catch (e) {
+      console.error(e);
     }
   };
 
@@ -290,7 +320,7 @@ export default function StoreOrdersPage() {
                       <div key={order.id} className="p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
                         <div className="flex items-start justify-between">
                           <div>
-                            <div className="text-sm text-gray-600">ผู้สั่งซื้อ: {order.userId}</div>
+                            <div className="text-sm text-gray-600">ผู้สั่งซื้อ: {order.username || order.userId}</div>
                             <div className="font-semibold text-gray-900">ยอดรวม: ฿{order.totalAmount?.toLocaleString()}</div>
                             <div className="text-sm text-gray-500">สถานะ: {order.status || '—'}</div>
                           </div>
@@ -317,6 +347,68 @@ export default function StoreOrdersPage() {
                           )}
 
                           <div className="mt-3 text-sm text-gray-600">ที่อยู่จัดส่ง: {order.shippingAddress || '—'}</div>
+
+                          {/* Shipping details entry for seller */}
+                          <div className="mt-3 grid grid-cols-1 md:grid-cols-3 gap-3">
+                            <input
+                              className="border rounded-lg px-3 py-2 text-sm"
+                              placeholder="รูปแบบการจัดส่ง เช่น ปกติ/ด่วน"
+                              value={shippingDrafts[order.id]?.shippingMethod ?? order.shippingMethod ?? ''}
+                              onChange={(e) => setShippingDrafts((prev) => ({
+                                ...prev,
+                                [order.id]: {
+                                  shippingMethod: e.target.value,
+                                  shippingCarrier: prev[order.id]?.shippingCarrier ?? order.shippingCarrier ?? '',
+                                  shippingId: prev[order.id]?.shippingId ?? order.shippingId ?? ''
+                                }
+                              }))}
+                            />
+                            <input
+                              className="border rounded-lg px-3 py-2 text-sm"
+                              placeholder="ชื่อขนส่ง เช่น Kerry, J&T, Flash"
+                              value={shippingDrafts[order.id]?.shippingCarrier ?? order.shippingCarrier ?? ''}
+                              onChange={(e) => setShippingDrafts((prev) => ({
+                                ...prev,
+                                [order.id]: {
+                                  shippingMethod: prev[order.id]?.shippingMethod ?? order.shippingMethod ?? '',
+                                  shippingCarrier: e.target.value,
+                                  shippingId: prev[order.id]?.shippingId ?? order.shippingId ?? ''
+                                }
+                              }))}
+                            />
+                            <div className="flex gap-2">
+                              <input
+                                className="flex-1 border rounded-lg px-3 py-2 text-sm"
+                                placeholder="Shipping ID / Tracking No."
+                                value={shippingDrafts[order.id]?.shippingId ?? order.shippingId ?? ''}
+                                onChange={(e) => setShippingDrafts((prev) => ({
+                                  ...prev,
+                                  [order.id]: {
+                                    shippingMethod: prev[order.id]?.shippingMethod ?? order.shippingMethod ?? '',
+                                    shippingCarrier: prev[order.id]?.shippingCarrier ?? order.shippingCarrier ?? '',
+                                    shippingId: e.target.value
+                                  }
+                                }))}
+                              />
+                              <button
+                                onClick={() => updateOrderShipping(order.id, {
+                                  shippingMethod: shippingDrafts[order.id]?.shippingMethod ?? order.shippingMethod,
+                                  shippingCarrier: shippingDrafts[order.id]?.shippingCarrier ?? order.shippingCarrier,
+                                  shippingId: shippingDrafts[order.id]?.shippingId ?? order.shippingId
+                                })}
+                                className="px-3 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700"
+                              >
+                                บันทึก
+                              </button>
+                            </div>
+                          </div>
+
+                          {/* Read-only shipping summary */}
+                          <div className="mt-2 text-sm text-gray-600">
+                            <div>รูปแบบการจัดส่ง: {order.shippingMethod || shippingDrafts[order.id]?.shippingMethod || '—'}</div>
+                            <div>ชื่อขนส่ง: {order.shippingCarrier || shippingDrafts[order.id]?.shippingCarrier || '—'}</div>
+                            <div>Shipping ID: {order.shippingId || shippingDrafts[order.id]?.shippingId || '—'}</div>
+                          </div>
 
                           {order.status === 'PENDING' && (
                             <div className="mt-3 flex gap-2">

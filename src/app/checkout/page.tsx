@@ -43,6 +43,7 @@ export default function CheckoutPage() {
   const [storePayments, setStorePayments] = useState<Record<string, { qrUrl?: string }>>({});
   const [selectedPayment, setSelectedPayment] = useState<Record<string, string>>({});
   const [selectedShipping, setSelectedShipping] = useState<Record<string, string>>({});
+  const [phoneNumber, setPhoneNumber] = useState('');
   const router = useRouter();
 
   // Fetch user profile
@@ -118,6 +119,7 @@ export default function CheckoutPage() {
       selectedShipping,
     };
     sessionStorage.setItem('checkoutSelection', JSON.stringify(selections));
+    sessionStorage.setItem('checkoutPhoneNumber', phoneNumber);
 
     // Keep checkoutData in sessionStorage (already present) and navigate to confirm page
     router.push('/checkout/confirm');
@@ -321,6 +323,16 @@ export default function CheckoutPage() {
                 <div className="flex justify-between text-gray-600">
                   <span>จำนวนร้านค้า</span>
                   <span>{checkoutData.stores.length} ร้าน</span>
+                </div>
+                <div className="pt-3">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">เบอร์โทรผู้รับ</label>
+                  <input
+                    type="tel"
+                    value={phoneNumber}
+                    onChange={(e) => setPhoneNumber(e.target.value)}
+                    placeholder="กรอกเบอร์โทรติดต่อผู้รับ"
+                    className="w-full border rounded-lg px-3 py-2"
+                  />
                 </div>
                 <div className="border-t pt-3">
                   <div className="flex justify-between text-lg font-bold text-gray-800">

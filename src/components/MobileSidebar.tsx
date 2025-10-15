@@ -185,8 +185,23 @@ export default function MobileSidebar({ isOpen, onClose, userProfile, onLogout, 
                 <span className="font-medium text-gray-900">ร้านค้าของฉัน</span>
               </button>
             )}
-
-            
+    
+            {/* My Orders */}
+            <button 
+              onClick={() => {
+                onClose();
+                router.push('/my-orders');
+              }}
+              className="w-full flex items-center gap-3 p-3 text-left hover:bg-gray-100 rounded-lg transition-colors"
+            >
+              <div className="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center">
+                <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <rect x="4" y="4" width="16" height="16" rx="2" strokeWidth="2" />
+                  <path d="M8 2v4m8-4v4M4 10h16" strokeWidth="2" />
+                </svg>
+              </div>
+              <span className="font-medium text-gray-900">รายการสั่งซื้อของฉัน</span>
+            </button>
 
             {/* Divider */}
             <div className="my-4 border-t border-gray-200" />
