@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 import NotificationBell from '@/components/NotificationBell';
 import CartIcon from '@/components/CartIcon';
+import { Metadata } from 'next';
 
 interface StoreData {
   id: string;
@@ -39,6 +40,10 @@ interface UserData {
     url: string;
   };
 }
+export const metadata: Metadata = {
+  title: "Walk4You",
+  description: "Senior Project by Team Walk4You",
+};
 
 interface StoreManagementLayoutProps {
   storeData: StoreData | null;

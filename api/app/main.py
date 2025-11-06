@@ -2313,6 +2313,52 @@ async def get_public_store(
 class StoreQRUpdate(BaseModel):
     qrUrl: str
 
+@app.get("/stores/{store_id}/products", response_model=list[ProductResponse])
+async def get_store_products(
+    store_id: str,
+    db: AsyncIOMotorDatabase = Depends(get_db)
+):
+    """Get all products from a specific store (public)"""
+    try:
+        # Verify store exists and is active
+        store = await db.Store.find_one({
+            "_id": ObjectId(store_id),
+            "status": "ACTIVE"
+        })
+        
+        if not store:
+            raise HTTPException(status_code=404, detail="Store not found")
+        
+        # Get all active products from this store
+        products = await db.Product.find({
+            "storeId": ObjectId(store_id),
+            "status": "ACTIVE"
+        }).sort("createdAt", -1).to_list(None)
+        
+        return [
+            ProductResponse(
+                id=str(product["_id"]),
+                storeId=str(product["storeId"]),
+                name=product["name"],
+                description=product["description"],
+                price=product["price"],
+                quantity=product["quantity"],
+                image_url=product.get("image_url"),
+                category=product.get("category"),
+                createdAt=product["createdAt"],
+                updatedAt=product["updatedAt"],
+                status=product["status"]
+            )
+            for product in products
+        ]
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error getting store products: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error")
+
+
 @app.get("/stores/{store_id}/qr")
 async def get_store_qr(store_id: str, db: AsyncIOMotorDatabase = Depends(get_db)):
     """Return QR URL for a store (public)"""
@@ -2339,3 +2385,466 @@ async def update_store_qr(store_id: str, data: StoreQRUpdate, db: AsyncIOMotorDa
     if result.modified_count == 1:
         return {"message": "QR URL updated"}
     raise HTTPException(status_code=500, detail="Failed to update QR URL")
+
+
+# ===== Report Models =====
+class ReportCreate(BaseModel):
+    targetStoreId: str
+    reportType: str
+    description: Optional[str] = None
+
+
+class ReportStatusUpdate(BaseModel):
+    status: str
+
+
+class ReportResponse(BaseModel):
+    id: str
+    userId: str
+    targetStoreId: Optional[str] = None
+    storeName: Optional[str] = None
+    reportType: str
+    description: Optional[str] = None
+    submittedAt: datetime
+    status: str
+
+
+# ===== Report Endpoints =====
+@app.post("/reports", response_model=ReportResponse)
+async def create_report(
+    report_data: ReportCreate,
+    current_user: dict = Depends(get_current_user),
+    db: AsyncIOMotorDatabase = Depends(get_db)
+):
+    """Create a new report for a store"""
+    try:
+        # Verify store exists
+        store = await db.Store.find_one({"_id": ObjectId(report_data.targetStoreId)})
+        if not store:
+            raise HTTPException(status_code=404, detail="Store not found")
+        
+        # Create report
+        report_doc = {
+            "userId": current_user["_id"],
+            "targetStoreId": ObjectId(report_data.targetStoreId),
+            "reportType": report_data.reportType,
+            "description": report_data.description,
+            "submittedAt": datetime.utcnow(),
+            "status": "OPEN"
+        }
+        
+        result = await db.Report.insert_one(report_doc)
+        report_doc["_id"] = result.inserted_id
+        
+        return ReportResponse(
+            id=str(report_doc["_id"]),
+            userId=str(report_doc["userId"]),
+            targetStoreId=str(report_doc["targetStoreId"]),
+            storeName=store["storeName"],
+            reportType=report_doc["reportType"],
+            description=report_doc["description"],
+            submittedAt=report_doc["submittedAt"],
+            status=report_doc["status"]
+        )
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error creating report: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error")
+
+
+@app.get("/reports/my", response_model=list[ReportResponse])
+async def get_my_reports(
+    current_user: dict = Depends(get_current_user),
+    db: AsyncIOMotorDatabase = Depends(get_db)
+):
+    """Get all reports submitted by current user"""
+    try:
+        # Get reports with store information
+        pipeline = [
+            {"$match": {"userId": current_user["_id"]}},
+            {
+                "$lookup": {
+                    "from": "Store",
+                    "localField": "targetStoreId",
+                    "foreignField": "_id",
+                    "as": "store"
+                }
+            },
+            {"$unwind": {"path": "$store", "preserveNullAndEmptyArrays": True}},
+            {
+                "$project": {
+                    "_id": 1,
+                    "userId": 1,
+                    "targetStoreId": 1,
+                    "storeName": "$store.storeName",
+                    "reportType": 1,
+                    "description": 1,
+                    "submittedAt": 1,
+                    "status": 1
+                }
+            },
+            {"$sort": {"submittedAt": -1}}
+        ]
+        
+        reports = await db.Report.aggregate(pipeline).to_list(None)
+        
+        return [
+            ReportResponse(
+                id=str(report["_id"]),
+                userId=str(report["userId"]),
+                targetStoreId=str(report["targetStoreId"]) if report.get("targetStoreId") else None,
+                storeName=report.get("storeName"),
+                reportType=report["reportType"],
+                description=report.get("description"),
+                submittedAt=report["submittedAt"],
+                status=report["status"]
+            )
+            for report in reports
+        ]
+        
+    except Exception as e:
+        logger.error(f"Error getting user reports: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error")
+
+
+@app.get("/reports", response_model=list[ReportResponse])
+async def get_all_reports(
+    current_user: dict = Depends(get_current_user),
+    db: AsyncIOMotorDatabase = Depends(get_db)
+):
+    """Get all reports (admin only)"""
+    try:
+        # Check if user is admin
+        if current_user.get("role") != "ADMIN":
+            raise HTTPException(status_code=403, detail="Admin access required")
+        
+        # Get all reports with store and user information
+        pipeline = [
+            {
+                "$lookup": {
+                    "from": "Store",
+                    "localField": "targetStoreId",
+                    "foreignField": "_id",
+                    "as": "store"
+                }
+            },
+            {"$unwind": {"path": "$store", "preserveNullAndEmptyArrays": True}},
+            {
+                "$project": {
+                    "_id": 1,
+                    "userId": 1,
+                    "targetStoreId": 1,
+                    "storeName": "$store.storeName",
+                    "reportType": 1,
+                    "description": 1,
+                    "submittedAt": 1,
+                    "status": 1
+                }
+            },
+            {"$sort": {"submittedAt": -1}}
+        ]
+        
+        reports = await db.Report.aggregate(pipeline).to_list(None)
+        
+        return [
+            ReportResponse(
+                id=str(report["_id"]),
+                userId=str(report["userId"]),
+                targetStoreId=str(report["targetStoreId"]) if report.get("targetStoreId") else None,
+                storeName=report.get("storeName"),
+                reportType=report["reportType"],
+                description=report.get("description"),
+                submittedAt=report["submittedAt"],
+                status=report["status"]
+            )
+            for report in reports
+        ]
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error getting all reports: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error")
+
+
+@app.put("/reports/{report_id}/status", response_model=ReportResponse)
+async def update_report_status(
+    report_id: str,
+    status_update: ReportStatusUpdate,
+    current_user: dict = Depends(get_current_user),
+    db: AsyncIOMotorDatabase = Depends(get_db)
+):
+    """Update report status (admin only)"""
+    try:
+        # Check if user is admin
+        if current_user.get("role") != "ADMIN":
+            raise HTTPException(status_code=403, detail="Admin access required")
+        
+        # Validate status
+        allowed_statuses = ["OPEN", "REVIEWING", "RESOLVED", "REJECTED"]
+        new_status = status_update.status.upper()
+        if new_status not in allowed_statuses:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Invalid status. Allowed: {allowed_statuses}"
+            )
+        
+        # Find report
+        report = await db.Report.find_one({"_id": ObjectId(report_id)})
+        if not report:
+            raise HTTPException(status_code=404, detail="Report not found")
+        
+        # Update status
+        await db.Report.update_one(
+            {"_id": ObjectId(report_id)},
+            {"$set": {"status": new_status}}
+        )
+        
+        # Get updated report with store information
+        pipeline = [
+            {"$match": {"_id": ObjectId(report_id)}},
+            {
+                "$lookup": {
+                    "from": "Store",
+                    "localField": "targetStoreId",
+                    "foreignField": "_id",
+                    "as": "store"
+                }
+            },
+            {"$unwind": {"path": "$store", "preserveNullAndEmptyArrays": True}},
+            {
+                "$project": {
+                    "_id": 1,
+                    "userId": 1,
+                    "targetStoreId": 1,
+                    "storeName": "$store.storeName",
+                    "reportType": 1,
+                    "description": 1,
+                    "submittedAt": 1,
+                    "status": 1
+                }
+            }
+        ]
+        
+        updated_reports = await db.Report.aggregate(pipeline).to_list(1)
+        if not updated_reports:
+            raise HTTPException(status_code=404, detail="Report not found after update")
+        
+        updated_report = updated_reports[0]
+        
+        return ReportResponse(
+            id=str(updated_report["_id"]),
+            userId=str(updated_report["userId"]),
+            targetStoreId=str(updated_report["targetStoreId"]) if updated_report.get("targetStoreId") else None,
+            storeName=updated_report.get("storeName"),
+            reportType=updated_report["reportType"],
+            description=updated_report.get("description"),
+            submittedAt=updated_report["submittedAt"],
+            status=updated_report["status"]
+        )
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error updating report status: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error")
+
+
+# ===== Admin Models =====
+class UserListResponse(BaseModel):
+    id: str
+    username: str
+    email: str
+    phone: Optional[str] = None
+    role: str
+    registerDate: datetime
+    storeCount: int = 0
+    storeStatus: Optional[str] = None
+
+
+class StoreListResponse(BaseModel):
+    id: str
+    ownerId: str
+    ownerUsername: str
+    storeName: str
+    storeDescription: Optional[str] = None
+    registerDate: datetime
+    status: str
+
+
+class StoreStatusUpdate(BaseModel):
+    status: str
+
+
+# ===== Admin Endpoints =====
+@app.get("/admin/users", response_model=list[UserListResponse])
+async def get_all_users(
+    current_user: dict = Depends(get_current_user),
+    db: AsyncIOMotorDatabase = Depends(get_db)
+):
+    """Get all users (admin only)"""
+    try:
+        # Check if user is admin
+        if current_user.get("role") != "ADMIN":
+            raise HTTPException(status_code=403, detail="Admin access required")
+        
+        # Get all users with their store information
+        pipeline = [
+            {
+                "$lookup": {
+                    "from": "Store",
+                    "localField": "_id",
+                    "foreignField": "ownerId",
+                    "as": "stores"
+                }
+            },
+            {
+                "$project": {
+                    "_id": 1,
+                    "username": 1,
+                    "email": 1,
+                    "phone": 1,
+                    "role": 1,
+                    "registerDate": 1,
+                    "storeCount": {"$size": "$stores"},
+                    "storeStatus": {"$arrayElemAt": ["$stores.status", 0]}
+                }
+            },
+            {"$sort": {"registerDate": -1}}
+        ]
+        
+        users = await db.User.aggregate(pipeline).to_list(None)
+        
+        return [
+            UserListResponse(
+                id=str(user["_id"]),
+                username=user["username"],
+                email=user["email"],
+                phone=user.get("phone"),
+                role=user["role"],
+                registerDate=user["registerDate"],
+                storeCount=user.get("storeCount", 0),
+                storeStatus=user.get("storeStatus")
+            )
+            for user in users
+        ]
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error getting all users: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error")
+
+
+@app.get("/admin/stores", response_model=list[StoreListResponse])
+async def get_all_stores(
+    current_user: dict = Depends(get_current_user),
+    db: AsyncIOMotorDatabase = Depends(get_db)
+):
+    """Get all stores (admin only)"""
+    try:
+        # Check if user is admin
+        if current_user.get("role") != "ADMIN":
+            raise HTTPException(status_code=403, detail="Admin access required")
+        
+        # Get all stores with owner information
+        pipeline = [
+            {
+                "$lookup": {
+                    "from": "User",
+                    "localField": "ownerId",
+                    "foreignField": "_id",
+                    "as": "owner"
+                }
+            },
+            {"$unwind": "$owner"},
+            {
+                "$project": {
+                    "_id": 1,
+                    "ownerId": 1,
+                    "ownerUsername": "$owner.username",
+                    "storeName": 1,
+                    "storeDescription": 1,
+                    "registerDate": 1,
+                    "status": 1
+                }
+            },
+            {"$sort": {"registerDate": -1}}
+        ]
+        
+        stores = await db.Store.aggregate(pipeline).to_list(None)
+        
+        return [
+            StoreListResponse(
+                id=str(store["_id"]),
+                ownerId=str(store["ownerId"]),
+                ownerUsername=store["ownerUsername"],
+                storeName=store["storeName"],
+                storeDescription=store.get("storeDescription"),
+                registerDate=store["registerDate"],
+                status=store["status"]
+            )
+            for store in stores
+        ]
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error getting all stores: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error")
+
+
+@app.put("/admin/stores/{store_id}/status")
+async def update_store_status(
+    store_id: str,
+    status_update: StoreStatusUpdate,
+    current_user: dict = Depends(get_current_user),
+    db: AsyncIOMotorDatabase = Depends(get_db)
+):
+    """Update store status (admin only)"""
+    try:
+        # Check if user is admin
+        if current_user.get("role") != "ADMIN":
+            raise HTTPException(status_code=403, detail="Admin access required")
+        
+        # Validate status
+        allowed_statuses = ["ACTIVE", "INACTIVE", "BLOCKED"]
+        new_status = status_update.status.upper()
+        if new_status not in allowed_statuses:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Invalid status. Allowed: {allowed_statuses}"
+            )
+        
+        # Find store
+        store = await db.Store.find_one({"_id": ObjectId(store_id)})
+        if not store:
+            raise HTTPException(status_code=404, detail="Store not found")
+        
+        # Update status
+        await db.Store.update_one(
+            {"_id": ObjectId(store_id)},
+            {"$set": {"status": new_status}}
+        )
+        
+        # Create admin action log
+        try:
+            await db.AdminAction.insert_one({
+                "adminId": current_user["_id"],
+                "actionType": "UPDATE_STORE_STATUS",
+                "targetStoreId": ObjectId(store_id),
+                "timestamp": datetime.utcnow(),
+                "description": f"Changed store status to {new_status}"
+            })
+        except Exception:
+            pass  # Don't fail if logging fails
+        
+        return {"message": "Store status updated", "status": new_status}
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error updating store status: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error")

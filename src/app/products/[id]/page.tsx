@@ -3,7 +3,7 @@
 import useSWR from "swr";
 import { useParams } from "next/navigation";
 import { useState, useEffect } from "react";
-import { ShoppingCart, Heart, Share2, Star, Package, Shield, Truck, Bell, User, ThumbsUp, MessageCircle } from "lucide-react";
+import { ShoppingCart, Heart, Share2, Star, Package, Shield, Truck, Bell, User, ThumbsUp, MessageCircle, AlertTriangle } from "lucide-react";
 import NotificationBell from "@/components/NotificationBell";
 import { useCart } from "@/contexts/CartContext";
 import CartIcon from "@/components/CartIcon";
@@ -489,9 +489,29 @@ export default function ProductPage() {
                     <span className="text-gray-600">ประเภท:</span>
                     <span className="font-medium text-gray-900">{product.category || "-"}</span>
                   </div>
-                  <div className="flex justify-between p-4 bg-gray-50 rounded-lg">
-                    <span className="text-gray-600">ร้านค้า:</span>
-                    <span className="font-medium text-gray-900">{store?.storeName || product.storeId}</span>
+                  <div className="flex justify-between items-center p-4 bg-gray-50 rounded-lg">
+                    <div className="flex-1">
+                      <span className="text-gray-600">ร้านค้า:</span>
+                      {store ? (
+                        <a
+                          href={`/stores/${store.id}`}
+                          className="font-medium text-blue-600 hover:text-blue-700 hover:underline ml-2"
+                        >
+                          {store.storeName}
+                        </a>
+                      ) : (
+                        <span className="font-medium text-gray-900 ml-2">{product.storeId}</span>
+                      )}
+                    </div>
+                    {store && currentUser && (
+                      <a
+                        href={`/report-store?storeId=${store.id}`}
+                        className="ml-4 px-3 py-1.5 text-xs font-medium text-red-600 bg-red-50 hover:bg-red-100 rounded-lg transition flex items-center gap-1"
+                      >
+                        <AlertTriangle className="w-4 h-4" />
+                        รายงานร้านค้า
+                      </a>
+                    )}
                   </div>
                   <div className="flex justify-between p-4 bg-gray-50 rounded-lg">
                     <span className="text-gray-600">รหัสสินค้า:</span>

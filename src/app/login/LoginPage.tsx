@@ -30,7 +30,13 @@ export default function LoginPage() {
       if (!res.ok) throw new Error(data?.detail || 'Login failed');
       if (data?.access_token) localStorage.setItem('access_token', data.access_token);
       console.log('[login] success', data);
-      router.push('/');
+      
+      // Redirect admin to admin dashboard
+      if (data?.user?.role === 'ADMIN') {
+        router.push('/admin');
+      } else {
+        router.push('/');
+      }
     } catch (err: any) {
       console.error('[login] error', err);
       setError(`❌ ${err?.message || 'Login failed'}`);

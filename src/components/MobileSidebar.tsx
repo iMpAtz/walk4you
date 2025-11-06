@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
-import { ShoppingCart, Bell } from 'lucide-react';
+import { ShoppingCart, Bell, AlertTriangle } from 'lucide-react';
 import type { UserProfile } from '@/types';
 import { useCart } from '@/contexts/CartContext';
 import { useNotifications } from '@/hooks/useNotifications';
@@ -201,6 +201,20 @@ export default function MobileSidebar({ isOpen, onClose, userProfile, onLogout, 
                 </svg>
               </div>
               <span className="font-medium text-gray-900">รายการสั่งซื้อของฉัน</span>
+            </button>
+
+            {/* My Reports */}
+            <button 
+              onClick={() => {
+                onClose();
+                router.push('/my-reports');
+              }}
+              className="w-full flex items-center gap-3 p-3 text-left hover:bg-gray-100 rounded-lg transition-colors"
+            >
+              <div className="w-8 h-8 bg-orange-100 rounded-full flex items-center justify-center">
+                <AlertTriangle className="w-5 h-5 text-orange-600" />
+              </div>
+              <span className="font-medium text-gray-900">รายงานของฉัน</span>
             </button>
 
             {/* Divider */}
