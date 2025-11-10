@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
+import { useCart } from '@/contexts/CartContext';
 
 interface CheckoutItem {
   id: string;
@@ -31,6 +32,7 @@ interface CheckoutData {
 
 export default function CheckoutConfirmPage() {
   const router = useRouter();
+  const { clearCart } = useCart();
   const [checkoutData, setCheckoutData] = useState<CheckoutData | null>(null);
   const [selection, setSelection] = useState<any>(null);
   const [address, setAddress] = useState('');
@@ -128,6 +130,14 @@ export default function CheckoutConfirmPage() {
         const err = await res.text();
         alert('การสั่งซื้อล้มเหลว: ' + err);
         return;
+      }
+
+      // Clear cart after successful order
+      try {
+        await clearCart();
+      } catch (error) {
+        console.error('Failed to clear cart after order:', error);
+        // Don't block the flow if cart clearing fails
       }
 
       alert('สั่งซื้อเรียบร้อย');
