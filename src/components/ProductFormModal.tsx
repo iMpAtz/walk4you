@@ -15,6 +15,15 @@ interface ProductFormData {
   category?: string;
 }
 
+interface ProductFormErrors {
+  name?: string;
+  description?: string;
+  price?: string;
+  quantity?: string;
+  image?: string;
+  category?: string;
+}
+
 interface ProductFormModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -31,15 +40,16 @@ export default function ProductFormModal({ isOpen, onClose, onSubmit, username }
     category: '',
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [errors, setErrors] = useState<Partial<ProductFormData>>({});
+  const [errors, setErrors] = useState<ProductFormErrors>({});
   
   const categoryOptions = getCategoryOptions();
 
   const handleInputChange = (field: keyof ProductFormData, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
     // Clear error when user starts typing
-    if (errors[field]) {
-      setErrors(prev => ({ ...prev, [field]: undefined }));
+    const errorField = field as keyof ProductFormErrors;
+    if (errors[errorField]) {
+      setErrors(prev => ({ ...prev, [errorField]: undefined }));
     }
   };
 
@@ -118,7 +128,7 @@ export default function ProductFormModal({ isOpen, onClose, onSubmit, username }
   };
 
   const validateForm = (): boolean => {
-    const newErrors: Partial<ProductFormData> = {};
+    const newErrors: ProductFormErrors = {};
 
     if (!formData.name.trim()) {
       newErrors.name = 'กรุณากรอกชื่อสินค้า';

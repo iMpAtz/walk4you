@@ -19,12 +19,6 @@ interface Product {
   storeId: string;
 }
 
-interface SearchSuggestion {
-  text: string;
-  type: 'product' | 'category';
-  count: number;
-}
-
 interface Banner {
   id: number;
   title: string;
@@ -41,15 +35,11 @@ const banners: Banner[] = [
 export default function Home() {
   const router = useRouter();
   const [featuredProducts, setFeaturedProducts] = useState<Product[]>([]);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [searchSuggestions, setSearchSuggestions] = useState<SearchSuggestion[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [isSearching, setIsSearching] = useState(false);
   const [currentBanner, setCurrentBanner] = useState(0);
   const [error, setError] = useState<string | null>(null);
 
-  const debounceRef = useRef<NodeJS.Timeout>();
-  const bannerIntervalRef = useRef<NodeJS.Timeout>();
+  const bannerIntervalRef = useRef<NodeJS.Timeout | undefined>(undefined);
 
   const { categories: categoriesWithCounts, error: categoriesError } = useCategoriesWithCounts();
 
@@ -84,32 +74,10 @@ export default function Home() {
     bannerIntervalRef.current = setInterval(() => setCurrentBanner(prev => (prev + 1) % banners.length), 4500);
   };
 
-  // --- Fetch Search Suggestions with debounce ---
-  useEffect(() => {
-    if (debounceRef.current) clearTimeout(debounceRef.current);
-    const query = searchQuery.trim();
-    if (!query) {
-      setSearchSuggestions([]);
-      return;
-    }
-    debounceRef.current = setTimeout(async () => {
-      try {
-        const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE || 'http://localhost:8000'}/products/search/suggestions?q=${encodeURIComponent(query)}&limit=5`);
-        if (!res.ok) throw new Error('Failed to fetch suggestions');
-        const suggestions: SearchSuggestion[] = await res.json();
-        setSearchSuggestions(suggestions);
-      } catch (err) { console.error(err); }
-    }, 300);
-
-    return () => { if (debounceRef.current) clearTimeout(debounceRef.current); };
-  }, [searchQuery]);
-
-  // --- Handle Search ---
-const handleSearch = (query?: string) => {
-  const searchTerm = query || searchQuery.trim();
-  if (!searchTerm) return;
-  router.push(`/search?query=${encodeURIComponent(searchTerm)}`);
-};
+  // --- Handle Category Search ---
+  const handleCategorySearch = (categoryName: string) => {
+    router.push(`/search?query=${encodeURIComponent(categoryName)}`);
+  };
 
 
   return (
@@ -119,17 +87,8 @@ const handleSearch = (query?: string) => {
       {/* Header + search */}
       <div className="bg-white shadow-sm border-b border-[#E2E8F0]">
         <div className="mx-auto max-w-[1200px] px-4 py-4">
-
           {/* Search Bar */}
-          <div className="mx-auto max-w-[1200px] px-4 py-4">
-            <Searchbar
-              value={searchQuery}
-              onChange={(val) => setSearchQuery(val)}
-              onSearch={handleSearch}
-              suggestions={searchSuggestions}
-              isSearching={isSearching}
-            />
-          </div>
+          <Searchbar />
         </div>
       </div>
 
@@ -170,7 +129,7 @@ const handleSearch = (query?: string) => {
           {(categoriesError ? baseCategories : categoriesWithCounts).map((category) => {
             const Icon = category.icon;
             return (
-              <button key={category.id} onClick={() => handleSearch(category.name)}
+              <button key={category.id} onClick={() => handleCategorySearch(category.name)}
                 className="flex items-center gap-2 px-4 py-2 rounded-full border bg-white text-[#1B2A47] border-[#1B2A47] hover:bg-[#1B2A47] hover:text-white active:scale-95 transition-all text-sm shadow-sm"
               >
                 <Icon className="w-4 h-4" />

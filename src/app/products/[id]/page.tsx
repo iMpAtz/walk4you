@@ -1,7 +1,7 @@
 'use client';
 
 import useSWR from "swr";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
 import { ShoppingCart, Heart, Share2, Star, Package, Shield, Truck, MessageCircle, AlertTriangle, User } from "lucide-react";
 import { useCart } from "@/contexts/CartContext";
@@ -104,6 +104,7 @@ const userFetcher = async (url: string): Promise<User> => {
 
 export default function ProductPage() {
   const params = useParams();
+  const router = useRouter();
   const id = params?.id as string | undefined;
   const [quantity, setQuantity] = useState(1);
   const [isFavorite, setIsFavorite] = useState(false);
@@ -114,6 +115,7 @@ export default function ProductPage() {
   const [isSubmittingReview, setIsSubmittingReview] = useState(false);
   const [reviewsLoading, setReviewsLoading] = useState(false);
   const [isAddingToCart, setIsAddingToCart] = useState(false);
+  const [isBuyingNow, setIsBuyingNow] = useState(false);
   
   const { addToCart } = useCart();
 
@@ -209,9 +211,22 @@ export default function ProductPage() {
     }
   };
 
-  const handleBuyNow = () => {
-    if (!inStock) return;
-    console.log(`Buying ${quantity} of ${product.name}`);
+  const handleBuyNow = async () => {
+    if (!inStock || !product || !id) return;
+    
+    try {
+      setIsBuyingNow(true);
+      // Add to cart first
+      await addToCart(id, quantity);
+      // Then redirect to checkout page
+      router.push('/checkout');
+    } catch (error) {
+      console.error('Failed to buy now:', error);
+      const errorMessage = error instanceof Error ? error.message : 'เกิดข้อผิดพลาดในการซื้อสินค้า';
+      alert(errorMessage);
+    } finally {
+      setIsBuyingNow(false);
+    }
   };
 
   const submitReview = async (reviewData: ReviewForm) => {
@@ -412,10 +427,17 @@ export default function ProductPage() {
                   </button>
                   <button
                     onClick={handleBuyNow}
-                    disabled={!inStock}
-                    className="flex-1 bg-[#0B44A3] hover:bg-[#093782] text-white font-semibold px-4 lg:px-6 py-3 lg:py-4 rounded-xl transition transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none text-sm lg:text-base"
+                    disabled={!inStock || isBuyingNow}
+                    className="flex-1 bg-[#0B44A3] hover:bg-[#093782] text-white font-semibold px-4 lg:px-6 py-3 lg:py-4 rounded-xl transition transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none text-sm lg:text-base flex items-center justify-center gap-2"
                   >
-                    ซื้อเลย
+                    {isBuyingNow ? (
+                      <>
+                        <div className="w-4 h-4 lg:w-5 lg:h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                        กำลังดำเนินการ...
+                      </>
+                    ) : (
+                      'ซื้อเลย'
+                    )}
                   </button>
                 </div>
               </div>

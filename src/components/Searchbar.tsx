@@ -27,7 +27,7 @@ export default function SearchBar({
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState(-1);
 
-  const debounceRef = useRef<NodeJS.Timeout>();
+  const debounceRef = useRef<NodeJS.Timeout | undefined>(undefined);
   const wrapperRef = useRef<HTMLDivElement>(null);
 
   // --- Fetch suggestions with debounce ---
