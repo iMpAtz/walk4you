@@ -122,7 +122,7 @@ export default function AvatarUpload({ currentAvatar, onAvatarUpdate, username }
         
         <label
           htmlFor="avatar-upload"
-          className={`inline-flex items-center px-3 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 cursor-pointer ${
+          className={`inline-flex items-center px-3 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-[#0B44A3] hover:bg-[#093782] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#0B44A3] cursor-pointer ${
             isUploading ? 'opacity-50 cursor-not-allowed' : ''
           }`}
         >

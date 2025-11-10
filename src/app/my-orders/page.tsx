@@ -118,21 +118,21 @@ export default function MyOrdersPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <div className="bg-white shadow-sm border">
+      <div className="bg-[#0B44A3] shadow-sm border-b border-[#093782]">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-          <a href="/" className="text-2xl font-bold">Walk4You</a>
+          <a href="/" className="text-2xl font-bold text-white">Walk4You</a>
           <div className="flex items-center gap-4">
             <NotificationBell />
             <CartIcon />
-            <button className="flex items-center gap-2 p-2 hover:bg-gray-100 rounded-lg">
+            <button className="flex items-center gap-2 p-2 hover:bg-[#093782] rounded-lg">
               {userData?.avatar?.url ? (
                 <Image src={userData.avatar.url} alt="Profile" width={24} height={24} className="rounded-full w-6 h-6 object-cover" />
               ) : (
-                <div className="w-6 h-6 bg-gray-500 rounded-full text-white text-xs flex items-center justify-center">
+                <div className="w-6 h-6 bg-white rounded-full text-[#0B44A3] text-xs flex items-center justify-center font-semibold">
                   {userData?.username?.charAt(0).toUpperCase() || 'U'}
                 </div>
               )}
-              <span className="text-sm font-medium text-gray-700">{userData?.username || 'ผู้ใช้'}</span>
+              <span className="text-sm font-medium text-white">{userData?.username || 'ผู้ใช้'}</span>
             </button>
           </div>
         </div>
@@ -188,7 +188,7 @@ export default function MyOrdersPage() {
                       <div className="mt-4">
                         <button
                           onClick={() => confirmReceived(order.id)}
-                          className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
+                          className="px-4 py-2 bg-[#0B44A3] text-white rounded-lg hover:bg-[#093782]"
                         >
                           ยืนยันได้รับสินค้า
                         </button>

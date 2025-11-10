@@ -434,6 +434,19 @@ def create_access_token(data: dict) -> str:
     return token
 
 
+def create_refresh_token(data: dict) -> str:
+    """Create refresh token with 7 days expiration"""
+    exp_dt = datetime.utcnow() + timedelta(days=7)
+    payload = {
+        "sub": data.get("user_id"),
+        "username": data.get("username"),
+        "exp": int(exp_dt.timestamp()),
+        "type": "refresh"
+    }
+    token = base64.b64encode(json.dumps(payload).encode()).decode()
+    return token
+
+
 async def get_current_user(request: Request, db: AsyncIOMotorDatabase = Depends(get_db)):
     auth_header = request.headers.get("Authorization", "")
     if not auth_header.startswith("Bearer "):
@@ -482,7 +495,9 @@ class UserResponse(BaseModel):
 
 class AuthResponse(BaseModel):
     access_token: str
+    refresh_token: Optional[str] = None
     token_type: str
+    expires_in: Optional[int] = None
     user: UserResponse
 
 
@@ -515,14 +530,18 @@ async def register(user_data: UserRegister, db: AsyncIOMotorDatabase = Depends(g
         
         result = await db.User.insert_one(user_doc)
         
-        access_token = create_access_token({
+        token_data = {
             "user_id": str(result.inserted_id),
             "username": user_data.username
-        })
+        }
+        access_token = create_access_token(token_data)
+        refresh_token = create_refresh_token(token_data)
         
         return AuthResponse(
             access_token=access_token,
+            refresh_token=refresh_token,
             token_type="bearer",
+            expires_in=86400,  # 24 hours
             user=UserResponse(
                 id=str(result.inserted_id),
                 username=user_data.username,
@@ -554,14 +573,18 @@ async def login(login_data: UserLogin, db: AsyncIOMotorDatabase = Depends(get_db
                 detail="Invalid username or password"
             )
         
-        access_token = create_access_token({
+        token_data = {
             "user_id": str(user["_id"]),
             "username": user["username"]
-        })
+        }
+        access_token = create_access_token(token_data)
+        refresh_token = create_refresh_token(token_data)
         
         return AuthResponse(
             access_token=access_token,
+            refresh_token=refresh_token,
             token_type="bearer",
+            expires_in=86400,  # 24 hours
             user=UserResponse(
                 id=str(user["_id"]),
                 username=user["username"],
@@ -579,6 +602,83 @@ async def login(login_data: UserLogin, db: AsyncIOMotorDatabase = Depends(get_db
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Login failed"
+        )
+
+
+@app.post("/auth/refresh")
+async def refresh_token(request: Request, db: AsyncIOMotorDatabase = Depends(get_db)):
+    """Refresh access token using refresh token"""
+    try:
+        # Get refresh token from request body
+        body = await request.json()
+        refresh_token = body.get("refresh_token")
+        
+        if not refresh_token:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Refresh token required"
+            )
+        
+        # Decode and verify refresh token
+        try:
+            payload_raw = base64.b64decode(refresh_token).decode()
+            payload = json.loads(payload_raw)
+            exp = int(payload.get("exp", 0))
+            
+            # Check if refresh token is expired
+            if int(datetime.utcnow().timestamp()) >= exp:
+                raise HTTPException(
+                    status_code=status.HTTP_401_UNAUTHORIZED,
+                    detail="Refresh token expired"
+                )
+            
+            user_id = payload.get("sub")
+            if not user_id:
+                raise HTTPException(
+                    status_code=status.HTTP_401_UNAUTHORIZED,
+                    detail="Invalid refresh token"
+                )
+            
+            # Verify user still exists
+            user = await db.User.find_one({"_id": ObjectId(user_id)})
+            if not user:
+                raise HTTPException(
+                    status_code=status.HTTP_401_UNAUTHORIZED,
+                    detail="User not found"
+                )
+            
+            # Create new access token
+            new_access_token = create_access_token({
+                "user_id": str(user["_id"]),
+                "username": user["username"]
+            })
+            
+            # Return new access token (and optionally new refresh token)
+            return {
+                "access_token": new_access_token,
+                "token_type": "bearer",
+                "expires_in": 86400  # 24 hours in seconds
+            }
+            
+        except json.JSONDecodeError:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid refresh token format"
+            )
+        except Exception as decode_error:
+            logger.error(f"Token decode error: {decode_error}")
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid refresh token"
+            )
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Refresh token error: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Token refresh failed"
         )
 
 
@@ -1730,6 +1830,51 @@ async def update_order_status(order_id: str, status_update: OrderStatusUpdate, c
         new_status = status_update.status.upper()
         if new_status not in allowed:
             raise HTTPException(status_code=400, detail=f"Invalid status. Allowed: {allowed}")
+
+        # Get current status before updating
+        old_status = order.get("status", "PENDING")
+        
+        # If status is changing to APPROVED and wasn't APPROVED before, deduct stock
+        if new_status == "APPROVED" and old_status != "APPROVED":
+            # Validate and deduct stock for each item
+            items = order.get("items", [])
+            for item in items:
+                product_id = item.get("productId")
+                quantity = item.get("quantity", 0)
+                
+                # Check current stock
+                product = await db.Product.find_one({"_id": ObjectId(product_id)})
+                if not product:
+                    raise HTTPException(status_code=404, detail=f"Product {product_id} not found")
+                
+                current_stock = product.get("quantity", 0)
+                if current_stock < quantity:
+                    raise HTTPException(
+                        status_code=400, 
+                        detail=f"Insufficient stock for product {product.get('name', product_id)}. Available: {current_stock}, Required: {quantity}"
+                    )
+                
+                # Deduct stock
+                result = await db.Product.update_one(
+                    {"_id": ObjectId(product_id)},
+                    {"$inc": {"quantity": -quantity}}
+                )
+                
+                if result.modified_count == 0:
+                    raise HTTPException(status_code=500, detail=f"Failed to update stock for product {product_id}")
+        
+        # If status is changing from APPROVED to REJECTED or CANCELLED, restore stock
+        elif old_status == "APPROVED" and new_status in ["REJECTED", "CANCELLED"]:
+            items = order.get("items", [])
+            for item in items:
+                product_id = item.get("productId")
+                quantity = item.get("quantity", 0)
+                
+                # Restore stock
+                await db.Product.update_one(
+                    {"_id": ObjectId(product_id)},
+                    {"$inc": {"quantity": quantity}}
+                )
 
         await db.Order.update_one({"_id": ObjectId(order_id)}, {"$set": {"status": new_status, "updatedAt": datetime.utcnow()}})
 

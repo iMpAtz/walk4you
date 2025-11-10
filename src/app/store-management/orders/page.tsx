@@ -3,10 +3,8 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
-import NotificationBell from '@/components/NotificationBell';
-import CartIcon from '@/components/CartIcon';
+import TopBar from '@/components/TopBar';
 import { 
-  ArrowLeft,
   Building2,
   Clipboard,
   BarChart3,
@@ -182,51 +180,7 @@ export default function StoreOrdersPage() {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
-      <div className="bg-white shadow-sm border-b">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16">
-            {/* Logo and back */}
-            <div className="flex items-center">
-              <button 
-                onClick={() => router.back()}
-                className="mr-4 p-2 hover:bg-gray-100 rounded-lg transition-colors"
-              >
-                <ArrowLeft className="w-6 h-6" />
-              </button>
-              <a 
-                href="/" 
-                className="text-2xl lg:text-3xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent hover:opacity-80 transition cursor-pointer"
-              >
-                ShopLogo
-              </a>
-            </div>
-
-            {/* Right icons */}
-            <div className="flex items-center space-x-4">
-              <NotificationBell />
-              <CartIcon />
-              <button className="flex items-center gap-2 p-2 hover:bg-gray-100 rounded-lg transition-colors">
-                {userData?.avatar?.url ? (
-                  <Image 
-                    src={userData.avatar.url} 
-                    alt="Profile" 
-                    width={24} 
-                    height={24} 
-                    className="rounded-full object-cover w-6 h-6"
-                  />
-                ) : (
-                  <div className="w-6 h-6 bg-gray-500 rounded-full flex items-center justify-center text-xs text-white">
-                    {userData?.username?.charAt(0).toUpperCase() || 'U'}
-                  </div>
-                )}
-                <span className="text-sm font-medium text-gray-700">
-                  {userData?.username || 'User001'}
-                </span>
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
+      <TopBar />
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
         <div className="flex flex-col lg:flex-row gap-6">
@@ -244,8 +198,8 @@ export default function StoreOrdersPage() {
                     className="rounded-full object-cover w-10 h-10"
                   />
                 ) : (
-                  <div className="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center">
-                    <Building2 className="w-6 h-6 text-red-600" />
+                  <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
+                    <Building2 className="w-6 h-6 text-[#0B44A3]" />
                   </div>
                 )}
                 <div>
@@ -278,9 +232,9 @@ export default function StoreOrdersPage() {
                   <span className="font-medium text-gray-900">สินค้าของฉัน</span>
                 </button>
 
-                <button className="w-full flex items-center gap-3 p-3 text-left bg-red-50 text-red-600 rounded-lg">
-                  <div className="w-8 h-8 bg-red-100 rounded-full flex items-center justify-center">
-                    <Clipboard className="w-5 h-5 text-red-600" />
+                <button className="w-full flex items-center gap-3 p-3 text-left bg-blue-50 text-[#0B44A3] rounded-lg">
+                  <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+                    <Clipboard className="w-5 h-5 text-[#0B44A3]" />
                   </div>
                   <span className="font-medium">รายการสั่งซื้อ</span>
                 </button>
@@ -396,7 +350,7 @@ export default function StoreOrdersPage() {
                                   shippingCarrier: shippingDrafts[order.id]?.shippingCarrier ?? order.shippingCarrier,
                                   shippingId: shippingDrafts[order.id]?.shippingId ?? order.shippingId
                                 })}
-                                className="px-3 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700"
+                                className="px-3 py-2 bg-[#0B44A3] text-white rounded-lg text-sm hover:bg-[#093782]"
                               >
                                 บันทึก
                               </button>

@@ -4,9 +4,6 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { 
-  Search, 
-  Bell, 
-  ShoppingCart, 
   Lock, 
   MapPin, 
   Shield, 
@@ -14,7 +11,6 @@ import {
   Building2, 
   Plus, 
   FileText,
-  User,
   Edit3,
   Trash2,
   Check,
@@ -23,8 +19,7 @@ import {
 import type { UserProfile, Store } from '@/types';
 import AvatarUpload from '@/components/AvatarUpload';
 import StoreRegisterModal from '@/components/StoreRegisterModal';
-import NotificationBell from '@/components/NotificationBell';
-import CartIcon from '@/components/CartIcon';
+import TopBar from '@/components/TopBar';
 
 export default function ProfilePage() {
   const router = useRouter();
@@ -173,7 +168,7 @@ export default function ProfilePage() {
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600"></div>
+        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-[#0B44A3]"></div>
       </div>
     );
   }
@@ -181,38 +176,7 @@ export default function ProfilePage() {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Navbar */}
-      <nav className="bg-white border-b border-gray-200 px-6 lg:px-8 py-4 shadow-sm sticky top-0 z-50 backdrop-blur-lg bg-opacity-95">
-        <div className="max-w-7xl mx-auto flex justify-between items-center">
-          <a 
-            href="/" 
-            className="text-2xl lg:text-3xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent hover:opacity-80 transition cursor-pointer"
-          >
-            ShopLogo
-          </a>
-          <div className="flex items-center gap-3 lg:gap-6">
-            <NotificationBell />
-            <CartIcon />
-            <div className="flex items-center gap-2 lg:gap-3">
-              {userProfile?.avatar?.url ? (
-                <Image 
-                  src={userProfile.avatar.url} 
-                  alt="Profile" 
-                  width={32} 
-                  height={32} 
-                  className="rounded-full object-cover w-8 h-8"
-                />
-              ) : (
-                <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-500 rounded-full flex items-center justify-center">
-                  <User className="w-5 h-5 text-white" />
-                </div>
-              )}
-              <span className="hidden sm:block font-medium text-gray-700">
-                {userProfile?.username || 'User'}
-              </span>
-            </div>
-          </div>
-        </div>
-      </nav>
+      <TopBar />
 
       {/* Mobile Layout */}
       <div className="md:hidden">
@@ -576,7 +540,7 @@ export default function ProfilePage() {
                     
                     <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
                       <div className="flex items-center">
-                        <Info className="w-5 h-5 text-blue-600 mr-2" />
+                        <Info className="w-5 h-5 text-[#0B44A3] mr-2" />
                         <div>
                           <h4 className="text-sm font-medium text-blue-900">Store Management</h4>
                           <p className="text-sm text-blue-700">Manage your products, orders, and store settings.</p>
@@ -991,7 +955,7 @@ export default function ProfilePage() {
                       
                       <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
                         <div className="flex items-center">
-                          <svg className="w-5 h-5 text-blue-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <svg className="w-5 h-5 text-[#0B44A3] mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                           </svg>
                           <div>

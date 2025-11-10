@@ -211,13 +211,13 @@ export default function ReportStorePage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <div className="bg-white shadow-sm border">
+      <div className="bg-[#0B44A3] shadow-sm border-b border-[#093782]">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-          <a href="/" className="text-2xl font-bold">Walk4You</a>
+          <a href="/" className="text-2xl font-bold text-white">Walk4You</a>
           <div className="flex items-center gap-4">
             <NotificationBell />
             <CartIcon />
-            <button className="flex items-center gap-2 p-2 hover:bg-gray-100 rounded-lg">
+            <button className="flex items-center gap-2 p-2 hover:bg-[#093782] rounded-lg">
               {userData?.avatar?.url ? (
                 <img
                   src={userData.avatar.url}
@@ -227,11 +227,11 @@ export default function ReportStorePage() {
                   className="rounded-full w-6 h-6 object-cover"
                 />
               ) : (
-                <div className="w-6 h-6 bg-gray-500 rounded-full text-white text-xs flex items-center justify-center">
+                <div className="w-6 h-6 bg-white rounded-full text-[#0B44A3] text-xs flex items-center justify-center font-semibold">
                   {userData?.username?.charAt(0).toUpperCase() || 'U'}
                 </div>
               )}
-              <span className="text-sm font-medium text-gray-700">{userData?.username || 'ผู้ใช้'}</span>
+              <span className="text-sm font-medium text-white">{userData?.username || 'ผู้ใช้'}</span>
             </button>
           </div>
         </div>
@@ -256,7 +256,7 @@ export default function ReportStorePage() {
                       value={searchStoreQuery}
                       onChange={(e) => handleStoreSearch(e.target.value)}
                       placeholder="ค้นหาร้านค้า..."
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0B44A3]"
                     />
                     {searchingStores && (
                       <div className="absolute right-3 top-2.5">
@@ -284,11 +284,11 @@ export default function ReportStorePage() {
                   {storeData && (
                     <div className="mt-2 p-3 bg-blue-50 border border-blue-200 rounded-lg">
                       <div className="flex items-center gap-2">
-                        <Store className="w-5 h-5 text-blue-600" />
+                        <Store className="w-5 h-5 text-[#0B44A3]" />
                         <div>
-                          <div className="font-medium text-blue-900">{storeData.storeName}</div>
+                          <div className="font-medium text-[#0B44A3]">{storeData.storeName}</div>
                           {storeData.storeDescription && (
-                            <div className="text-sm text-blue-700">{storeData.storeDescription}</div>
+                            <div className="text-sm text-[#0B44A3]">{storeData.storeDescription}</div>
                           )}
                         </div>
                       </div>
@@ -304,7 +304,7 @@ export default function ReportStorePage() {
                     value={reportType}
                     onChange={(e) => setReportType(e.target.value)}
                     required
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0B44A3]"
                   >
                     <option value="">เลือกประเภทการรายงาน</option>
                     {REPORT_TYPES.map((type) => (
@@ -324,7 +324,7 @@ export default function ReportStorePage() {
                     onChange={(e) => setDescription(e.target.value)}
                     placeholder="อธิบายรายละเอียดเพิ่มเติม (ถ้ามี)..."
                     rows={5}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0B44A3]"
                   />
                 </div>
 

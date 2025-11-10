@@ -100,13 +100,13 @@ export default function MyReportsPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <div className="bg-white shadow-sm border">
+      <div className="bg-[#0B44A3] shadow-sm border-b border-[#093782]">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-          <a href="/" className="text-2xl font-bold">Walk4You</a>
+          <a href="/" className="text-2xl font-bold text-white">Walk4You</a>
           <div className="flex items-center gap-4">
             <NotificationBell />
             <CartIcon />
-            <button className="flex items-center gap-2 p-2 hover:bg-gray-100 rounded-lg">
+            <button className="flex items-center gap-2 p-2 hover:bg-[#093782] rounded-lg">
               {userData?.avatar?.url ? (
                 <img
                   src={userData.avatar.url}
@@ -116,11 +116,11 @@ export default function MyReportsPage() {
                   className="rounded-full w-6 h-6 object-cover"
                 />
               ) : (
-                <div className="w-6 h-6 bg-gray-500 rounded-full text-white text-xs flex items-center justify-center">
+                <div className="w-6 h-6 bg-white rounded-full text-[#0B44A3] text-xs flex items-center justify-center font-semibold">
                   {userData?.username?.charAt(0).toUpperCase() || 'U'}
                 </div>
               )}
-              <span className="text-sm font-medium text-gray-700">{userData?.username || 'ผู้ใช้'}</span>
+              <span className="text-sm font-medium text-white">{userData?.username || 'ผู้ใช้'}</span>
             </button>
           </div>
         </div>
@@ -140,7 +140,7 @@ export default function MyReportsPage() {
                 <p className="mb-4">ยังไม่มีรายงานที่คุณส่ง</p>
                 <a
                   href="/report-store"
-                  className="inline-block px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
+                  className="inline-block px-4 py-2 bg-[#0B44A3] text-white rounded-lg hover:bg-[#093782] transition"
                 >
                   ส่งรายงานร้านค้า
                 </a>
@@ -174,7 +174,7 @@ export default function MyReportsPage() {
                           {report.targetStoreId && (
                             <a
                               href={`/stores/${report.targetStoreId}`}
-                              className="inline-block mt-2 text-sm text-blue-600 hover:text-blue-700 hover:underline"
+                              className="inline-block mt-2 text-sm text-[#0B44A3] hover:text-[#093782] hover:underline"
                             >
                               ดูร้านค้า →
                             </a>

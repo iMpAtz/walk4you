@@ -3,6 +3,7 @@
 import { Bell, X, Check, Star, ShoppingCart, MessageCircle } from 'lucide-react';
 import { useNotifications } from '@/hooks/useNotifications';
 import { useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 
 interface NotificationDropdownProps {
   isOpen: boolean;
@@ -10,6 +11,7 @@ interface NotificationDropdownProps {
 }
 
 export default function NotificationDropdown({ isOpen, onClose }: NotificationDropdownProps) {
+  const router = useRouter();
   const { 
     notifications, 
     loading, 
@@ -69,7 +71,7 @@ export default function NotificationDropdown({ isOpen, onClose }: NotificationDr
         <div className="max-h-80 overflow-y-auto">
           {loading ? (
             <div className="flex items-center justify-center py-8">
-              <div className="w-6 h-6 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+              <div className="w-6 h-6 border-2 border-[#0B44A3] border-t-transparent rounded-full animate-spin"></div>
               <span className="ml-2 text-gray-500">กำลังโหลด...</span>
             </div>
           ) : notifications.length === 0 ? (
@@ -118,11 +120,10 @@ export default function NotificationDropdown({ isOpen, onClose }: NotificationDr
         {notifications.length > 0 && (
           <div className="p-4 border-t border-gray-200 bg-gray-50">
             <button
-              onClick={markAllAsRead}
-              className="w-full text-sm text-blue-600 hover:text-blue-700 font-medium"
+              className="w-full text-sm text-[#0B44A3] hover:text-[#093782] font-medium"
+              onClick={() => router.push('/notifications')}
             >
-              <Check className="w-4 h-4 inline mr-1" />
-              ทำเครื่องหมายทั้งหมดว่าอ่านแล้ว
+              ดูทั้งหมด
             </button>
           </div>
         )}

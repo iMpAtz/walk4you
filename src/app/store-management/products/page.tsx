@@ -4,7 +4,6 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { 
-  ArrowLeft, 
   Building2, 
   User, 
   Clipboard, 
@@ -19,8 +18,7 @@ import {
 } from 'lucide-react';
 import ProductFormModal from '@/components/ProductFormModal';
 import ProductEditModal from '@/components/ProductEditModal';
-import NotificationBell from '@/components/NotificationBell';
-import CartIcon from '@/components/CartIcon';
+import TopBar from '@/components/TopBar';
 
 interface Product {
   id: string;
@@ -337,56 +335,7 @@ export default function MyProductsPage() {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
-      <div className="bg-white shadow-sm border-b">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16">
-            {/* Logo */}
-            <div className="flex items-center">
-              <button 
-                onClick={() => router.back()}
-                className="mr-4 p-2 hover:bg-gray-100 rounded-lg transition-colors"
-              >
-                <ArrowLeft className="w-6 h-6" />
-              </button>
-              <a 
-                href="/" 
-                className="text-2xl lg:text-3xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent hover:opacity-80 transition cursor-pointer"
-              >
-                ShopLogo
-              </a>
-            </div>
-
-            {/* Right side icons */}
-            <div className="flex items-center space-x-4">
-              {/* Notifications */}
-              <NotificationBell />
-                {/* Cart */}
-              <CartIcon />
-              {/* User */}
-              <button className="flex items-center gap-2 p-2 hover:bg-gray-100 rounded-lg transition-colors">
-                {userData?.avatar?.url ? (
-                  <Image 
-                    src={userData.avatar.url} 
-                    alt="Profile" 
-                    width={24} 
-                    height={24} 
-                    className="rounded-full object-cover w-6 h-6"
-                  />
-                ) : (
-                  <div className="w-6 h-6 bg-gray-500 rounded-full flex items-center justify-center text-xs text-white">
-                    {userData?.username?.charAt(0).toUpperCase() || 'U'}
-                  </div>
-                )}
-                <span className="text-sm font-medium text-gray-700">
-                  {userData?.username || 'User001'}
-                </span>
-              </button>
-
-             
-            </div>
-          </div>
-        </div>
-      </div>
+      <TopBar />
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
         <div className="flex flex-col lg:flex-row gap-6">
@@ -404,8 +353,8 @@ export default function MyProductsPage() {
                     className="rounded-full object-cover w-10 h-10"
                   />
                 ) : (
-                  <div className="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center">
-                    <Building2 className="w-6 h-6 text-red-600" />
+                  <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
+                    <Building2 className="w-6 h-6 text-[#0B44A3]" />
                   </div>
                 )}
                 <div>
@@ -430,9 +379,9 @@ export default function MyProductsPage() {
                   <span className="font-medium text-gray-900">ร้านค้าของฉัน</span>
                 </button>
 
-                <button className="w-full flex items-center gap-3 p-3 text-left bg-red-50 text-red-600 rounded-lg">
-                  <div className="w-8 h-8 bg-red-100 rounded-full flex items-center justify-center">
-                    <Clipboard className="w-5 h-5 text-red-600" />
+                <button className="w-full flex items-center gap-3 p-3 text-left bg-blue-50 text-[#0B44A3] rounded-lg">
+                  <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+                    <Clipboard className="w-5 h-5 text-[#0B44A3]" />
                   </div>
                   <span className="font-medium">สินค้าของฉัน</span>
                 </button>
@@ -475,7 +424,7 @@ export default function MyProductsPage() {
                     <p className="text-gray-500 mb-4">เริ่มต้นด้วยการเพิ่มสินค้าแรกของคุณ</p>
                     <button
                       onClick={handleAddNew}
-                      className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+                      className="px-4 py-2 bg-[#0B44A3] text-white rounded-lg hover:bg-[#0937a] transition-colors"
                     >
                       เพิ่มสินค้าแรก
                     </button>
@@ -588,7 +537,7 @@ export default function MyProductsPage() {
                   <div className="mt-6 flex justify-end">
                     <button
                       onClick={handleAddNew}
-                      className="px-6 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-medium"
+                      className="px-6 py-3 bg-[#0B44A3] text-white rounded-lg hover:bg-[#093782] transition-colors font-medium"
                     >
                       Add New
                     </button>
@@ -647,7 +596,7 @@ export default function MyProductsPage() {
               </button>
               <button
                 onClick={confirmDeleteProduct}
-                className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+                className="flex-1 px-4 py-2 bg-[#0B44A3] text-white rounded-lg hover:bg-[#093782] transition-colors"
               >
                 ลบสินค้า
               </button>

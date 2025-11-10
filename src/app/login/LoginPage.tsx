@@ -73,7 +73,7 @@ export default function LoginPage() {
             placeholder="Password"
             value={password}
             onChange={(e) => setPassword(sanitizeSql(e.target.value))}
-            className="w-full rounded-lg border border-gray-700 bg-[#2a2a2a] p-4 text-white placeholder-gray-400 focus:border-pink-400 focus:outline-none focus:ring-2 focus:ring-pink-300 transition"
+            className="w-full rounded-lg border border-gray-700 bg-[#2a2a2a] p-4 text-white placeholder-gray-400 focus:border-[#0B44A3] focus:outline-none focus:ring-2 focus:ring-[#0B44A3]/50 transition"
             autoCorrect="off"
             autoCapitalize="none"
             spellCheck={false}
@@ -89,7 +89,7 @@ export default function LoginPage() {
           </button>
         </form>
         <p className="mt-6 text-center text-sm text-gray-300">
-          Don’t have an account? <a href="/register" className="text-pink-400 underline">Sign up</a>
+          Don't have an account? <a href="/register" className="text-[#0B44A3] underline font-semibold">Sign up</a>
         </p>
       </div>
 
@@ -98,7 +98,7 @@ export default function LoginPage() {
         .bubble {
           position: absolute;
           bottom: -150px;
-          background: rgba(255, 192, 203, 0.4);
+          background: rgba(11, 68, 163, 0.4);
           border-radius: 50%;
           animation: rise 20s infinite ease-in;
         }

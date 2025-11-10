@@ -3,10 +3,9 @@
 import useSWR from "swr";
 import { useParams } from "next/navigation";
 import { useState, useEffect } from "react";
-import { ShoppingCart, Heart, Share2, Star, Package, Shield, Truck, Bell, User, ThumbsUp, MessageCircle, AlertTriangle } from "lucide-react";
-import NotificationBell from "@/components/NotificationBell";
+import { ShoppingCart, Heart, Share2, Star, Package, Shield, Truck, MessageCircle, AlertTriangle, User } from "lucide-react";
 import { useCart } from "@/contexts/CartContext";
-import CartIcon from "@/components/CartIcon";
+import TopBar from "@/components/TopBar";
 
 interface Product {
   id: string;
@@ -276,36 +275,7 @@ export default function ProductPage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
       {/* Navbar */}
-      <nav className="bg-white border-b border-gray-200 px-6 lg:px-8 py-4 shadow-sm sticky top-0 z-50 backdrop-blur-lg bg-opacity-95">
-        <div className="max-w-7xl mx-auto flex justify-between items-center">
-          <a 
-            href="/" 
-            className="text-2xl lg:text-3xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent hover:opacity-80 transition cursor-pointer"
-          >
-            ShopLogo
-          </a>
-          <div className="flex items-center gap-3 lg:gap-6">
-            <NotificationBell />
-            <CartIcon />
-            <div className="flex items-center gap-2 lg:gap-3 px-3 lg:px-4 py-2 hover:bg-gray-100 rounded-full transition cursor-pointer">
-              {currentUser?.avatar?.url ? (
-                <img
-                  src={currentUser.avatar.url}
-                  alt={currentUser.username}
-                  className="w-8 h-8 rounded-full object-cover"
-                />
-              ) : (
-                <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-500 rounded-full flex items-center justify-center">
-                  <User className="w-5 h-5 text-white" />
-                </div>
-              )}
-              <span className="hidden sm:block font-medium text-gray-700">
-                {currentUser ? currentUser.username : 'Guest'}
-              </span>
-            </div>
-          </div>
-        </div>
-      </nav>
+      <TopBar />
 
       {/* Product Detail */}
       <div className="max-w-7xl mx-auto p-4 lg:p-8">
@@ -348,7 +318,7 @@ export default function ProductPage() {
             <div className="p-6 lg:p-10 flex flex-col">
               <div className="flex-1">
                 {product.category && (
-                  <span className="inline-block px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-sm font-medium mb-4">
+                  <span className="inline-block px-3 py-1 bg-blue-50 text-[#0B44A3] rounded-full text-sm font-medium mb-4">
                     {product.category}
                   </span>
                 )}
@@ -387,7 +357,7 @@ export default function ProductPage() {
                     <span className="text-xs text-gray-600 text-center">รับประกัน</span>
                   </div>
                   <div className="flex flex-col items-center p-2 lg:p-3 bg-gray-50 rounded-lg">
-                    <Package className="w-5 h-5 lg:w-6 lg:h-6 text-purple-600 mb-1 lg:mb-2" />
+                    <Package className="w-5 h-5 lg:w-6 lg:h-6 text-[#0B44A3] mb-1 lg:mb-2" />
                     <span className="text-xs text-gray-600 text-center">คืนสินค้าได้</span>
                   </div>
                 </div>
@@ -410,7 +380,7 @@ export default function ProductPage() {
                         max={product.quantity}
                         value={quantity}
                         onChange={(e) => setQuantity(Math.max(1, Math.min(product.quantity ?? 1, parseInt(e.target.value) || 1)))}
-                        className="w-20 h-10 text-center border-2 border-gray-300 rounded-lg font-semibold focus:outline-none focus:border-blue-500"
+                        className="w-20 h-10 text-center border-2 border-gray-300 rounded-lg font-semibold focus:outline-none focus:border-[#0B44A3]"
                       />
                       <button
                         onClick={() => setQuantity(Math.min(product.quantity ?? 1, quantity + 1))}
@@ -443,7 +413,7 @@ export default function ProductPage() {
                   <button
                     onClick={handleBuyNow}
                     disabled={!inStock}
-                    className="flex-1 bg-gradient-to-r from-red-500 to-pink-500 hover:from-red-600 hover:to-pink-600 text-white font-semibold px-4 lg:px-6 py-3 lg:py-4 rounded-xl transition transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none text-sm lg:text-base"
+                    className="flex-1 bg-[#0B44A3] hover:bg-[#093782] text-white font-semibold px-4 lg:px-6 py-3 lg:py-4 rounded-xl transition transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none text-sm lg:text-base"
                   >
                     ซื้อเลย
                   </button>
@@ -461,7 +431,7 @@ export default function ProductPage() {
                 onClick={() => setActiveTab('description')}
                 className={`flex-1 px-6 py-4 font-semibold transition ${
                   activeTab === 'description'
-                    ? 'text-blue-600 border-b-2 border-blue-600'
+                    ? 'text-[#0B44A3] border-b-2 border-[#0B44A3]'
                     : 'text-gray-600 hover:text-gray-900'
                 }`}
               >
@@ -471,7 +441,7 @@ export default function ProductPage() {
                 onClick={() => setActiveTab('reviews')}
                 className={`flex-1 px-6 py-4 font-semibold transition flex items-center justify-center gap-2 ${
                   activeTab === 'reviews'
-                    ? 'text-blue-600 border-b-2 border-blue-600'
+                    ? 'text-[#0B44A3] border-b-2 border-[#0B44A3]'
                     : 'text-gray-600 hover:text-gray-900'
                 }`}
               >
@@ -495,7 +465,7 @@ export default function ProductPage() {
                       {store ? (
                         <a
                           href={`/stores/${store.id}`}
-                          className="font-medium text-blue-600 hover:text-blue-700 hover:underline ml-2"
+                          className="font-medium text-[#0B44A3] hover:text-[#093782] hover:underline ml-2"
                         >
                           {store.storeName}
                         </a>
@@ -534,7 +504,7 @@ export default function ProductPage() {
             ) : (
               <div className="space-y-6">
                 {/* Write Review */}
-                <div className="p-6 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl border border-blue-100">
+                <div className="p-6 bg-blue-50 rounded-xl border border-blue-100">
                   <h3 className="text-lg font-semibold text-gray-900 mb-4">เขียนรีวิวของคุณ</h3>
                   <div className="mb-4">
                     <label className="block text-sm font-medium text-gray-700 mb-2">คะแนน</label>
@@ -562,13 +532,13 @@ export default function ProductPage() {
                       value={newComment}
                       onChange={(e) => setNewComment(e.target.value)}
                       placeholder="แบ่งปันประสบการณ์การใช้งานสินค้านี้..."
-                      className="w-full p-4 border-2 border-gray-300 rounded-lg focus:outline-none focus:border-blue-500 min-h-[100px]"
+                      className="w-full p-4 border-2 border-gray-300 rounded-lg focus:outline-none focus:border-[#0B44A3] min-h-[100px]"
                     />
                   </div>
                   <button
                     onClick={handleSubmitReview}
                     disabled={isSubmittingReview}
-                    className="bg-gradient-to-r from-blue-500 to-indigo-500 hover:from-blue-600 hover:to-indigo-600 text-white font-semibold px-6 py-3 rounded-lg transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                    className="bg-[#0B44A3] hover:bg-[#093782] text-white font-semibold px-6 py-3 rounded-lg transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
                   >
                     {isSubmittingReview ? (
                       <>
@@ -586,7 +556,7 @@ export default function ProductPage() {
                   <h3 className="text-lg font-semibold text-gray-900">รีวิวจากลูกค้า</h3>
                   {reviewsLoading ? (
                     <div className="text-center py-8">
-                      <div className="w-8 h-8 border-2 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+                      <div className="w-8 h-8 border-2 border-[#0B44A3] border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
                       <p className="text-gray-500">กำลังโหลดรีวิว...</p>
                     </div>
                   ) : reviews.length === 0 ? (
@@ -598,7 +568,7 @@ export default function ProductPage() {
                       <div key={review.id} className="p-6 border border-gray-200 rounded-xl hover:shadow-md transition">
                         <div className="flex items-start justify-between mb-3">
                           <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-500 rounded-full flex items-center justify-center">
+                            <div className="w-10 h-10 bg-[#0B44A3] rounded-full flex items-center justify-center">
                               <User className="w-6 h-6 text-white" />
                             </div>
                             <div>
@@ -640,7 +610,7 @@ export default function ProductPage() {
             </div>
           ) : !recommendedProducts ? (
             <div className="text-center py-8">
-              <div className="w-8 h-8 border-2 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+              <div className="w-8 h-8 border-2 border-[#0B44A3] border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
               <p className="text-gray-500">กำลังโหลดสินค้าแนะนำ...</p>
             </div>
           ) : recommendedProducts?.length === 0 ? (
@@ -674,7 +644,7 @@ export default function ProductPage() {
                   <div className="p-4">
                     <h3 className="font-semibold text-gray-900 mb-2 line-clamp-2">{item.name}</h3>
                     {item.category && (
-                      <p className="text-xs text-blue-600 mb-2">{item.category}</p>
+                      <p className="text-xs text-[#0B44A3] mb-2">{item.category}</p>
                     )}
                     <p className="text-lg font-bold text-green-700">
                       {(item.price || 0).toLocaleString("th-TH", { style: "currency", currency: "THB" })}

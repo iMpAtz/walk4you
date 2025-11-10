@@ -4,9 +4,7 @@ import { useState, useEffect } from 'react';
 import { useCart, CartItem } from '@/contexts/CartContext';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
-import { User } from 'lucide-react';
-import NotificationBell from '@/components/NotificationBell';
-import CartIcon from '@/components/CartIcon';
+import TopBar from '@/components/TopBar';
 
 interface StoreGroup {
   storeId: string;
@@ -157,7 +155,7 @@ export default function CartPage() {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#0B44A3] mx-auto"></div>
           <p className="mt-4 text-gray-600">กำลังโหลดตระกร้าสินค้า...</p>
         </div>
       </div>
@@ -171,7 +169,7 @@ export default function CartPage() {
           <p className="text-red-600 mb-4">เกิดข้อผิดพลาด: {error}</p>
           <button 
             onClick={() => window.location.reload()}
-            className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700"
+            className="bg-[#0B44A3] text-white px-4 py-2 rounded-lg hover:bg-[#093782]"
           >
             ลองใหม่
           </button>
@@ -189,7 +187,7 @@ export default function CartPage() {
           <p className="text-gray-600 mb-6">เพิ่มสินค้าลงในตระกร้าเพื่อเริ่มต้นการช้อปปิ้ง</p>
           <button 
             onClick={() => router.push('/')}
-            className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors"
+            className="bg-[#0B44A3] text-white px-6 py-3 rounded-lg hover:bg-[#093782] transition-colors"
           >
             เริ่มช้อปปิ้ง
           </button>
@@ -201,37 +199,7 @@ export default function CartPage() {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Navbar */}
-      <nav className="bg-white border-b border-gray-200 px-6 lg:px-8 py-4 shadow-sm sticky top-0 z-50 backdrop-blur-lg bg-opacity-95">
-        <div className="max-w-7xl mx-auto flex justify-between items-center">
-          <a 
-            href="/" 
-            className="text-2xl lg:text-3xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent hover:opacity-80 transition cursor-pointer"
-          >
-            ShopLogo
-          </a>
-          <div className="flex items-center gap-3 lg:gap-6">
-            <NotificationBell />
-            <div className="flex items-center gap-2 lg:gap-3">
-              {userProfile?.avatar?.url ? (
-                <Image 
-                  src={userProfile.avatar.url} 
-                  alt="Profile" 
-                  width={32} 
-                  height={32} 
-                  className="rounded-full object-cover w-8 h-8"
-                />
-              ) : (
-                <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-500 rounded-full flex items-center justify-center">
-                  <User className="w-5 h-5 text-white" />
-                </div>
-              )}
-              <span className="hidden sm:block font-medium text-gray-700">
-                {userProfile?.username || 'User'}
-              </span>
-            </div>
-          </div>
-        </div>
-      </nav>
+      <TopBar />
 
       <div className="max-w-6xl mx-auto px-4 py-8">
         {/* Header */}
@@ -250,7 +218,7 @@ export default function CartPage() {
                   type="checkbox"
                   checked={selectAll}
                   onChange={(e) => handleSelectAll(e.target.checked)}
-                  className="w-5 h-5 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                  className="w-5 h-5 text-[#0B44A3] border-gray-300 rounded focus:ring-[#0B44A3]"
                 />
                 <span className="ml-3 text-lg font-medium text-gray-800">
                   เลือกทั้งหมด ({storeGroups.length} ร้านค้า)
@@ -268,7 +236,7 @@ export default function CartPage() {
                       type="checkbox"
                       checked={storeGroup.selected}
                       onChange={(e) => handleStoreSelect(storeGroup.storeId, e.target.checked)}
-                      className="w-5 h-5 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                      className="w-5 h-5 text-[#0B44A3] border-gray-300 rounded focus:ring-[#0B44A3]"
                     />
                     <div className="ml-3">
                       <h3 className="text-lg font-semibold text-gray-800">
@@ -307,7 +275,7 @@ export default function CartPage() {
                         <h4 className="font-medium text-gray-800 truncate">
                           {item.productName}
                         </h4>
-                        <p className="text-lg font-semibold text-blue-600 mt-1">
+                        <p className="text-lg font-semibold text-[#0B44A3] mt-1">
                           ฿{item.productPrice.toLocaleString()}
                         </p>
                       </div>
@@ -387,9 +355,9 @@ export default function CartPage() {
               <div className="mt-4 text-center">
                 <button
                   onClick={() => router.push('/')}
-                  className="text-blue-600 hover:text-blue-700 font-medium"
+                  className="text-[#0B44A3] hover:text-[#093782] font-medium"
                 >
-                  ← กลับไปช้อปปิ้งต่อ
+                  กลับไปช้อปปิ้งต่อ
                 </button>
               </div>
             </div>

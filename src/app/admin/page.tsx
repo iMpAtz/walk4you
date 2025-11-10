@@ -249,16 +249,16 @@ export default function AdminPage() {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
-      <div className="bg-white border-b border-gray-200 shadow-sm">
+      <div className="bg-[#0B44A3] border-b border-[#093782] shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <Shield className="w-8 h-8 text-blue-600" />
-              <h1 className="text-2xl font-bold text-gray-900">Admin Dashboard</h1>
+              <Shield className="w-8 h-8 text-white" />
+              <h1 className="text-2xl font-bold text-white">Admin Dashboard</h1>
             </div>
             <a
               href="/"
-              className="px-4 py-2 text-sm font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition"
+              className="px-4 py-2 text-sm font-medium text-white hover:bg-[#093782] rounded-lg transition"
             >
               กลับหน้าหลัก
             </a>
@@ -278,7 +278,7 @@ export default function AdminPage() {
                 }}
                 className={`flex-1 px-6 py-4 font-semibold transition flex items-center justify-center gap-2 ${
                   activeTab === 'reports'
-                    ? 'text-blue-600 border-b-2 border-blue-600'
+                    ? 'text-[#0B44A3] border-b-2 border-[#0B44A3]'
                     : 'text-gray-600 hover:text-gray-900'
                 }`}
               >
@@ -292,7 +292,7 @@ export default function AdminPage() {
                 }}
                 className={`flex-1 px-6 py-4 font-semibold transition flex items-center justify-center gap-2 ${
                   activeTab === 'users'
-                    ? 'text-blue-600 border-b-2 border-blue-600'
+                    ? 'text-[#0B44A3] border-b-2 border-[#0B44A3]'
                     : 'text-gray-600 hover:text-gray-900'
                 }`}
               >
@@ -306,7 +306,7 @@ export default function AdminPage() {
                 }}
                 className={`flex-1 px-6 py-4 font-semibold transition flex items-center justify-center gap-2 ${
                   activeTab === 'stores'
-                    ? 'text-blue-600 border-b-2 border-blue-600'
+                    ? 'text-[#0B44A3] border-b-2 border-[#0B44A3]'
                     : 'text-gray-600 hover:text-gray-900'
                 }`}
               >
@@ -325,7 +325,7 @@ export default function AdminPage() {
                 placeholder="ค้นหา..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0B44A3]"
               />
             </div>
             {activeTab !== 'users' && (
@@ -334,7 +334,7 @@ export default function AdminPage() {
                 <select
                   value={statusFilter}
                   onChange={(e) => setStatusFilter(e.target.value)}
-                  className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0B44A3]"
                 >
                   <option value="all">ทั้งหมด</option>
                   {activeTab === 'reports' ? (
@@ -402,7 +402,7 @@ export default function AdminPage() {
                           <select
                             value={report.status}
                             onChange={(e) => updateReportStatus(report.id, e.target.value)}
-                            className="px-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            className="px-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0B44A3]"
                           >
                             <option value="OPEN">เปิด</option>
                             <option value="REVIEWING">กำลังตรวจสอบ</option>
@@ -412,7 +412,7 @@ export default function AdminPage() {
                           {report.targetStoreId && (
                             <a
                               href={`/stores/${report.targetStoreId}`}
-                              className="px-3 py-1.5 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition flex items-center gap-1"
+                              className="px-3 py-1.5 text-sm bg-[#0B44A3] text-white rounded-lg hover:bg-[#093782] transition flex items-center gap-1"
                             >
                               <Eye className="w-4 h-4" />
                               ดูร้านค้า
@@ -446,8 +446,8 @@ export default function AdminPage() {
                         <td className="px-4 py-3 text-sm text-gray-600">{user.email}</td>
                         <td className="px-4 py-3 text-sm">
                           <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                            user.role === 'ADMIN' ? 'bg-purple-100 text-purple-800' :
-                            user.role === 'SELLER' ? 'bg-blue-100 text-blue-800' :
+                            user.role === 'ADMIN' ? 'bg-[#0B44A3] bg-opacity-10 text-white' :
+                            user.role === 'SELLER' ? 'bg-blue-100 text-[#0B44A3]' :
                             'bg-gray-100 text-gray-800'
                           }`}>
                             {user.role === 'ADMIN' ? 'แอดมิน' : user.role === 'SELLER' ? 'ผู้ขาย' : 'ลูกค้า'}
@@ -514,7 +514,7 @@ export default function AdminPage() {
                           <select
                             value={store.status}
                             onChange={(e) => updateStoreStatus(store.id, e.target.value)}
-                            className="px-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            className="px-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0B44A3]"
                           >
                             <option value="ACTIVE">เปิดใช้งาน</option>
                             <option value="INACTIVE">ปิดใช้งาน</option>
@@ -522,7 +522,7 @@ export default function AdminPage() {
                           </select>
                           <a
                             href={`/stores/${store.id}`}
-                            className="px-3 py-1.5 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition flex items-center gap-1"
+                            className="px-3 py-1.5 text-sm bg-[#0B44A3] text-white rounded-lg hover:bg-[#093782] transition flex items-center gap-1"
                           >
                             <Eye className="w-4 h-4" />
                             ดูร้านค้า

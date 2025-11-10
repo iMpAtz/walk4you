@@ -16,9 +16,7 @@ export interface CategoryWithCount {
 
 export const categories: Category[] = [
   { id: "electronics", name: "อิเล็กทรอนิกส์", icon: Smartphone, color: "from-blue-500 to-cyan-500", count: 0 },
-  { id: "computers", name: "คอมพิวเตอร์", icon: Laptop, color: "from-purple-500 to-pink-500", count: 0 },
   { id: "fashion", name: "แฟชั่น", icon: Shirt, color: "from-pink-500 to-rose-500", count: 0 },
-  { id: "home", name: "บ้านและสวน", icon: HomeIcon, color: "from-green-500 to-emerald-500", count: 0 },
   { id: "books", name: "หนังสือ", icon: Book, color: "from-amber-500 to-orange-500", count: 0 },
   { id: "gifts", name: "ของขวัญ", icon: Gift, color: "from-red-500 to-pink-500", count: 0 },
   { id: "food", name: "อาหารและเครื่องดื่ม", icon: Utensils, color: "from-yellow-500 to-amber-500", count: 0 },

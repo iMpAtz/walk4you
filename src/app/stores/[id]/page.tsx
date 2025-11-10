@@ -4,8 +4,7 @@ import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { Store, Package, Mail, Phone, Calendar, AlertTriangle, ShoppingCart, Heart, Star } from 'lucide-react';
-import NotificationBell from '@/components/NotificationBell';
-import CartIcon from '@/components/CartIcon';
+import TopBar from '@/components/TopBar';
 import { useCart } from '@/contexts/CartContext';
 
 interface StoreData {
@@ -143,7 +142,7 @@ export default function StorePage() {
           <p className="text-gray-500 mb-4">ร้านค้านี้อาจถูกลบหรือไม่สามารถเข้าถึงได้</p>
           <button
             onClick={() => router.push('/')}
-            className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
+            className="px-6 py-2 bg-[#0B44A3] text-white rounded-lg hover:bg-[#093782] transition"
           >
             กลับหน้าหลัก
           </button>
@@ -155,27 +154,7 @@ export default function StorePage() {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Navbar */}
-      <nav className="bg-white border-b border-gray-200 px-6 lg:px-8 py-4 shadow-sm sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto flex justify-between items-center">
-          <a href="/" className="text-2xl font-bold">Walk4You</a>
-          <div className="flex items-center gap-4">
-            <NotificationBell />
-            <CartIcon />
-            {userData && (
-              <button className="flex items-center gap-2 p-2 hover:bg-gray-100 rounded-lg">
-                {userData?.avatar?.url ? (
-                  <Image src={userData.avatar.url} alt="Profile" width={24} height={24} className="rounded-full w-6 h-6 object-cover" />
-                ) : (
-                  <div className="w-6 h-6 bg-gray-500 rounded-full text-white text-xs flex items-center justify-center">
-                    {userData?.username?.charAt(0).toUpperCase() || 'U'}
-                  </div>
-                )}
-                <span className="text-sm font-medium text-gray-700">{userData?.username || 'ผู้ใช้'}</span>
-              </button>
-            )}
-          </div>
-        </div>
-      </nav>
+      <TopBar />
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Store Header */}
@@ -183,7 +162,7 @@ export default function StorePage() {
           <div className="flex flex-col lg:flex-row gap-6">
             {/* Store Icon/Image */}
             <div className="flex-shrink-0">
-              <div className="w-24 h-24 lg:w-32 lg:h-32 bg-gradient-to-br from-blue-500 to-purple-500 rounded-xl flex items-center justify-center">
+              <div className="w-24 h-24 lg:w-32 lg:h-32 bg-[#0B44A3] rounded-xl flex items-center justify-center">
                 <Store className="w-12 h-12 lg:w-16 lg:h-16 text-white" />
               </div>
             </div>
@@ -287,7 +266,7 @@ export default function StorePage() {
                     {/* Product Info */}
                     <div className="p-4">
                       {product.category && (
-                        <span className="inline-block px-2 py-1 bg-blue-100 text-blue-700 text-xs rounded-full mb-2">
+                        <span className="inline-block px-2 py-1 bg-blue-50 text-[#0B44A3] text-xs rounded-full mb-2">
                           {product.category}
                         </span>
                       )}
@@ -320,7 +299,7 @@ export default function StorePage() {
                         disabled={!inStock || addingToCart === product.id}
                         className={`w-full mt-3 px-4 py-2 rounded-lg font-medium transition ${
                           inStock
-                            ? 'bg-blue-600 hover:bg-blue-700 text-white'
+                            ? 'bg-[#0B44A3] hover:bg-[#093782] text-white'
                             : 'bg-gray-300 text-gray-500 cursor-not-allowed'
                         } disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2`}
                       >

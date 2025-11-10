@@ -192,7 +192,7 @@ export default function CheckoutConfirmPage() {
         
           <div className="flex gap-3 justify-end">
             <button onClick={() => router.back()} className="px-4 py-2 border rounded">ย้อนกลับ</button>
-            <button onClick={handleConfirm} className="px-4 py-2 bg-green-600 text-white rounded">ยืนยันและชำระเงิน</button>
+            <button onClick={handleConfirm} className="px-4 py-2 bg-[#0B44A3] text-white rounded hover:bg-[#093782]">ยืนยันและชำระเงิน</button>
           </div>
 
           {/* Upload modal */}

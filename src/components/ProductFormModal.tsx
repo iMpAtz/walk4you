@@ -260,8 +260,8 @@ export default function ProductFormModal({ isOpen, onClose, onSubmit, username }
                   className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-red-50 file:text-red-700 hover:file:bg-red-100 disabled:opacity-50 disabled:cursor-not-allowed"
                 />
                 <p className="text-xs text-gray-500 mt-1">
-                  รองรับไฟล์ JPG, PNG, GIF ขนาดไม่เกิน 5MB
-                  {isSubmitting && <span className="text-blue-600 ml-2">กำลังอัปโหลด...</span>}
+                  รองรับไฟล์ JPG, PNG ขนาดไม่เกิน 25MB
+                  {isSubmitting && <span className="text-[#0B44A3] ml-2">กำลังอัปโหลด...</span>}
                 </p>
               </div>
             </div>

@@ -1,12 +1,12 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import TopBar from "@/components/TopBar";
 import { useRouter } from "next/navigation";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { AlertCircle } from "lucide-react";
 import { categories as baseCategories, useCategoriesWithCounts } from '@/constants/categories';
-import NotificationBell from '@/components/NotificationBell';
-import CartIcon from '@/components/CartIcon';
+import Image from 'next/image';
+import Searchbar from '@/components/Searchbar';
 
 interface Product {
   id: string;
@@ -30,476 +30,184 @@ interface Banner {
   title: string;
   subtitle: string;
   image: string;
-  color: string;
-}
-
-interface Category {
-  id: string;
-  name: string;
-  icon: any;
-  color: string;
-  count: number;
-}
-
-interface CategoryWithCount {
-  category: string;
-  count: number;
 }
 
 const banners: Banner[] = [
-  {
-    id: 1,
-    title: "สินค้าอิเล็กทรอนิกส์",
-    subtitle: "ที่หลากหลาย",
-    image: "https://images.unsplash.com/photo-1607082348824-0a96f2a4b9da?w=800&h=400&fit=crop",
-    color: "from-blue-600 to-purple-600"
-  },
-  {
-    id: 2,
-    title: "ของใหม่มาแล้ว",
-    subtitle: "แฟชั่นสไตล์คุณ",
-    image: "https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=800&h=400&fit=crop",
-    color: "from-pink-500 to-rose-500"
-  },
-  {
-    id: 3,
-    title: "จัดส่งฟรี",
-    subtitle: "ทุกคำสั่งซื้อ",
-    image: "https://images.unsplash.com/photo-1578916171728-46686eac8d58?w=800&h=400&fit=crop",
-    color: "from-green-500 to-emerald-500"
-  }
+  { id: 1, title: "สินค้าอิเล็กทรอนิกส์", subtitle: "อัปเดตล่าสุด", image: "https://images.unsplash.com/photo-1607082348824-0a96f2a4b9da?w=800" },
+  { id: 2, title: "สินค้าแฟชั่น", subtitle: "สไตล์ที่เป็นคุณ", image: "https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=800" },
+  { id: 3, title: "ส่งฟรีทุกออเดอร์", subtitle: "ด่วน ภายใน 24 ชั่วโมง", image: "https://images.unsplash.com/photo-1578916171728-46686eac8d58?w=800" }
 ];
-
 
 export default function Home() {
   const router = useRouter();
   const [featuredProducts, setFeaturedProducts] = useState<Product[]>([]);
-  const [searchResults, setSearchResults] = useState<Product[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [searchSuggestions, setSearchSuggestions] = useState<SearchSuggestion[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isSearching, setIsSearching] = useState(false);
-  const [showSearchResults, setShowSearchResults] = useState(false);
-  const [showSuggestions, setShowSuggestions] = useState(false);
   const [currentBanner, setCurrentBanner] = useState(0);
-  const [categoryScroll, setCategoryScroll] = useState(0);
-  
-  // Use custom hook for categories with counts
-  const { categories: categoriesWithCounts, isLoading: categoriesLoading, error: categoriesError } = useCategoriesWithCounts();
+  const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    fetchFeaturedProducts();
-    
-    // Auto-rotate banner
-    const interval = setInterval(() => {
-      setCurrentBanner((prev) => (prev + 1) % banners.length);
-    }, 5000);
-    
-    return () => clearInterval(interval);
-  }, []);
+  const debounceRef = useRef<NodeJS.Timeout>();
+  const bannerIntervalRef = useRef<NodeJS.Timeout>();
+
+  const { categories: categoriesWithCounts, error: categoriesError } = useCategoriesWithCounts();
+
+  // --- Fetch Featured Products ---
+  useEffect(() => { fetchFeaturedProducts(); }, []);
 
   const fetchFeaturedProducts = async () => {
     try {
+      setError(null);
+      setIsLoading(true);
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE || 'http://localhost:8000'}/products/featured?limit=8`);
-      if (response.ok) {
-        const products = await response.json();
-        setFeaturedProducts(products);
-      }
-    } catch (error) {
-      console.error('Failed to fetch featured products:', error);
-    } finally {
-      setIsLoading(false);
-    }
+      if (!response.ok) throw new Error('Failed to fetch products');
+      const products: Product[] = await response.json();
+      setFeaturedProducts(products);
+    } catch (err) {
+      console.error(err);
+      setError('ไม่สามารถโหลดสินค้าได้ กรุณาลองใหม่อีกครั้ง');
+    } finally { setIsLoading(false); }
   };
 
-  const fetchSearchSuggestions = async (query: string) => {
-    if (query.length < 2) {
+  // --- Banner Carousel ---
+  useEffect(() => {
+    bannerIntervalRef.current = setInterval(() => setCurrentBanner(prev => (prev + 1) % banners.length), 4500);
+    return () => bannerIntervalRef.current && clearInterval(bannerIntervalRef.current);
+  }, []);
+
+  const prevBanner = () => setCurrentBanner(prev => (prev === 0 ? banners.length - 1 : prev - 1));
+  const nextBanner = () => setCurrentBanner(prev => (prev === banners.length - 1 ? 0 : prev + 1));
+  const goToBanner = (index: number) => {
+    setCurrentBanner(index);
+    if (bannerIntervalRef.current) clearInterval(bannerIntervalRef.current);
+    bannerIntervalRef.current = setInterval(() => setCurrentBanner(prev => (prev + 1) % banners.length), 4500);
+  };
+
+  // --- Fetch Search Suggestions with debounce ---
+  useEffect(() => {
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    const query = searchQuery.trim();
+    if (!query) {
       setSearchSuggestions([]);
-      setShowSuggestions(false);
       return;
     }
-
-    try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE || 'http://localhost:8000'}/products/search/suggestions?q=${encodeURIComponent(query)}&limit=5`);
-      if (response.ok) {
-        const suggestions = await response.json();
+    debounceRef.current = setTimeout(async () => {
+      try {
+        const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE || 'http://localhost:8000'}/products/search/suggestions?q=${encodeURIComponent(query)}&limit=5`);
+        if (!res.ok) throw new Error('Failed to fetch suggestions');
+        const suggestions: SearchSuggestion[] = await res.json();
         setSearchSuggestions(suggestions);
-        setShowSuggestions(suggestions.length > 0);
-      }
-    } catch (error) {
-      console.error('Failed to fetch search suggestions:', error);
-    }
-  };
+      } catch (err) { console.error(err); }
+    }, 300);
 
-  const handleSearch = async () => {
-    if (!searchQuery.trim()) {
-      setShowSearchResults(false);
-      return;
-    }
+    return () => { if (debounceRef.current) clearTimeout(debounceRef.current); };
+  }, [searchQuery]);
 
-    setIsSearching(true);
-    setShowSuggestions(false);
-    try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE || 'http://localhost:8000'}/products/search?q=${encodeURIComponent(searchQuery)}&limit=20`);
-      if (response.ok) {
-        const products = await response.json();
-        setSearchResults(products);
-        setShowSearchResults(true);
-      }
-    } catch (error) {
-      console.error('Failed to search products:', error);
-    } finally {
-      setIsSearching(false);
-    }
-  };
+  // --- Handle Search ---
+const handleSearch = (query?: string) => {
+  const searchTerm = query || searchQuery.trim();
+  if (!searchTerm) return;
+  router.push(`/search?query=${encodeURIComponent(searchTerm)}`);
+};
 
-  const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter') {
-      handleSearch();
-    }
-  };
-
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value;
-    setSearchQuery(value);
-    
-    if (value.trim() === '') {
-      setShowSearchResults(false);
-      setShowSuggestions(false);
-    } else {
-      const timeoutId = setTimeout(() => {
-        fetchSearchSuggestions(value);
-      }, 300);
-      
-      return () => clearTimeout(timeoutId);
-    }
-  };
-
-  const handleSuggestionClick = (suggestion: SearchSuggestion) => {
-    setSearchQuery(suggestion.text);
-    setShowSuggestions(false);
-    setTimeout(() => {
-      handleSearch();
-    }, 100);
-  };
-
-  const nextBanner = () => {
-    setCurrentBanner((prev) => (prev + 1) % banners.length);
-  };
-
-  const prevBanner = () => {
-    setCurrentBanner((prev) => (prev - 1 + banners.length) % banners.length);
-  };
-
-  const scrollCategories = (direction: 'left' | 'right') => {
-    const container = document.getElementById('category-scroll');
-    if (container) {
-      const scrollAmount = 300;
-      if (direction === 'left') {
-        container.scrollLeft -= scrollAmount;
-      } else {
-        container.scrollLeft += scrollAmount;
-      }
-    }
-  };
-
-  const handleCategoryClick = (categoryId: string) => {
-    const category = baseCategories.find(c => c.id === categoryId);
-    if (category) {
-      setSearchQuery(category.name);
-      handleSearch();
-    }
-  };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-[#F5F7FA]">
       <TopBar />
 
-      {/* Header with logo + search */}
-      <div className="bg-white shadow-sm">
+      {/* Header + search */}
+      <div className="bg-white shadow-sm border-b border-[#E2E8F0]">
         <div className="mx-auto max-w-[1200px] px-4 py-4">
-          <div className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">ShopLogo</div>
-          <div className="mt-3 flex items-center gap-2 relative">
-            <div className="w-full relative">
-              <input 
-                className="w-full rounded-lg border-2 border-gray-300 px-4 py-2.5 focus:border-blue-500 focus:outline-none transition" 
-                placeholder="ค้นหาสินค้า..." 
-                value={searchQuery}
-                onChange={handleInputChange}
-                onKeyPress={handleKeyPress}
-                onFocus={() => {
-                  if (searchSuggestions.length > 0) {
-                    setShowSuggestions(true);
-                  }
-                }}
-                onBlur={() => {
-                  setTimeout(() => setShowSuggestions(false), 200);
-                }}
-              />
-              
-              {showSuggestions && searchSuggestions.length > 0 && (
-                <div className="absolute top-full left-0 right-0 z-50 mt-1 bg-white border border-gray-300 rounded-lg shadow-xl max-h-60 overflow-y-auto">
-                  {searchSuggestions.map((suggestion, index) => (
-                    <div
-                      key={index}
-                      className="px-4 py-3 hover:bg-gray-50 cursor-pointer border-b border-gray-100 last:border-b-0 transition"
-                      onClick={() => handleSuggestionClick(suggestion)}
-                    >
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <span className="text-sm font-medium">{suggestion.text}</span>
-                          <span className={`text-xs px-2 py-1 rounded ${
-                            suggestion.type === 'product' 
-                              ? 'bg-blue-100 text-blue-600' 
-                              : 'bg-green-100 text-green-600'
-                          }`}>
-                            {suggestion.type === 'product' ? 'สินค้า' : 'หมวดหมู่'}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-            
-            <button 
-              className="rounded-lg bg-gradient-to-r from-blue-600 to-purple-600 px-6 py-2.5 text-white font-semibold hover:from-blue-700 hover:to-purple-700 disabled:opacity-50 whitespace-nowrap transition" 
-              onClick={handleSearch}
-              disabled={isSearching}
-            >
-              {isSearching ? 'กำลังค้นหา...' : 'ค้นหา'}
-            </button>
+
+          {/* Search Bar */}
+          <div className="mx-auto max-w-[1200px] px-4 py-4">
+            <Searchbar
+              value={searchQuery}
+              onChange={(val) => setSearchQuery(val)}
+              onSearch={handleSearch}
+              suggestions={searchSuggestions}
+              isSearching={isSearching}
+            />
           </div>
         </div>
       </div>
 
-      {/* Search Results */}
-      {showSearchResults && (
-        <div className="mx-auto max-w-[1200px] px-4 py-6">
-          <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-semibold">
-                ผลการค้นหา:"{searchQuery}" 
-                <span className="text-gray-500 font-normal ml-2">({searchResults.length} รายการ)</span>
-              </h2>
-            </div>
-            {searchResults.length > 0 ? (
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                {searchResults.map((product) => (
-                  <div 
-                    key={product.id} 
-                    className="rounded-xl bg-white border border-gray-200 overflow-hidden cursor-pointer hover:shadow-lg transition-all group"
-                    onClick={() => router.push(`/products/${product.id}`)}
-                  >
-                    <div className="relative h-[180px]">
-                      {product.image_url ? (
-                        <img 
-                          src={product.image_url} 
-                          alt={product.name}
-                          className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
-                        />
-                      ) : (
-                        <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-gray-100 to-gray-200 text-gray-400">
-                          <span className="text-sm">ไม่มีรูปภาพ</span>
-                        </div>
-                      )}
-                    </div>
-                    <div className="p-3">
-                      <div className="text-sm font-medium truncate mb-1">{product.name}</div>
-                      <div className="text-lg font-bold text-blue-600">฿{product.price.toLocaleString()}</div>
-                      {product.category && (
-                        <div className="text-xs text-gray-500 mt-1">{product.category}</div>
-                      )}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="text-center py-12 text-gray-500">
-                <p className="text-lg">ไม่พบสินค้าที่ตรงกับการค้นหา</p>
-                <p className="text-sm mt-2">ลองใช้คำค้นหาอื่น หรือตรวจสอบการสะกด</p>
-              </div>
-            )}
-          </div>
-        </div>
-      )}
-
-      {/* Hero Banner Carousel */}
-      <div className="mx-auto max-w-[1200px] px-4 py-6">
-        <div className="relative rounded-2xl overflow-hidden shadow-xl h-[300px] md:h-[400px]">
-          {banners.map((banner, index) => (
-            <div
-              key={banner.id}
-              className={`absolute inset-0 transition-opacity duration-500 ${
-                index === currentBanner ? 'opacity-100' : 'opacity-0'
-              }`}
-            >
-              <div className="relative h-full">
-                <img
-                  src={banner.image}
-                  alt={banner.title}
-                  className="w-full h-full object-cover"
-                />
-                <div className={`absolute inset-0 bg-gradient-to-r ${banner.color} opacity-80`} />
-                <div className="absolute inset-0 flex flex-col items-center justify-center text-white">
-                  <h2 className="text-4xl md:text-6xl font-bold mb-4">{banner.title}</h2>
-                  <p className="text-xl md:text-2xl mb-6">{banner.subtitle}</p>
-                  <button className="bg-white text-gray-900 px-8 py-3 rounded-full font-semibold hover:bg-gray-100 transition">
-                    ช้อปเลย
-                  </button>
-                </div>
+      {/* Banner */}
+      <div className="mx-auto max-w-[1200px] px-4 pt-6">
+        <div className="relative rounded-xl overflow-hidden shadow-lg h-[160px] md:h-[200px]">
+          {banners.map((banner, idx) => (
+            <div key={banner.id} className={`absolute inset-0 transition-opacity duration-500 ${idx === currentBanner ? "opacity-100" : "opacity-0"}`}>
+              <img src={banner.image} alt={banner.title} className="w-full h-full object-cover opacity-60" />
+              <div className="absolute inset-0" style={{ background: "linear-gradient(90deg, rgba(27,42,71,0.5), rgba(49,78,114,0.5))" }} />
+              <div className="absolute inset-0 flex flex-col justify-center items-center text-white text-center px-4">
+                <h2 className="text-2xl font-bold">{banner.title}</h2>
+                <p className="mt-1 text-sm opacity-90">{banner.subtitle}</p>
+                <button className="mt-2 px-4 py-1.5 bg-white text-[#1B2A47] font-medium rounded-lg hover:bg-[#E2E8F0] transition text-sm shadow">
+                  ช้อปเลย
+                </button>
               </div>
             </div>
           ))}
-          
-          {/* Banner Controls */}
-          <div className="absolute left-0 top-1/2 -translate-y-1/2">
-            <button
-              onClick={prevBanner}
-              className="bg-white bg-opacity-50 hover:bg-opacity-100 rounded-full p-2 transition"
-            >
-              <ChevronLeft className="w-6 h-6" />
-            </button>
+
+          <div className="absolute inset-0 flex items-center justify-between px-4 z-20">
+            <button onClick={prevBanner} className="bg-white/90 backdrop-blur-md shadow-lg rounded-full w-9 h-9 flex items-center justify-center hover:bg-white text-[#1B2A47] font-bold">‹</button>
+            <button onClick={nextBanner} className="bg-white/90 backdrop-blur-md shadow-lg rounded-full w-9 h-9 flex items-center justify-center hover:bg-white text-[#1B2A47] font-bold">›</button>
           </div>
-          <div className="absolute right-0 top-1/2 -translate-y-1/2">
-            <button
-              onClick={nextBanner}
-              className="bg-white bg-opacity-50 hover:bg-opacity-100 rounded-full p-2 transition"
-            >
-              <ChevronRight className="w-6 h-6" />
-            </button>
-          </div>
-          
-          {/* Banner Indicators */}
-          <div className="absolute bottom-4 right-4 flex gap-2">
-            {banners.map((_, index) => (
-              <button
-                key={index}
-                onClick={() => setCurrentBanner(index)}
-                className={`w-2 h-2 rounded-full transition ${
-                  index === currentBanner ? 'bg-white w-8' : 'bg-white bg-opacity-50'
-                }`}
-              />
+
+          <div className="absolute bottom-3 left-0 right-0 flex justify-center gap-2 z-20">
+            {banners.map((_, idx) => (
+              <button key={idx} onClick={() => goToBanner(idx)} className={`w-3 h-3 rounded-full transition-all ${idx === currentBanner ? "bg-white scale-110" : "bg-white/50"}`}></button>
             ))}
           </div>
         </div>
       </div>
 
-      {/* Categories Section */}
+      {/* Categories */}
       <div className="mx-auto max-w-[1200px] px-4 py-6">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-xl font-bold">หมวดหมู่สินค้า</h2>
-          <div className="flex gap-2">
-            <button
-              onClick={() => scrollCategories('left')}
-              className="p-2 rounded-full bg-white border border-gray-300 hover:bg-gray-50 transition"
-            >
-              <ChevronLeft className="w-5 h-5" />
-            </button>
-            <button
-              onClick={() => scrollCategories('right')}
-              className="p-2 rounded-full bg-white border border-gray-300 hover:bg-gray-50 transition"
-            >
-              <ChevronRight className="w-5 h-5" />
-            </button>
-          </div>
-        </div>
-        
-        <div
-          id="category-scroll"
-          className="flex gap-4 overflow-x-auto scrollbar-hide scroll-smooth pb-4"
-          style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
-        >
-          {categoriesLoading ? (
-            // Loading skeleton for categories
-            [...Array(5)].map((_, i) => (
-              <div key={i} className="flex-shrink-0 w-[140px]">
-                <div className="bg-gray-200 rounded-2xl p-6 h-[140px] flex flex-col items-center justify-center animate-pulse">
-                  <div className="w-10 h-10 bg-gray-300 rounded mb-2"></div>
-                  <div className="w-16 h-4 bg-gray-300 rounded"></div>
-                </div>
-              </div>
-            ))
-          ) : categoriesError ? (
-            // Error state - show base categories
-            baseCategories.map((category) => {
-              const Icon = category.icon;
-              return (
-                <div
-                  key={category.id}
-                  onClick={() => handleCategoryClick(category.id)}
-                  className="flex-shrink-0 w-[140px] cursor-pointer group"
-                >
-                  <div className={`bg-gradient-to-br ${category.color} rounded-2xl p-6 h-[140px] flex flex-col items-center justify-center text-white shadow-lg hover:shadow-xl transform hover:scale-105 transition-all`}>
-                    <Icon className="w-10 h-10 mb-2" />
-                    <span className="text-sm font-semibold text-center">{category.name}</span>
-                  </div>
-                </div>
-              );
-            })
-          ) : (
-            // Normal state with real counts
-            categoriesWithCounts.map((category) => {
-              const Icon = category.icon;
-              return (
-                <div
-                  key={category.id}
-                  onClick={() => handleCategoryClick(category.id)}
-                  className="flex-shrink-0 w-[140px] cursor-pointer group"
-                >
-                  <div className={`bg-gradient-to-br ${category.color} rounded-2xl p-6 h-[140px] flex flex-col items-center justify-center text-white shadow-lg hover:shadow-xl transform hover:scale-105 transition-all`}>
-                    <Icon className="w-10 h-10 mb-2" />
-                    <span className="text-sm font-semibold text-center">{category.name}</span>
-                  </div>
-                </div>
-              );
-            })
-          )}
+        <h2 className="text-xl font-bold text-[#1B2A47] mb-3">หมวดหมู่สินค้า</h2>
+        <div className="flex flex-wrap gap-2">
+          {(categoriesError ? baseCategories : categoriesWithCounts).map((category) => {
+            const Icon = category.icon;
+            return (
+              <button key={category.id} onClick={() => handleSearch(category.name)}
+                className="flex items-center gap-2 px-4 py-2 rounded-full border bg-white text-[#1B2A47] border-[#1B2A47] hover:bg-[#1B2A47] hover:text-white active:scale-95 transition-all text-sm shadow-sm"
+              >
+                <Icon className="w-4 h-4" />
+                {category.name}
+              </button>
+            );
+          })}
         </div>
       </div>
 
-      {/* Featured products */}
-      <div className="mx-auto max-w-[1200px] px-4 py-6">
-        <h2 className="mb-4 text-xl font-bold">สินค้าแนะนำ</h2>
-        <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
+      {/* Featured Products */}
+      <div className="mx-auto max-w-[1200px] px-4 pb-10">
+        <h2 className="text-xl font-bold text-[#1B2A47] mb-3">สินค้าแนะนำ</h2>
+        <div className="rounded-xl bg-white border p-6 shadow">
           {isLoading ? (
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              {[...Array(8)].map((_, i) => (
-                <div key={i} className="h-[240px] rounded-xl bg-gray-100 animate-pulse" />
+              {Array(8).fill(null).map((_, i) => (
+                <div key={i} className="h-[240px] bg-gray-200 rounded-lg animate-pulse"></div>
               ))}
             </div>
-          ) : featuredProducts.length > 0 ? (
+          ) : error ? (
+            <div className="text-red-500 flex items-center gap-2"><AlertCircle size={20} /> {error}</div>
+          ) : featuredProducts.length === 0 ? (
+            <div className="text-gray-500">ไม่มีสินค้าแนะนำในขณะนี้</div>
+          ) : (
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              {featuredProducts.map((product) => (
-                <div
-                  key={product.id}
-                  className="rounded-xl bg-white border border-gray-200 overflow-hidden cursor-pointer hover:shadow-lg transition-all group"
-                  onClick={() => router.push(`/products/${product.id}`)}
-                >
-                  <div className="relative h-[180px]">
-                    {product.image_url ? (
-                      <img
-                        src={product.image_url}
-                        alt={product.name}
-                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
-                      />
-                    ) : (
-                      <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-gray-100 to-gray-200 text-gray-400">
-                        <span className="text-sm">ไม่มีรูปภาพ</span>
-                      </div>
-                    )}
+              {featuredProducts.map((p) => (
+                <div key={p.id} className="bg-white border rounded-lg shadow-sm hover:shadow-lg cursor-pointer transition" onClick={() => router.push(`/products/${p.id}`)}>
+                  <div className="h-[180px] overflow-hidden rounded-t-lg relative">
+                    {p.image_url ? <Image src={p.image_url} alt={p.name} fill className="object-cover hover:scale-110 transition" /> : <div className="bg-gray-200 w-full h-full" />}
                   </div>
                   <div className="p-3">
-                    <div className="text-sm font-medium truncate mb-1">{product.name}</div>
-                    <div className="text-lg font-bold text-blue-600">฿{product.price.toLocaleString()}</div>
+                    <div className="text-sm font-medium truncate">{p.name}</div>
+                    <div className="text-lg font-bold text-[#1B2A47]">฿{p.price.toLocaleString()}</div>
                   </div>
                 </div>
               ))}
-            </div>
-          ) : (
-            <div className="text-center py-12 text-gray-500">
-              <p>ไม่มีสินค้าแนะนำในขณะนี้</p>
             </div>
           )}
         </div>

@@ -75,7 +75,7 @@ export default function CartDropdown({ isOpen, onClose }: CartDropdownProps) {
         <div className="max-h-80 overflow-y-auto">
           {loading ? (
             <div className="flex items-center justify-center py-8">
-              <div className="w-6 h-6 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+              <div className="w-6 h-6 border-2 border-[#0B44A3] border-t-transparent rounded-full animate-spin"></div>
               <span className="ml-2 text-gray-500">กำลังโหลด...</span>
             </div>
           ) : !cart || cart.items.length === 0 ? (
@@ -185,7 +185,7 @@ export default function CartDropdown({ isOpen, onClose }: CartDropdownProps) {
                   onClose();
                   window.location.href = '/cart';
                 }}
-                className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-3 rounded-lg transition-colors"
+                className="flex-1 bg-[#0B44A3] hover:bg-[#093782] text-white font-medium py-2 px-3 rounded-lg transition-colors"
               >
                 ดูตระกร้า
               </button>

@@ -101,7 +101,7 @@ export default function RegisterPage() {
           <button
             type="button"
             onClick={() => fileRef.current?.click()}
-            className="group h-24 w-24 overflow-hidden rounded-full ring-2 ring-transparent transition-all hover:ring-[#ff6b6b]/40"
+            className="group h-24 w-24 overflow-hidden rounded-full ring-2 ring-transparent transition-all hover:ring-[#0B44A3]/40"
             aria-label="Upload avatar"
             title="อัปโหลดรูปโปรไฟล์"
           >
@@ -153,7 +153,7 @@ export default function RegisterPage() {
               placeholder="Enter Username"
               value={username}
               onChange={(e) => setUsername(sanitizeSql(e.target.value))}
-              className="w-full rounded border border-gray-200 px-3 py-2 text-sm outline-none transition-colors focus:border-[#ff6b6b]/60"
+              className="w-full rounded border border-gray-200 px-3 py-2 text-sm outline-none transition-colors focus:border-[#0B44A3]/60"
               inputMode="email"
               autoCorrect="off"
               autoCapitalize="none"
@@ -169,7 +169,7 @@ export default function RegisterPage() {
               placeholder="Enter Password"
               value={password}
               onChange={(e) => setPassword(sanitizeSql(e.target.value))}
-              className="w-full rounded border border-gray-200 px-3 py-2 text-sm outline-none transition-colors focus:border-[#ff6b6b]/60"
+              className="w-full rounded border border-gray-200 px-3 py-2 text-sm outline-none transition-colors focus:border-[#0B44A3]/60"
               autoCorrect="off"
               autoCapitalize="none"
               spellCheck={false}
@@ -184,7 +184,7 @@ export default function RegisterPage() {
               placeholder="Confirm Password"
               value={confirm}
               onChange={(e) => setConfirm(sanitizeSql(e.target.value))}
-              className="w-full rounded border border-gray-200 px-3 py-2 text-sm outline-none transition-colors focus:border-[#ff6b6b]/60"
+              className="w-full rounded border border-gray-200 px-3 py-2 text-sm outline-none transition-colors focus:border-[#0B44A3]/60"
               autoCorrect="off"
               autoCapitalize="none"
               spellCheck={false}
@@ -199,7 +199,7 @@ export default function RegisterPage() {
               placeholder="Enter Email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="w-full rounded border border-gray-200 px-3 py-2 text-sm outline-none transition-colors focus:border-[#ff6b6b]/60"
+              className="w-full rounded border border-gray-200 px-3 py-2 text-sm outline-none transition-colors focus:border-[#0B44A3]/60"
             />
           </div>
 
@@ -209,7 +209,7 @@ export default function RegisterPage() {
               <select
                 value={gender}
                 onChange={(e) => setGender(e.target.value as any)}
-                className="w-full rounded border border-gray-200 bg-white px-3 py-2 text-sm focus:border-[#ff6b6b]/60"
+                className="w-full rounded border border-gray-200 bg-white px-3 py-2 text-sm focus:border-[#0B44A3]/60"
               >
                 <option value="Male">Male</option>
                 <option value="Female">Female</option>
@@ -220,13 +220,13 @@ export default function RegisterPage() {
             <div>
               <label className="mb-1 block text-sm text-gray-700">Birth Day</label>
               <div className="flex gap-2">
-                <select value={day} onChange={(e) => setDay(e.target.value)} className="w-20 rounded border border-gray-200 bg-white px-2 py-2 text-sm focus:border-[#ff6b6b]/60">
+                <select value={day} onChange={(e) => setDay(e.target.value)} className="w-20 rounded border border-gray-200 bg-white px-2 py-2 text-sm focus:border-[#0B44A3]/60">
                   <option value="">DD</option>
                   {days.map((d) => (
                     <option key={d} value={d}>{d}</option>
                   ))}
                 </select>
-                <select value={month} onChange={(e) => setMonth(e.target.value)} className="w-20 rounded border border-gray-200 bg-white px-2 py-2 text-sm focus:border-[#ff6b6b]/60">
+                <select value={month} onChange={(e) => setMonth(e.target.value)} className="w-20 rounded border border-gray-200 bg-white px-2 py-2 text-sm focus:border-[#0B44A3]/60">
                   <option value="">MM</option>
                   {months.map((m) => (
                     <option key={m.v} value={m.v}>{m.t}</option>
