@@ -1,4 +1,4 @@
-from fastapi import FastAPI, Depends, HTTPException, status, Request
+from fastapi import FastAPI, Depends, HTTPException, status, Request, Header
 from fastapi.middleware.cors import CORSMiddleware
 from motor.motor_asyncio import AsyncIOMotorClient, AsyncIOMotorDatabase
 from pydantic import BaseModel, EmailStr
@@ -477,6 +477,9 @@ class UserRegister(BaseModel):
     password: str
     email: EmailStr
     phone: Optional[str] = None
+    fullName: Optional[str] = None
+    gender: Optional[str] = None
+    birthDay: Optional[str] = None
 
 
 class UserLogin(BaseModel):
@@ -490,6 +493,7 @@ class UserResponse(BaseModel):
     email: str
     role: str
     registerDate: datetime
+    status: Optional[str] = "ACTIVE"
     avatar: Optional[dict] = None
 
 
@@ -524,6 +528,9 @@ async def register(user_data: UserRegister, db: AsyncIOMotorDatabase = Depends(g
             "password": hashed_password,
             "email": user_data.email,
             "phone": user_data.phone,
+            "fullName": user_data.fullName,
+            "gender": user_data.gender,
+            "birthDay": user_data.birthDay,
             "role": "CUSTOMER",
             "registerDate": datetime.utcnow()
         }
@@ -690,6 +697,7 @@ async def get_my_profile(current_user=Depends(get_current_user)):
         email=current_user["email"],
         role=current_user["role"],
         registerDate=current_user["registerDate"],
+        status=current_user.get("status", "ACTIVE"),
         avatar=current_user.get("avatar")
     )
 
@@ -1099,7 +1107,7 @@ async def create_my_store(
         "status": "ACTIVE"
     }
     
-    result = await db.stores.insert_one(store_doc)
+    result = await db.Store.insert_one(store_doc)
     store_doc["_id"] = result.inserted_id
     
     return StoreResponse(
@@ -1107,9 +1115,177 @@ async def create_my_store(
         storeName=store_doc["storeName"],
         storeDescription=store_doc.get("storeDescription"),
         buMail=store_doc.get("buMail"),
+        qrUrl=store_doc.get("qrUrl"),
         registerDate=store_doc["registerDate"],
         status=store_doc["status"]
     )
+
+
+# Sales Dashboard Endpoint
+class DashboardStats(BaseModel):
+    totalRevenue: float
+    totalOrders: int
+    pendingOrders: int
+    completedOrders: int
+    topProducts: list[dict]
+    recentOrders: list[dict]
+    dailySales: list[dict]
+    monthlySales: list[dict]
+
+@app.get("/stores/my/dashboard")
+async def get_store_dashboard(
+    current_user: dict = Depends(get_current_user),
+    db: AsyncIOMotorDatabase = Depends(get_db)
+):
+    """Get sales dashboard statistics for store owner"""
+    try:
+        user_id = current_user["_id"]
+        
+        # Find store
+        store = await db.Store.find_one({"ownerId": user_id})
+        if not store:
+            raise HTTPException(status_code=404, detail="Store not found")
+        
+        store_id = store["_id"]
+        
+        # Get all products from this store
+        products = await db.Product.find({"storeId": store_id}).to_list(None)
+        product_ids = [p["_id"] for p in products]
+        product_ids_str = [str(pid) for pid in product_ids]
+        
+        # Get all orders containing products from this store (try both ObjectId and string)
+        orders = await db.Order.find({
+            "$or": [
+                {"items.productId": {"$in": product_ids}},
+                {"items.productId": {"$in": product_ids_str}}
+            ]
+        }).to_list(None)
+        
+        # Calculate statistics (only COMPLETED orders)
+        total_revenue = 0
+        total_orders = 0
+        pending_orders = 0
+        completed_orders = 0
+        product_sales = {}
+        daily_sales = {}
+        monthly_sales = {}
+        
+        for order in orders:
+            order_status = order.get("status", "PENDING")
+            order_date = order.get("orderDate", datetime.utcnow())
+            day_key = order_date.strftime("%Y-%m-%d")
+            month_key = order_date.strftime("%Y-%m")
+            
+            # Filter items from this store (check both ObjectId and string)
+            store_items = []
+            for item in order.get("items", []):
+                item_product_id = item.get("productId")
+                # Convert to string for comparison
+                if isinstance(item_product_id, ObjectId):
+                    item_product_id_str = str(item_product_id)
+                else:
+                    item_product_id_str = item_product_id
+                
+                if item_product_id in product_ids or item_product_id_str in product_ids_str:
+                    store_items.append(item)
+            
+            # Count orders that have at least one item from this store
+            if store_items:
+                total_orders += 1
+                
+                # Count order status
+                if order_status in ["PENDING", "PROCESSING"]:
+                    pending_orders += 1
+                elif order_status == "COMPLETED":
+                    completed_orders += 1
+            
+            # Only calculate revenue for COMPLETED orders
+            if order_status == "COMPLETED":
+                for item in store_items:
+                    item_total = item.get("price", 0) * item.get("quantity", 0)
+                    total_revenue += item_total
+                    
+                    # Track product sales
+                    product_id = str(item.get("productId"))
+                    if product_id not in product_sales:
+                        product_sales[product_id] = {
+                            "productId": product_id,
+                            "quantity": 0,
+                            "revenue": 0
+                        }
+                    product_sales[product_id]["quantity"] += item.get("quantity", 0)
+                    product_sales[product_id]["revenue"] += item_total
+                    
+                    # Track daily sales
+                    if day_key not in daily_sales:
+                        daily_sales[day_key] = 0
+                    daily_sales[day_key] += item_total
+                    
+                    # Track monthly sales
+                    if month_key not in monthly_sales:
+                        monthly_sales[month_key] = 0
+                    monthly_sales[month_key] += item_total
+        
+        # Get top 5 products by revenue
+        top_products_list = sorted(product_sales.values(), key=lambda x: x["revenue"], reverse=True)[:5]
+        
+        # Enrich with product details
+        for item in top_products_list:
+            product = await db.Product.find_one({"_id": ObjectId(item["productId"])})
+            if product:
+                item["name"] = product.get("name", "Unknown")
+                item["price"] = product.get("price", 0)
+        
+        # Get recent 10 orders (only COMPLETED orders)
+        recent_orders_list = []
+        completed_orders_with_items = [
+            order for order in orders 
+            if order.get("status") == "COMPLETED" and 
+            any(item.get("productId") in product_ids for item in order.get("items", []))
+        ]
+        
+        for order in sorted(completed_orders_with_items, key=lambda x: x.get("orderDate", datetime.min), reverse=True)[:10]:
+            store_items = [item for item in order.get("items", []) if item.get("productId") in product_ids]
+            if store_items:
+                order_total = sum(item.get("price", 0) * item.get("quantity", 0) for item in store_items)
+                recent_orders_list.append({
+                    "orderId": str(order["_id"]),
+                    "orderDate": order.get("orderDate", datetime.utcnow()).isoformat(),
+                    "status": order.get("status", "PENDING"),
+                    "total": order_total,
+                    "itemCount": sum(item.get("quantity", 0) for item in store_items)
+                })
+        
+        # Format daily sales (last 30 days)
+        daily_sales_list = [
+            {"date": date, "revenue": revenue}
+            for date, revenue in sorted(daily_sales.items(), reverse=True)[:30]
+        ]
+        daily_sales_list.reverse()  # Show oldest to newest
+        
+        # Format monthly sales (last 12 months)
+        monthly_sales_list = [
+            {"month": month, "revenue": revenue}
+            for month, revenue in sorted(monthly_sales.items(), reverse=True)[:12]
+        ]
+        monthly_sales_list.reverse()
+        
+        return {
+            "totalRevenue": round(total_revenue, 2),
+            "totalOrders": total_orders,
+            "pendingOrders": pending_orders,
+            "completedOrders": completed_orders,
+            "topProducts": top_products_list,
+            "recentOrders": recent_orders_list,
+            "dailySales": daily_sales_list,
+            "monthlySales": monthly_sales_list
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error getting store dashboard: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 
 # ===== Product Endpoints =====
@@ -2807,6 +2983,7 @@ class UserListResponse(BaseModel):
     registerDate: datetime
     storeCount: int = 0
     storeStatus: Optional[str] = None
+    status: Optional[str] = "ACTIVE"
 
 
 class StoreListResponse(BaseModel):
@@ -2853,6 +3030,7 @@ async def get_all_users(
                     "phone": 1,
                     "role": 1,
                     "registerDate": 1,
+                    "status": 1,
                     "storeCount": {"$size": "$stores"},
                     "storeStatus": {"$arrayElemAt": ["$stores.status", 0]}
                 }
@@ -2871,7 +3049,8 @@ async def get_all_users(
                 role=user["role"],
                 registerDate=user["registerDate"],
                 storeCount=user.get("storeCount", 0),
-                storeStatus=user.get("storeStatus")
+                storeStatus=user.get("storeStatus"),
+                status=user.get("status", "ACTIVE")
             )
             for user in users
         ]
@@ -2992,4 +3171,153 @@ async def update_store_status(
         raise
     except Exception as e:
         logger.error(f"Error updating store status: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error")
+
+
+class UserStatusUpdate(BaseModel):
+    status: str
+
+
+@app.put("/admin/users/{user_id}/status")
+async def update_user_status(
+    user_id: str,
+    status_update: UserStatusUpdate,
+    current_user: dict = Depends(get_current_user),
+    db: AsyncIOMotorDatabase = Depends(get_db)
+):
+    """Update user status (admin only) - Ban/Unban user"""
+    try:
+        # Check if user is admin
+        if current_user.get("role") != "ADMIN":
+            raise HTTPException(status_code=403, detail="Admin access required")
+        
+        # Validate status
+        allowed_statuses = ["ACTIVE", "BANNED"]
+        new_status = status_update.status.upper()
+        if new_status not in allowed_statuses:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Invalid status. Allowed: {allowed_statuses}"
+            )
+        
+        # Find user
+        user = await db.User.find_one({"_id": ObjectId(user_id)})
+        if not user:
+            raise HTTPException(status_code=404, detail="User not found")
+        
+        # Prevent admin from banning themselves
+        if str(user["_id"]) == str(current_user["_id"]):
+            raise HTTPException(status_code=400, detail="Cannot ban yourself")
+        
+        # Prevent banning other admins
+        if user.get("role") == "ADMIN":
+            raise HTTPException(status_code=400, detail="Cannot ban other admins")
+        
+        # Update status
+        await db.User.update_one(
+            {"_id": ObjectId(user_id)},
+            {"$set": {"status": new_status, "updatedAt": datetime.utcnow()}}
+        )
+        
+        # Create admin action log
+        try:
+            await db.AdminAction.insert_one({
+                "adminId": current_user["_id"],
+                "actionType": "UPDATE_USER_STATUS",
+                "targetUserId": ObjectId(user_id),
+                "timestamp": datetime.utcnow(),
+                "description": f"Changed user status to {new_status}"
+            })
+        except Exception:
+            pass
+        
+        return {"message": "User status updated", "status": new_status}
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error updating user status: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error")
+
+# Update User Info by Admin
+class UserUpdate(BaseModel):
+    username: Optional[str] = None
+    email: Optional[str] = None
+    phone: Optional[str] = None
+    role: Optional[str] = None
+
+@app.put("/admin/users/{user_id}")
+async def update_user_info(
+    user_id: str,
+    user_update: UserUpdate,
+    current_user: dict = Depends(get_current_user),
+    db: AsyncIOMotorDatabase = Depends(get_db)
+):
+    try:
+        # Verify admin role
+        if current_user.get("role") != "ADMIN":
+            raise HTTPException(status_code=403, detail="Admin access required")
+        
+        admin_id = str(current_user["_id"])
+        
+        # Find target user
+        target_user = await db.User.find_one({"_id": ObjectId(user_id)})
+        if not target_user:
+            raise HTTPException(status_code=404, detail="User not found")
+        
+        # Prevent changing admin's own role
+        if admin_id == user_id and user_update.role and user_update.role != target_user.get("role"):
+            raise HTTPException(status_code=400, detail="Cannot change your own role")
+        
+        # Validate role if provided
+        if user_update.role and user_update.role not in ["CUSTOMER", "SELLER", "ADMIN"]:
+            raise HTTPException(status_code=400, detail="Invalid role")
+        
+        # Check username uniqueness if changed
+        if user_update.username and user_update.username != target_user.get("username"):
+            existing = await db.User.find_one({"username": user_update.username})
+            if existing:
+                raise HTTPException(status_code=400, detail="Username already exists")
+        
+        # Check email uniqueness if changed
+        if user_update.email and user_update.email != target_user.get("email"):
+            existing = await db.User.find_one({"email": user_update.email})
+            if existing:
+                raise HTTPException(status_code=400, detail="Email already exists")
+        
+        # Build update document
+        update_doc = {}
+        if user_update.username:
+            update_doc["username"] = user_update.username
+        if user_update.email:
+            update_doc["email"] = user_update.email
+        if user_update.phone:
+            update_doc["phone"] = user_update.phone
+        if user_update.role:
+            update_doc["role"] = user_update.role
+        
+        if not update_doc:
+            raise HTTPException(status_code=400, detail="No fields to update")
+        
+        # Update user
+        await db.User.update_one(
+            {"_id": ObjectId(user_id)},
+            {"$set": update_doc}
+        )
+        
+        # Log admin action
+        await db.AdminAction.insert_one({
+            "adminId": admin_id,
+            "action": "UPDATE_USER",
+            "targetUserId": user_id,
+            "changes": update_doc,
+            "timestamp": datetime.utcnow()
+        })
+        
+        return {"message": "User updated successfully", "updated": update_doc}
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error updating user: {e}")
         raise HTTPException(status_code=500, detail="Internal server error")

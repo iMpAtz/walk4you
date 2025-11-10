@@ -7,7 +7,8 @@ import {
   Building2, 
   User, 
   Clipboard, 
-  BarChart3, 
+  BarChart3,
+  Package, 
 } from 'lucide-react';
 import TopBar from '@/components/TopBar';
 import { Metadata } from 'next';
@@ -139,72 +140,77 @@ export default function StoreManagementLayout({ storeData, userData, onSave }: S
 
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
       {/* Navbar */}
       <TopBar />
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="flex flex-col lg:flex-row gap-6">
           {/* Sidebar */}
           <div className="lg:w-64">
-            <div className="bg-white rounded-lg shadow-sm border p-4">
+            <div className="bg-white rounded-xl shadow-md border border-gray-200 p-4 sticky top-24">
               {/* Store Info */}
-              <div className="flex items-center gap-3 mb-6">
+              <div className="flex items-center gap-3 mb-6 pb-4 border-b border-gray-200">
                 {userData?.avatar?.url ? (
                   <Image 
                     src={userData.avatar.url} 
                     alt="Store Owner" 
-                    width={40} 
-                    height={40} 
-                    className="rounded-full object-cover w-10 h-10"
+                    width={48} 
+                    height={48} 
+                    className="rounded-xl object-cover w-12 h-12 shadow-sm"
                   />
                 ) : (
-                  <div className="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center">
-                    <Building2 className="w-6 h-6 text-red-600" />
+                  <div className="w-12 h-12 bg-gradient-to-br from-[#0B44A3] to-[#1a5fd4] rounded-xl flex items-center justify-center shadow-sm">
+                    <Building2 className="w-6 h-6 text-white" />
                   </div>
                 )}
                 <div>
-                  <div className="font-semibold text-gray-900">
+                  <div className="font-bold text-gray-900">
                     {storeData?.storeName || userData?.username || 'ร้านค้า'}
                   </div>
-                  <div className="text-sm text-gray-500">
-                    {userData?.username ? `เจ้าของ: ${userData.username}` : 'ร้านค้า'}
+                  <div className="text-xs text-gray-500">
+                    {userData?.username ? `${userData.username}` : 'Store Owner'}
                   </div>
                 </div>
               </div>
 
               {/* Navigation */}
-              <nav className="space-y-2">
-                <button className="w-full flex items-center gap-3 p-3 text-left bg-red-50 text-red-600 rounded-lg">
-                  <div className="w-8 h-8 bg-red-100 rounded-full flex items-center justify-center">
-                    <User className="w-5 h-5 text-red-600" />
+              <nav className="space-y-1">
+                <button className="w-full flex items-center gap-3 p-3 text-left bg-gradient-to-r from-[#0B44A3] to-[#1a5fd4] text-white rounded-lg shadow-sm">
+                  <div className="w-9 h-9 bg-white bg-opacity-20 rounded-lg flex items-center justify-center">
+                    <Building2 className="w-5 h-5 text-gray-600" />
                   </div>
-                  <span className="font-medium">ร้านค้าของฉัน</span>
+                  <span className="font-semibold">ข้อมูลร้านค้า</span>
+                </button>
+
+                <button 
+                  onClick={() => router.push('/store-management/dashboard')}
+                  className="w-full flex items-center gap-3 p-3 text-left hover:bg-gray-50 rounded-lg transition-all group"
+                >
+                  <div className="w-9 h-9 bg-gray-100 group-hover:bg-gray-200 rounded-lg flex items-center justify-center transition-colors">
+                    <BarChart3 className="w-5 h-5 text-gray-600" />
+                  </div>
+                  <span className="font-medium text-gray-700 group-hover:text-gray-900">ยอดขายของฉัน</span>
                 </button>
 
                 <button 
                   onClick={() => router.push('/store-management/products')}
-                  className="w-full flex items-center gap-3 p-3 text-left hover:bg-gray-100 rounded-lg transition-colors"
+                  className="w-full flex items-center gap-3 p-3 text-left hover:bg-gray-50 rounded-lg transition-all group"
                 >
-                  <div className="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center">
-                    <Clipboard className="w-5 h-5 text-gray-600" />
+                  <div className="w-9 h-9 bg-gray-100 group-hover:bg-gray-200 rounded-lg flex items-center justify-center transition-colors">
+                    <Package className="w-5 h-5 text-gray-600" />
                   </div>
-                  <span className="font-medium text-gray-900">สินค้าของฉัน</span>
+                  <span className="font-medium text-gray-700 group-hover:text-gray-900">สินค้าของฉัน</span>
                 </button>
+                
                 <button 
                   onClick={() => router.push('/store-management/orders')}
-                  className="w-full flex items-center gap-3 p-3 text-left hover:bg-gray-100 rounded-lg transition-colors"
+                  className="w-full flex items-center gap-3 p-3 text-left hover:bg-gray-50 rounded-lg transition-all group"
                 >
-                  <div className="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center">
+                  <div className="w-9 h-9 bg-gray-100 group-hover:bg-gray-200 rounded-lg flex items-center justify-center transition-colors">
                     <Clipboard className="w-5 h-5 text-gray-600" />
                   </div>
-                  <span className="font-medium text-gray-900">รายการสั่งซื้อ</span>
-                </button>
-                <button className="w-full flex items-center gap-3 p-3 text-left hover:bg-gray-100 rounded-lg transition-colors">
-                  <div className="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center">
-                    <BarChart3 className="w-5 h-5 text-gray-600" />
-                  </div>
-                  <span className="font-medium text-gray-900">ยอดขายของฉัน</span>
+                  <span className="font-medium text-gray-700 group-hover:text-gray-900">รายการสั่งซื้อ</span>
                 </button>
               </nav>
             </div>
@@ -212,15 +218,15 @@ export default function StoreManagementLayout({ storeData, userData, onSave }: S
 
           {/* Main Content */}
           <div className="flex-1">
-            <div className="bg-white rounded-lg shadow-sm border">
+            <div className="bg-white rounded-xl shadow-md border border-gray-200">
               {/* Header */}
-              <div className="px-6 py-4 border-b">
-                <h1 className="text-2xl font-bold text-gray-900">ร้านค้าของฉัน</h1>
-                <p className="text-gray-600 mt-1">จัดการร้านค้าของคุณ</p>
+              <div className="px-8 py-6 border-b border-gray-200">
+                <h1 className="text-3xl font-bold bg-gradient-to-r from-[#0B44A3] to-[#1a5fd4] bg-clip-text text-transparent">ร้านค้าของฉัน</h1>
+                <p className="text-gray-600 mt-2">จัดการข้อมูลร้านค้าของคุณ</p>
               </div>
 
               {/* Form */}
-              <div className="p-6">
+              <div className="p-8">
                 <div className="space-y-6">
                   {/* Shop Name */}
                   <div>

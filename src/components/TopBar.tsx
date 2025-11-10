@@ -4,7 +4,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { User } from 'lucide-react';
+import { User, Ban } from 'lucide-react';
 import type { UserProfile } from '@/types';
 import MobileSidebar from './MobileSidebar';
 import NotificationBell from './NotificationBell';
@@ -17,6 +17,7 @@ export default function TopBar() {
   const [hasStore, setHasStore] = useState<boolean>(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState<boolean>(false);
   const [isDesktop, setIsDesktop] = useState<boolean>(false);
+  const [showBannedModal, setShowBannedModal] = useState<boolean>(false);
 
   useEffect(() => {
     try {
@@ -52,6 +53,13 @@ export default function TopBar() {
       if (response.ok) {
         const profile = await response.json();
         setUserProfile(profile);
+        
+        // Check if user is banned
+        if (profile.status === 'BANNED') {
+          setShowBannedModal(true);
+          return;
+        }
+        
         // Check if user has a store
         await checkStoreStatus(token);
       }
@@ -170,6 +178,31 @@ export default function TopBar() {
         isDesktop={isDesktop}
         hasStore={hasStore}
       />
+
+      {/* Banned User Modal */}
+      {showBannedModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[9999] p-4">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-8 text-center animate-in fade-in zoom-in duration-300">
+            <div className="w-20 h-20 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <Ban className="w-10 h-10 text-red-600" />
+            </div>
+            <h2 className="text-2xl font-bold text-gray-900 mb-2">บัญชีถูกระงับ</h2>
+            <p className="text-gray-600 mb-6">
+              คุณถูกแบนไม่สามารถใช้งานเว็บไซต์ได้<br />
+              กรุณาติดต่อผู้ดูแลระบบสำหรับข้อมูลเพิ่มเติม
+            </p>
+            <button
+              onClick={() => {
+                setShowBannedModal(false);
+                handleLogout();
+              }}
+              className="w-full px-6 py-3 bg-gradient-to-r from-red-500 to-red-600 text-white rounded-xl font-semibold hover:opacity-90 transition-all shadow-md"
+            >
+              ออกจากระบบ
+            </button>
+          </div>
+        </div>
+      )}
     </>
   );
 }

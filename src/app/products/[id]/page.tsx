@@ -229,6 +229,40 @@ export default function ProductPage() {
     }
   };
 
+  const handleShare = async () => {
+    if (!product || !id) return;
+    
+    const shareData = {
+      title: product.name,
+      text: `${product.name} - ${(product.price ?? 0).toLocaleString("th-TH", { style: "currency", currency: "THB" })}`,
+      url: window.location.href,
+    };
+
+    try {
+      // Check if Web Share API is supported
+      if (navigator.share) {
+        await navigator.share(shareData);
+      } else {
+        // Fallback: Copy to clipboard
+        await navigator.clipboard.writeText(window.location.href);
+        alert('คัดลอกลิงก์สินค้าแล้ว!');
+      }
+    } catch (error) {
+      // User cancelled or error occurred
+      if (error instanceof Error && error.name !== 'AbortError') {
+        console.error('Error sharing:', error);
+        // Fallback to copy
+        try {
+          await navigator.clipboard.writeText(window.location.href);
+          alert('คัดลอกลิงก์สินค้าแล้ว!');
+        } catch (clipboardError) {
+          console.error('Clipboard error:', clipboardError);
+          alert('ไม่สามารถแชร์ได้ กรุณาลองอีกครั้ง');
+        }
+      }
+    }
+  };
+
   const submitReview = async (reviewData: ReviewForm) => {
     if (!id || !currentUser) return;
     
@@ -321,6 +355,7 @@ export default function ProductPage() {
                   <Heart className={`w-4 h-4 lg:w-5 lg:h-5 ${isFavorite ? 'fill-current' : ''}`} />
                 </button>
                 <button 
+                  onClick={handleShare}
                   className="p-2.5 lg:p-3 bg-white rounded-full shadow-lg hover:bg-gray-100 transition"
                   aria-label="Share product"
                 >

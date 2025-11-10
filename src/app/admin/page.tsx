@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import TopBar from '@/components/TopBar';
 import { 
   Shield, 
   AlertTriangle, 
@@ -13,8 +14,10 @@ import {
   Eye,
   Edit,
   Search,
-  Filter
+  Filter,
+  BarChart3
 } from 'lucide-react';
+import UserEditModal from '@/components/UserEditModal';
 
 interface UserData {
   id: string;
@@ -25,6 +28,7 @@ interface UserData {
   registerDate: string;
   storeCount: number;
   storeStatus?: string;
+  status?: string;
 }
 
 interface StoreData {
@@ -76,6 +80,8 @@ export default function AdminPage() {
   const [activeTab, setActiveTab] = useState<'reports' | 'users' | 'stores'>('reports');
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [editingUser, setEditingUser] = useState<UserData | null>(null);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
 
   useEffect(() => {
     const init = async () => {
@@ -211,6 +217,41 @@ export default function AdminPage() {
     }
   };
 
+  const updateUserStatus = async (userId: string, newStatus: string) => {
+    try {
+      const token = localStorage.getItem('access_token');
+      if (!token) return;
+
+      const confirmed = confirm(
+        newStatus === 'BANNED' 
+          ? 'คุณแน่ใจหรือไม่ที่จะแบนผู้ใช้นี้?' 
+          : 'คุณแน่ใจหรือไม่ที่จะปลดแบนผู้ใช้นี้?'
+      );
+      
+      if (!confirmed) return;
+
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE || 'http://localhost:8000'}/admin/users/${userId}/status`, {
+        method: 'PUT',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ status: newStatus }),
+      });
+
+      if (res.ok) {
+        await fetchUsers(token);
+        alert('อัปเดตสถานะผู้ใช้สำเร็จ');
+      } else {
+        const error = await res.json();
+        alert(error.detail || 'เกิดข้อผิดพลาด');
+      }
+    } catch (error) {
+      console.error('Error updating user status:', error);
+      alert('เกิดข้อผิดพลาดในการอัปเดต');
+    }
+  };
+
   const filteredReports = reports.filter((report) => {
     const matchesSearch = 
       report.storeName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -246,78 +287,161 @@ export default function AdminPage() {
     );
   }
 
+  const handleEditUser = (user: UserData) => {
+    setEditingUser(user);
+    setIsEditModalOpen(true);
+  };
+
+  const handleCloseEditModal = () => {
+    setIsEditModalOpen(false);
+    setEditingUser(null);
+  };
+
+  const handleUpdateUser = () => {
+    const token = localStorage.getItem('access_token');
+    if (token) {
+      fetchUsers(token);
+    }
+  };
+
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <div className="bg-[#0B44A3] border-b border-[#093782] shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <Shield className="w-8 h-8 text-white" />
-              <h1 className="text-2xl font-bold text-white">Admin Dashboard</h1>
-            </div>
-            <a
-              href="/"
-              className="px-4 py-2 text-sm font-medium text-white hover:bg-[#093782] rounded-lg transition"
-            >
-              กลับหน้าหลัก
-            </a>
-          </div>
-        </div>
-      </div>
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
+      <TopBar />
+
+      {/* User Edit Modal */}
+      {editingUser && (
+        <UserEditModal
+          isOpen={isEditModalOpen}
+          onClose={handleCloseEditModal}
+          onUpdate={handleUpdateUser}
+          user={{
+            id: editingUser.id,
+            username: editingUser.username,
+            email: editingUser.email,
+            phone: editingUser.phone || '',
+            role: editingUser.role
+          }}
+        />
+      )}
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Tabs */}
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 mb-6">
-          <div className="border-b border-gray-200">
-            <div className="flex">
-              <button
-                onClick={() => {
-                  setActiveTab('reports');
-                  setStatusFilter('all');
-                }}
-                className={`flex-1 px-6 py-4 font-semibold transition flex items-center justify-center gap-2 ${
-                  activeTab === 'reports'
-                    ? 'text-[#0B44A3] border-b-2 border-[#0B44A3]'
-                    : 'text-gray-600 hover:text-gray-900'
-                }`}
-              >
-                <AlertTriangle className="w-5 h-5" />
-                รายงาน ({reports.length})
-              </button>
-              <button
-                onClick={() => {
-                  setActiveTab('users');
-                  setStatusFilter('all');
-                }}
-                className={`flex-1 px-6 py-4 font-semibold transition flex items-center justify-center gap-2 ${
-                  activeTab === 'users'
-                    ? 'text-[#0B44A3] border-b-2 border-[#0B44A3]'
-                    : 'text-gray-600 hover:text-gray-900'
-                }`}
-              >
-                <Users className="w-5 h-5" />
-                ผู้ใช้งาน ({users.length})
-              </button>
-              <button
-                onClick={() => {
-                  setActiveTab('stores');
-                  setStatusFilter('all');
-                }}
-                className={`flex-1 px-6 py-4 font-semibold transition flex items-center justify-center gap-2 ${
-                  activeTab === 'stores'
-                    ? 'text-[#0B44A3] border-b-2 border-[#0B44A3]'
-                    : 'text-gray-600 hover:text-gray-900'
-                }`}
-              >
-                <Store className="w-5 h-5" />
-                ร้านค้า ({stores.length})
-              </button>
+        <div className="flex flex-col lg:flex-row gap-6">
+          {/* Sidebar */}
+          <div className="lg:w-64">
+            <div className="bg-white rounded-xl shadow-md border border-gray-200 p-4 sticky top-24">
+              <div className="flex items-center gap-3 mb-6 pb-4 border-b border-gray-200">
+                <div className="w-12 h-12 bg-gradient-to-br from-[#0B44A3] to-[#1a5fd4] rounded-xl flex items-center justify-center shadow-sm">
+                  <Shield className="w-6 h-6 text-white" />
+                </div>
+                <div>
+                  <div className="font-bold text-gray-900">Admin Panel</div>
+                  <div className="text-xs text-gray-500">จัดการระบบ</div>
+                </div>
+              </div>
+
+              {/* Navigation */}
+              <nav className="space-y-1">
+                <button 
+                  onClick={() => {
+                    setActiveTab('reports');
+                    setStatusFilter('all');
+                  }}
+                  className={`w-full flex items-center gap-3 p-3 text-left rounded-lg transition-all group ${
+                    activeTab === 'reports'
+                      ? 'bg-gradient-to-r from-[#0B44A3] to-[#1a5fd4]  shadow-sm'
+                      : 'hover:bg-gray-50'
+                  }`}
+                >
+                  <div className={`w-9 h-9 rounded-lg flex items-center justify-center transition-colors ${
+                    activeTab === 'reports'
+                      ? 'text-gray-600  bg-opacity-20'
+                      : 'bg-gray-100 group-hover:bg-gray-200'
+                  }`}>
+                    <AlertTriangle className={`w-5 h-5 ${activeTab === 'reports' ? 'text-white' : 'text-gray-600'}`} />
+                  </div>
+                  <div className="flex-1">
+                    <span className={`font-medium ${activeTab === 'reports' ? 'font-semibold' : 'text-gray-700 group-hover:text-gray-900'}`}>
+                      รายงาน
+                    </span>
+                    <div className="text-xs opacity-75">{reports.length} รายการ</div>
+                  </div>
+                </button>
+
+                <button 
+                  onClick={() => {
+                    setActiveTab('users');
+                    setStatusFilter('all');
+                  }}
+                  className={`w-full flex items-center gap-3 p-3 text-left rounded-lg transition-all group ${
+                    activeTab === 'users'
+                      ? 'bg-gradient-to-r from-[#0B44A3] to-[#1a5fd4] text-white shadow-sm'
+                      : 'hover:bg-gray-50'
+                  }`}
+                >
+                  <div className={`w-9 h-9 rounded-lg flex items-center justify-center transition-colors ${
+                    activeTab === 'users'
+                      ? 'text-gray-600  bg-opacity-20'
+                      : 'bg-gray-100 group-hover:bg-gray-200'
+                  }`}>
+                    <Users className={`w-5 h-5 ${activeTab === 'users' ? 'text-white' : 'text-gray-600'}`} />
+                  </div>
+                  <div className="flex-1">
+                    <span className={`font-medium ${activeTab === 'users' ? 'font-semibold' : 'text-gray-700 group-hover:text-gray-900'}`}>
+                      ผู้ใช้งาน
+                    </span>
+                    <div className="text-xs opacity-75">{users.length} คน</div>
+                  </div>
+                </button>
+
+                <button 
+                  onClick={() => {
+                    setActiveTab('stores');
+                    setStatusFilter('all');
+                  }}
+                  className={`w-full flex items-center gap-3 p-3 text-left rounded-lg transition-all group ${
+                    activeTab === 'stores'
+                      ? 'bg-gradient-to-r from-[#0B44A3] to-[#1a5fd4] text-white shadow-sm'
+                      : 'hover:bg-gray-50'
+                  }`}
+                >
+                  <div className={`w-9 h-9 rounded-lg flex items-center justify-center transition-colors ${
+                    activeTab === 'stores'
+                      ? 'text-gray-600  bg-opacity-20'
+                      : 'bg-gray-100 group-hover:bg-gray-200'
+                  }`}>
+                    <Store className={`w-5 h-5 ${activeTab === 'stores' ? 'text-white' : 'text-gray-600'}`} />
+                  </div>
+                  <div className="flex-1">
+                    <span className={`font-medium ${activeTab === 'stores' ? 'font-semibold' : 'text-gray-700 group-hover:text-gray-900'}`}>
+                      ร้านค้า
+                    </span>
+                    <div className="text-xs opacity-75">{stores.length} ร้าน</div>
+                  </div>
+                </button>
+              </nav>
             </div>
           </div>
 
-          {/* Search and Filter */}
-          <div className="p-4 border-b border-gray-200 flex flex-col sm:flex-row gap-4">
+          {/* Main Content */}
+          <div className="flex-1">
+            <div className="bg-white rounded-xl shadow-md border border-gray-200">
+              {/* Header */}
+              <div className="px-8 py-6 border-b border-gray-200">
+                <h1 className="text-3xl font-bold bg-gradient-to-r from-[#0B44A3] to-[#1a5fd4] bg-clip-text text-transparent">
+                  {activeTab === 'reports' && 'จัดการรายงาน'}
+                  {activeTab === 'users' && 'จัดการผู้ใช้งาน'}
+                  {activeTab === 'stores' && 'จัดการร้านค้า'}
+                </h1>
+                <p className="text-gray-600 mt-2">
+                  {activeTab === 'reports' && 'ตรวจสอบและจัดการรายงานที่เข้ามา'}
+                  {activeTab === 'users' && 'จัดการข้อมูลและสิทธิ์ผู้ใช้งาน'}
+                  {activeTab === 'stores' && 'จัดการสถานะร้านค้าในระบบ'}
+                </p>
+              </div>
+
+              {/* Search and Filter */}
+              <div className="px-8 py-6 border-b border-gray-200">
+                <div className="flex flex-col sm:flex-row gap-4">
             <div className="flex-1 relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
               <input
@@ -325,7 +449,7 @@ export default function AdminPage() {
                 placeholder="ค้นหา..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0B44A3]"
+                className="w-full pl-10 pr-4 py-2.5 border-2 border-gray-200 rounded-lg focus:border-[#0B44A3] focus:ring-2 focus:ring-[#0B44A3] focus:ring-opacity-20 transition-all"
               />
             </div>
             {activeTab !== 'users' && (
@@ -334,7 +458,7 @@ export default function AdminPage() {
                 <select
                   value={statusFilter}
                   onChange={(e) => setStatusFilter(e.target.value)}
-                  className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0B44A3]"
+                  className="px-4 py-2.5 border-2 border-gray-200 rounded-lg focus:border-[#0B44A3] focus:ring-2 focus:ring-[#0B44A3] focus:ring-opacity-20 transition-all"
                 >
                   <option value="all">ทั้งหมด</option>
                   {activeTab === 'reports' ? (
@@ -354,10 +478,11 @@ export default function AdminPage() {
                 </select>
               </div>
             )}
-          </div>
+                </div>
+              </div>
 
           {/* Content */}
-          <div className="p-6">
+          <div className="p-8">
             {activeTab === 'reports' && (
               <div className="space-y-4">
                 {filteredReports.length === 0 ? (
@@ -402,7 +527,7 @@ export default function AdminPage() {
                           <select
                             value={report.status}
                             onChange={(e) => updateReportStatus(report.id, e.target.value)}
-                            className="px-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0B44A3]"
+                            className="px-3 py-2 text-sm border-2 border-gray-200 rounded-lg focus:border-[#0B44A3] focus:ring-2 focus:ring-[#0B44A3] focus:ring-opacity-20 transition-all"
                           >
                             <option value="OPEN">เปิด</option>
                             <option value="REVIEWING">กำลังตรวจสอบ</option>
@@ -412,7 +537,7 @@ export default function AdminPage() {
                           {report.targetStoreId && (
                             <a
                               href={`/stores/${report.targetStoreId}`}
-                              className="px-3 py-1.5 text-sm bg-[#0B44A3] text-white rounded-lg hover:bg-[#093782] transition flex items-center gap-1"
+                              className="px-4 py-2 text-sm bg-gradient-to-r from-[#0B44A3] to-[#1a5fd4] text-white rounded-lg hover:opacity-90 transition flex items-center gap-1 shadow-md"
                             >
                               <Eye className="w-4 h-4" />
                               ดูร้านค้า
@@ -434,9 +559,10 @@ export default function AdminPage() {
                       <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">ชื่อผู้ใช้</th>
                       <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">อีเมล</th>
                       <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">บทบาท</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">สถานะ</th>
                       <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">จำนวนร้าน</th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">สถานะร้าน</th>
                       <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">วันที่สมัคร</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">จัดการ</th>
                     </tr>
                   </thead>
                   <tbody className="bg-white divide-y divide-gray-200">
@@ -446,28 +572,46 @@ export default function AdminPage() {
                         <td className="px-4 py-3 text-sm text-gray-600">{user.email}</td>
                         <td className="px-4 py-3 text-sm">
                           <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                            user.role === 'ADMIN' ? 'bg-[#0B44A3] bg-opacity-10 text-white' :
+                            user.role === 'ADMIN' ? 'bg-purple-100 text-purple-800' :
                             user.role === 'SELLER' ? 'bg-blue-100 text-[#0B44A3]' :
                             'bg-gray-100 text-gray-800'
                           }`}>
                             {user.role === 'ADMIN' ? 'แอดมิน' : user.role === 'SELLER' ? 'ผู้ขาย' : 'ลูกค้า'}
                           </span>
                         </td>
-                        <td className="px-4 py-3 text-sm text-gray-600">{user.storeCount}</td>
                         <td className="px-4 py-3 text-sm">
-                          {user.storeStatus && (
-                            <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                              user.storeStatus === 'ACTIVE' ? 'bg-green-100 text-green-800' :
-                              user.storeStatus === 'INACTIVE' ? 'bg-gray-100 text-gray-800' :
-                              'bg-red-100 text-red-800'
-                            }`}>
-                              {user.storeStatus === 'ACTIVE' ? 'เปิดใช้งาน' :
-                               user.storeStatus === 'INACTIVE' ? 'ปิดใช้งาน' : 'ถูกบล็อก'}
-                            </span>
-                          )}
+                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                            user.status === 'BANNED' ? 'bg-red-100 text-red-800' : 'bg-green-100 text-green-800'
+                          }`}>
+                            {user.status === 'BANNED' ? 'ถูกแบน' : 'ปกติ'}
+                          </span>
                         </td>
+                        <td className="px-4 py-3 text-sm text-gray-600">{user.storeCount}</td>
                         <td className="px-4 py-3 text-sm text-gray-600">
                           {new Date(user.registerDate).toLocaleDateString('th-TH')}
+                        </td>
+                        <td className="px-4 py-3 text-sm">
+                          <div className="flex gap-2">
+                            <button
+                              onClick={() => handleEditUser(user)}
+                              className="px-3 py-1.5 text-xs font-medium rounded-lg bg-gradient-to-r from-[#0B44A3] to-[#1a5fd4] text-white hover:opacity-90 transition flex items-center gap-1 shadow-sm"
+                            >
+                              <Edit className="w-3 h-3" />
+                              แก้ไข
+                            </button>
+                            {user.role !== 'ADMIN' && (
+                              <button
+                                onClick={() => updateUserStatus(user.id, user.status === 'BANNED' ? 'ACTIVE' : 'BANNED')}
+                                className={`px-3 py-1.5 text-xs font-medium rounded-lg transition shadow-sm ${
+                                  user.status === 'BANNED'
+                                    ? 'bg-gradient-to-r from-green-500 to-green-600 text-white hover:opacity-90'
+                                    : 'bg-gradient-to-r from-red-500 to-red-600 text-white hover:opacity-90'
+                                }`}
+                              >
+                                {user.status === 'BANNED' ? 'ปลดแบน' : 'แบน'}
+                              </button>
+                            )}
+                          </div>
                         </td>
                       </tr>
                     ))}
@@ -514,7 +658,7 @@ export default function AdminPage() {
                           <select
                             value={store.status}
                             onChange={(e) => updateStoreStatus(store.id, e.target.value)}
-                            className="px-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0B44A3]"
+                            className="px-3 py-2 text-sm border-2 border-gray-200 rounded-lg focus:border-[#0B44A3] focus:ring-2 focus:ring-[#0B44A3] focus:ring-opacity-20 transition-all"
                           >
                             <option value="ACTIVE">เปิดใช้งาน</option>
                             <option value="INACTIVE">ปิดใช้งาน</option>
@@ -522,7 +666,7 @@ export default function AdminPage() {
                           </select>
                           <a
                             href={`/stores/${store.id}`}
-                            className="px-3 py-1.5 text-sm bg-[#0B44A3] text-white rounded-lg hover:bg-[#093782] transition flex items-center gap-1"
+                            className="px-4 py-2 text-sm bg-gradient-to-r from-purple-500 to-purple-700 text-white rounded-lg hover:opacity-90 transition flex items-center gap-1 shadow-md"
                           >
                             <Eye className="w-4 h-4" />
                             ดูร้านค้า
@@ -534,6 +678,8 @@ export default function AdminPage() {
                 )}
               </div>
             )}
+          </div>
+            </div>
           </div>
         </div>
       </div>
