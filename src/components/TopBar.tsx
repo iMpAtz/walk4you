@@ -127,7 +127,7 @@ export default function TopBar() {
             href="/" 
             className="text-2xl lg:text-3xl font-bold text-white hover:opacity-80 transition cursor-pointer"
           >
-            ShopLogo
+            Walk4You
           </Link>
           <div className="flex items-center gap-3 lg:gap-6">
             {hasToken && (
