@@ -11,6 +11,7 @@ interface StoreData {
   phoneNumber?: string;
   buMail?: string;
   qrUrl?: string | null;
+  logoUrl?: string | null;
   registerDate: string;
   status: string;
 }
@@ -91,6 +92,7 @@ export default function StoreManagementPage() {
           phoneNumber: store.phoneNumber,
           buMail: store.buMail,
           qrUrl: store.qrUrl || null,
+          logoUrl: store.logoUrl || null,
           registerDate: store.registerDate,
           status: store.status,
         });
@@ -103,6 +105,7 @@ export default function StoreManagementPage() {
           phoneNumber: userData.phone,
           buMail: userData.email,
           qrUrl: null,
+          logoUrl: null,
           registerDate: new Date().toISOString(),
           status: 'DRAFT',
         });

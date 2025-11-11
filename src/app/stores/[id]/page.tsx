@@ -14,6 +14,7 @@ interface StoreData {
   phoneNumber?: string;
   buMail?: string;
   qrUrl?: string;
+  logoUrl?: string | null;
   registerDate: string;
   status: string;
 }
@@ -162,9 +163,19 @@ export default function StorePage() {
           <div className="flex flex-col lg:flex-row gap-6">
             {/* Store Icon/Image */}
             <div className="flex-shrink-0">
-              <div className="w-24 h-24 lg:w-32 lg:h-32 bg-[#0B44A3] rounded-xl flex items-center justify-center">
-                <Store className="w-12 h-12 lg:w-16 lg:h-16 text-white" />
-              </div>
+              {storeData.logoUrl ? (
+                <Image
+                  src={storeData.logoUrl}
+                  alt={`${storeData.storeName} Logo`}
+                  width={128}
+                  height={128}
+                  className="w-24 h-24 lg:w-32 lg:h-32 rounded-xl object-cover shadow-md"
+                />
+              ) : (
+                <div className="w-24 h-24 lg:w-32 lg:h-32 bg-gradient-to-br from-[#0B44A3] to-[#1a5fd4] rounded-xl flex items-center justify-center shadow-md">
+                  <Store className="w-12 h-12 lg:w-16 lg:h-16 text-white" />
+                </div>
+              )}
             </div>
 
             {/* Store Info */}

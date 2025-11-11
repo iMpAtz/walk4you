@@ -725,6 +725,7 @@ class StoreResponse(BaseModel):
     phoneNumber: Optional[str] = None
     buMail: Optional[str]
     qrUrl: Optional[str] = None
+    logoUrl: Optional[str] = None
     registerDate: datetime
     status: str
 
@@ -749,6 +750,7 @@ async def get_my_store(db: AsyncIOMotorDatabase = Depends(get_db), current_user=
         phoneNumber=store.get("phoneNumber"),
         buMail=store.get("buMail"),
         qrUrl=store.get("qrUrl"),
+        logoUrl=store.get("logoUrl"),
         registerDate=store["registerDate"],
         status=store["status"]
     )
@@ -980,6 +982,7 @@ class StoreResponse(BaseModel):
     storeDescription: Optional[str] = None
     buMail: Optional[str] = None
     qrUrl: Optional[str] = None
+    logoUrl: Optional[str] = None
     registerDate: datetime
     status: str
 
@@ -2621,6 +2624,7 @@ async def get_public_store(
             "phoneNumber": store.get("phoneNumber"),
             "buMail": store.get("buMail"),
             "qrUrl": store.get("qrUrl"),
+            "logoUrl": store.get("logoUrl"),
             "registerDate": store["registerDate"],
             "status": store["status"]
         }
@@ -2706,6 +2710,24 @@ async def update_store_qr(store_id: str, data: StoreQRUpdate, db: AsyncIOMotorDa
     if result.modified_count == 1:
         return {"message": "QR URL updated"}
     raise HTTPException(status_code=500, detail="Failed to update QR URL")
+
+
+class StoreLogoUpdate(BaseModel):
+    logoUrl: str
+
+
+@app.put("/stores/{store_id}/logo")
+async def update_store_logo(store_id: str, data: StoreLogoUpdate, db: AsyncIOMotorDatabase = Depends(get_db), current_user=Depends(get_current_user)):
+    """Update logo URL for a store (owner only)"""
+    # Find store by ID and owner
+    store = await db.Store.find_one({"_id": ObjectId(store_id), "ownerId": current_user["_id"]})
+    if not store:
+        raise HTTPException(status_code=404, detail="Store not found or permission denied")
+    # Update logo URL
+    result = await db.Store.update_one({"_id": ObjectId(store_id)}, {"$set": {"logoUrl": data.logoUrl}})
+    if result.modified_count == 1:
+        return {"message": "Logo URL updated"}
+    raise HTTPException(status_code=500, detail="Failed to update logo URL")
 
 
 # ===== Report Models =====

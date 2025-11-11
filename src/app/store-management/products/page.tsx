@@ -41,6 +41,12 @@ interface UserData {
   };
 }
 
+interface StoreData {
+  id: string;
+  storeName: string;
+  logoUrl?: string | null;
+}
+
 interface ProductFormData {
   name: string;
   description: string;
@@ -56,6 +62,7 @@ export default function MyProductsPage() {
   const router = useRouter();
   const [products, setProducts] = useState<Product[]>([]);
   const [userData, setUserData] = useState<UserData | null>(null);
+  const [storeData, setStoreData] = useState<StoreData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [hasToken, setHasToken] = useState(false);
   const [showProductModal, setShowProductModal] = useState(false);
@@ -76,6 +83,7 @@ export default function MyProductsPage() {
         }
         setHasToken(true);
         await fetchUserData(token);
+        await fetchStoreData(token);
         await fetchProducts(token);
       } catch (error) {
         console.error('Auth check failed:', error);
@@ -100,6 +108,27 @@ export default function MyProductsPage() {
       }
     } catch (error) {
       console.error('Failed to fetch user data:', error);
+    }
+  };
+
+  const fetchStoreData = async (token: string) => {
+    try {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE || 'http://localhost:8000'}/users/me/store`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+
+      if (response.ok) {
+        const store = await response.json();
+        setStoreData({
+          id: store.id,
+          storeName: store.storeName,
+          logoUrl: store.logoUrl,
+        });
+      }
+    } catch (error) {
+      console.error('Failed to fetch store data:', error);
     }
   };
 
@@ -345,7 +374,15 @@ export default function MyProductsPage() {
             <div className="bg-white rounded-xl shadow-md border border-gray-200 p-4 sticky top-24">
               {/* Store Info */}
               <div className="flex items-center gap-3 mb-6 pb-4 border-b border-gray-200">
-                {userData?.avatar?.url ? (
+                {storeData?.logoUrl ? (
+                  <Image 
+                    src={storeData.logoUrl} 
+                    alt="Store Logo" 
+                    width={48} 
+                    height={48} 
+                    className="rounded-xl object-cover w-12 h-12 shadow-sm"
+                  />
+                ) : userData?.avatar?.url ? (
                   <Image 
                     src={userData.avatar.url} 
                     alt="Store Owner" 

@@ -22,6 +22,7 @@ interface StoreData {
   registerDate: string;
   status: string;
   qrUrl?: string | null;
+  logoUrl?: string | null;
 }
 
 interface UserData {
@@ -45,9 +46,9 @@ interface StoreManagementLayoutProps {
 }
 
 export default function StoreManagementLayout({ storeData, userData, onSave }: StoreManagementLayoutProps) {
-  // ดึง QR จาก backend เมื่อโหลดหน้า
+  // ดึง QR และ Logo จาก backend เมื่อโหลดหน้า
   useEffect(() => {
-    const fetchQr = async () => {
+    const fetchStoreAssets = async () => {
       if (!storeData?.id) return;
       try {
         const token = localStorage.getItem('access_token');
@@ -61,10 +62,11 @@ export default function StoreManagementLayout({ storeData, userData, onSave }: S
         if (res.ok) {
           const data = await res.json();
           if (data.qrUrl) setQrPreview(data.qrUrl);
+          if (data.logoUrl) setLogoPreview(data.logoUrl);
         }
       } catch {}
     };
-    fetchQr();
+    fetchStoreAssets();
   }, [storeData?.id]);
   // ...existing code...
   const handleSave = async () => {
@@ -80,6 +82,9 @@ export default function StoreManagementLayout({ storeData, userData, onSave }: S
   const [qrFile, setQrFile] = useState<File | null>(null);
   const [qrPreview, setQrPreview] = useState<string | null>(storeData?.qrUrl || null);
   const [uploading, setUploading] = useState(false);
+  const [logoFile, setLogoFile] = useState<File | null>(null);
+  const [logoPreview, setLogoPreview] = useState<string | null>(storeData?.logoUrl || null);
+  const [uploadingLogo, setUploadingLogo] = useState(false);
 
   const handleInputChange = (field: string, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
@@ -138,6 +143,82 @@ export default function StoreManagementLayout({ storeData, userData, onSave }: S
     // TODO: call API to remove QR if needed
   };
 
+  const handleLogoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0] || null;
+    setLogoFile(file);
+    if (file) {
+      setLogoPreview(URL.createObjectURL(file));
+    }
+  };
+
+  const handleUploadLogo = async () => {
+    if (!logoFile || !storeData?.id) return;
+    setUploadingLogo(true);
+    
+    try {
+      const token = localStorage.getItem('access_token');
+      
+      // Get Cloudinary signature using GET
+      const signRes = await fetch('/api/uploads/cloudinary-sign?username=store&type=logo', {
+        method: 'GET',
+      });
+
+      if (!signRes.ok) {
+        throw new Error('Failed to get signature');
+      }
+
+      const { timestamp, signature, apiKey, cloudName, folder } = await signRes.json();
+
+      // Upload to Cloudinary
+      const formData = new FormData();
+      formData.append('file', logoFile);
+      formData.append('timestamp', timestamp.toString());
+      formData.append('signature', signature);
+      formData.append('api_key', apiKey);
+      formData.append('folder', folder);
+
+      const uploadRes = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/image/upload`, {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (!uploadRes.ok) {
+        throw new Error('Failed to upload to Cloudinary');
+      }
+
+      const uploadData = await uploadRes.json();
+      const logoUrl = uploadData.secure_url;
+
+      // Save logo URL to backend
+      const saveRes = await fetch(`${process.env.NEXT_PUBLIC_API_BASE || 'http://localhost:8000'}/stores/${storeData.id}/logo`, {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ logoUrl }),
+      });
+
+      if (saveRes.ok) {
+        setLogoPreview(logoUrl);
+        setLogoFile(null);
+        alert('อัปโหลดโลโก้สำเร็จ');
+      } else {
+        throw new Error('Failed to save logo URL');
+      }
+    } catch (error) {
+      console.error('Error uploading logo:', error);
+      alert('เกิดข้อผิดพลาดในการอัปโหลดโลโก้');
+    } finally {
+      setUploadingLogo(false);
+    }
+  };
+
+  const handleRemoveLogo = () => {
+    setLogoPreview(null);
+    setLogoFile(null);
+  };
+
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
@@ -151,7 +232,15 @@ export default function StoreManagementLayout({ storeData, userData, onSave }: S
             <div className="bg-white rounded-xl shadow-md border border-gray-200 p-4 sticky top-24">
               {/* Store Info */}
               <div className="flex items-center gap-3 mb-6 pb-4 border-b border-gray-200">
-                {userData?.avatar?.url ? (
+                {logoPreview ? (
+                  <Image 
+                    src={logoPreview} 
+                    alt="Store Logo" 
+                    width={48} 
+                    height={48} 
+                    className="rounded-xl object-cover w-12 h-12 shadow-sm border border-gray-200"
+                  />
+                ) : userData?.avatar?.url ? (
                   <Image 
                     src={userData.avatar.url} 
                     alt="Store Owner" 
@@ -228,6 +317,64 @@ export default function StoreManagementLayout({ storeData, userData, onSave }: S
               {/* Form */}
               <div className="p-8">
                 <div className="space-y-6">
+                  {/* Store Logo */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      โลโก้ร้านค้า
+                    </label>
+                    <div className="flex items-center gap-4">
+                      {logoPreview ? (
+                        <div className="relative group">
+                          <Image 
+                            src={logoPreview} 
+                            alt="Store Logo" 
+                            width={120} 
+                            height={120} 
+                            className="rounded-xl border-2 border-gray-200 object-cover shadow-md"
+                          />
+                          <button
+                            onClick={handleRemoveLogo}
+                            className="absolute top-1 right-1 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                          >
+                            ×
+                          </button>
+                        </div>
+                      ) : (
+                        <div className="w-[120px] h-[120px] bg-gradient-to-br from-gray-100 to-gray-200 rounded-xl flex items-center justify-center text-gray-400 border-2 border-dashed border-gray-300">
+                          <Building2 className="w-12 h-12" />
+                        </div>
+                      )}
+                      <div className="flex-1">
+                        <input 
+                          type="file" 
+                          accept="image/*" 
+                          onChange={handleLogoChange}
+                          id="logo-upload"
+                          className="hidden"
+                        />
+                        <label 
+                          htmlFor="logo-upload"
+                          className="inline-block px-4 py-2 bg-gray-100 border-2 border-gray-300 text-gray-700 rounded-lg hover:bg-gray-200 transition cursor-pointer"
+                        >
+                          เลือกรูปภาพ
+                        </label>
+                        {logoFile && (
+                          <button
+                            type="button"
+                            onClick={handleUploadLogo}
+                            disabled={uploadingLogo}
+                            className="ml-2 px-4 py-2 bg-gradient-to-r from-[#0B44A3] to-[#1a5fd4] text-white rounded-lg hover:opacity-90 transition shadow-md disabled:opacity-50"
+                          >
+                            {uploadingLogo ? 'กำลังอัปโหลด...' : 'อัปโหลดโลโก้'}
+                          </button>
+                        )}
+                        <div className="text-sm text-gray-500 mt-2">
+                          แนะนำขนาด 500x500px, ไฟล์ JPG, PNG (สูงสุด 5MB)
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
                   {/* Shop Name */}
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
