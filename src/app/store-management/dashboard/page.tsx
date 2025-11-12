@@ -181,14 +181,14 @@ export default function StoreDashboardPage() {
                   <div className="w-9 h-9 bg-gray-100 group-hover:bg-gray-200 rounded-lg flex items-center justify-center transition-colors">
                     <Building2 className="w-5 h-5 text-gray-600" />
                   </div>
-                  <span className="font-medium text-gray-700 group-hover:text-gray-900">ข้อมูลร้านค้า</span>
+                  <span className="font-medium text-white-700 group-hover:text-gray-900">ข้อมูลร้านค้า</span>
                 </button>
 
                 <button className="w-full flex items-center gap-3 p-3 text-left bg-gradient-to-r from-[#0B44A3] to-[#1a5fd4] text-white rounded-lg shadow-sm">
                   <div className="w-9 h-9 bg-white bg-opacity-20 rounded-lg flex items-center justify-center">
                     <BarChart3 className="w-5 h-5 text-gray-600" />
                   </div>
-                  <span className="font-semibold">ยอดขายของฉัน</span>
+                  <span className="font-semibold text-white">ยอดขายของฉัน</span>
                 </button>
 
                 <button 

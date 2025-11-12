@@ -453,7 +453,7 @@ export default function MyProductsPage() {
                   <div className="w-8 h-8 sm:w-9 sm:h-9 bg-white bg-opacity-20 rounded-lg flex items-center justify-center flex-shrink-0">
                     <Package className="w-4 h-4 sm:w-5 sm:h-5 text-gray-600" />
                   </div>
-                  <span className="font-semibold text-sm sm:text-base">สินค้าของฉัน</span>
+                  <span className="font-semibold text-sm sm:text-base text-white">สินค้าของฉัน</span>
                 </button>
 
                 <button 
@@ -482,8 +482,8 @@ export default function MyProductsPage() {
                   onClick={handleAddNew}
                   className="w-full sm:w-auto flex items-center justify-center gap-2 px-4 sm:px-6 py-2.5 sm:py-3 bg-gradient-to-r from-[#0B44A3] to-[#1a5fd4] text-white rounded-xl hover:opacity-90 transition-all shadow-md hover:shadow-lg text-sm sm:text-base min-h-[44px] touch-manipulation"
                 >
-                  <Plus className="w-4 h-4 sm:w-5 sm:h-5" />
-                  <span className="font-semibold">เพิ่มสินค้า</span>
+                  <Plus className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
+                  <span className="font-semibold text-white">เพิ่มสินค้า</span>
                 </button>
               </div>
 

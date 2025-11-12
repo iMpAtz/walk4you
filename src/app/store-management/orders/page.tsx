@@ -281,7 +281,7 @@ export default function StoreOrdersPage() {
                   <div className="w-8 h-8 sm:w-9 sm:h-9 bg-white bg-opacity-20 rounded-lg flex items-center justify-center flex-shrink-0">
                     <Clipboard className="w-4 h-4 sm:w-5 sm:h-5 text-gray-600" />
                   </div>
-                  <span className="font-semibold text-sm sm:text-base">รายการสั่งซื้อ</span>
+                  <span className="font-semibold text-sm sm:text-base text-white">รายการสั่งซื้อ</span>
                 </button>
               </nav>
             </div>
@@ -427,7 +427,7 @@ export default function StoreOrdersPage() {
                                 })}
                                 className="w-full px-3 sm:px-4 py-2 sm:py-2.5 bg-gradient-to-r from-[#0B44A3] to-[#1a5fd4] text-white rounded-lg text-xs sm:text-sm font-semibold hover:opacity-90 transition-all shadow-md touch-manipulation min-h-[44px]"
                               >
-                                บันทึก
+                                <span className="text-white ">บันทึก</span>
                               </button>
                             </div>
                           </div>
@@ -445,7 +445,7 @@ export default function StoreOrdersPage() {
                                 onClick={() => updateOrderStatus(order.id, 'APPROVED')}
                                 className="flex-1 px-3 sm:px-4 py-2.5 sm:py-3 bg-gradient-to-r from-green-500 to-green-600 text-white rounded-xl hover:opacity-90 transition-all flex items-center justify-center gap-2 font-semibold shadow-md text-sm sm:text-base min-h-[44px] touch-manipulation"
                               >
-                                <Check className="w-4 h-4 sm:w-5 sm:h-5" /> ยืนยันคำสั่งซื้อ
+                                <Check className="w-4 h-4 sm:w-5 sm:h-5 text-white" /> <span className='text-white'>ยืนยันคำสั่งซื้อ</span>
                               </button>
                               <button 
                                 onClick={() => updateOrderStatus(order.id, 'REJECTED')}

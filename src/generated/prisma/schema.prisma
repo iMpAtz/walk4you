@@ -95,6 +95,7 @@ model Store {
   products             Product[]
   subOrders            SubOrder[]
   adminTargetedActions AdminAction[] @relation("AdminTargetStore")
+  reports              Report[]
 
   @@index([ownerId])
 }
@@ -197,17 +198,20 @@ model Payment {
 }
 
 model Report {
-  id          String       @id @default(auto()) @map("_id") @db.ObjectId
-  userId      String       @db.ObjectId
-  reportType  String
-  description String?
-  submittedAt DateTime     @default(now())
-  status      ReportStatus @default(OPEN)
+  id            String       @id @default(auto()) @map("_id") @db.ObjectId
+  userId        String       @db.ObjectId
+  targetStoreId String?      @db.ObjectId
+  reportType    String
+  description   String?
+  submittedAt   DateTime     @default(now())
+  status        ReportStatus @default(OPEN)
 
   // Relations
-  user User @relation(fields: [userId], references: [id])
+  user        User   @relation(fields: [userId], references: [id])
+  targetStore Store? @relation(fields: [targetStoreId], references: [id])
 
   @@index([userId])
+  @@index([targetStoreId])
 }
 
 model AdminAction {

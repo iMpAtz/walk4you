@@ -409,8 +409,8 @@ export namespace Prisma {
   export import Exact = $Public.Exact
 
   /**
-   * Prisma Client JS version: 6.16.2
-   * Query Engine version: 1c57fdcd7e44b29b9313256c76699e91c3ac3c43
+   * Prisma Client JS version: 6.19.0
+   * Query Engine version: 2ba551f319ab1df4bc874a89965d8b3641056773
    */
   export type PrismaVersion = {
     client: string
@@ -423,6 +423,7 @@ export namespace Prisma {
    */
 
 
+  export import Bytes = runtime.Bytes
   export import JsonObject = runtime.JsonObject
   export import JsonArray = runtime.JsonArray
   export import JsonValue = runtime.JsonValue
@@ -1802,12 +1803,14 @@ export namespace Prisma {
     products: number
     subOrders: number
     adminTargetedActions: number
+    reports: number
   }
 
   export type StoreCountOutputTypeSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     products?: boolean | StoreCountOutputTypeCountProductsArgs
     subOrders?: boolean | StoreCountOutputTypeCountSubOrdersArgs
     adminTargetedActions?: boolean | StoreCountOutputTypeCountAdminTargetedActionsArgs
+    reports?: boolean | StoreCountOutputTypeCountReportsArgs
   }
 
   // Custom InputTypes
@@ -1840,6 +1843,13 @@ export namespace Prisma {
    */
   export type StoreCountOutputTypeCountAdminTargetedActionsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     where?: AdminActionWhereInput
+  }
+
+  /**
+   * StoreCountOutputType without action
+   */
+  export type StoreCountOutputTypeCountReportsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: ReportWhereInput
   }
 
 
@@ -3255,6 +3265,7 @@ export namespace Prisma {
     products?: boolean | Store$productsArgs<ExtArgs>
     subOrders?: boolean | Store$subOrdersArgs<ExtArgs>
     adminTargetedActions?: boolean | Store$adminTargetedActionsArgs<ExtArgs>
+    reports?: boolean | Store$reportsArgs<ExtArgs>
     _count?: boolean | StoreCountOutputTypeDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["store"]>
 
@@ -3275,6 +3286,7 @@ export namespace Prisma {
     products?: boolean | Store$productsArgs<ExtArgs>
     subOrders?: boolean | Store$subOrdersArgs<ExtArgs>
     adminTargetedActions?: boolean | Store$adminTargetedActionsArgs<ExtArgs>
+    reports?: boolean | Store$reportsArgs<ExtArgs>
     _count?: boolean | StoreCountOutputTypeDefaultArgs<ExtArgs>
   }
 
@@ -3285,6 +3297,7 @@ export namespace Prisma {
       products: Prisma.$ProductPayload<ExtArgs>[]
       subOrders: Prisma.$SubOrderPayload<ExtArgs>[]
       adminTargetedActions: Prisma.$AdminActionPayload<ExtArgs>[]
+      reports: Prisma.$ReportPayload<ExtArgs>[]
     }
     scalars: $Extensions.GetPayloadResult<{
       id: string
@@ -3660,6 +3673,7 @@ export namespace Prisma {
     products<T extends Store$productsArgs<ExtArgs> = {}>(args?: Subset<T, Store$productsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$ProductPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
     subOrders<T extends Store$subOrdersArgs<ExtArgs> = {}>(args?: Subset<T, Store$subOrdersArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$SubOrderPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
     adminTargetedActions<T extends Store$adminTargetedActionsArgs<ExtArgs> = {}>(args?: Subset<T, Store$adminTargetedActionsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$AdminActionPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+    reports<T extends Store$reportsArgs<ExtArgs> = {}>(args?: Subset<T, Store$reportsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$ReportPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
     /**
      * Attaches callbacks for the resolution and/or rejection of the Promise.
      * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -4134,6 +4148,30 @@ export namespace Prisma {
     take?: number
     skip?: number
     distinct?: AdminActionScalarFieldEnum | AdminActionScalarFieldEnum[]
+  }
+
+  /**
+   * Store.reports
+   */
+  export type Store$reportsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the Report
+     */
+    select?: ReportSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the Report
+     */
+    omit?: ReportOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: ReportInclude<ExtArgs> | null
+    where?: ReportWhereInput
+    orderBy?: ReportOrderByWithRelationInput | ReportOrderByWithRelationInput[]
+    cursor?: ReportWhereUniqueInput
+    take?: number
+    skip?: number
+    distinct?: ReportScalarFieldEnum | ReportScalarFieldEnum[]
   }
 
   /**
@@ -10441,6 +10479,7 @@ export namespace Prisma {
   export type ReportMinAggregateOutputType = {
     id: string | null
     userId: string | null
+    targetStoreId: string | null
     reportType: string | null
     description: string | null
     submittedAt: Date | null
@@ -10450,6 +10489,7 @@ export namespace Prisma {
   export type ReportMaxAggregateOutputType = {
     id: string | null
     userId: string | null
+    targetStoreId: string | null
     reportType: string | null
     description: string | null
     submittedAt: Date | null
@@ -10459,6 +10499,7 @@ export namespace Prisma {
   export type ReportCountAggregateOutputType = {
     id: number
     userId: number
+    targetStoreId: number
     reportType: number
     description: number
     submittedAt: number
@@ -10470,6 +10511,7 @@ export namespace Prisma {
   export type ReportMinAggregateInputType = {
     id?: true
     userId?: true
+    targetStoreId?: true
     reportType?: true
     description?: true
     submittedAt?: true
@@ -10479,6 +10521,7 @@ export namespace Prisma {
   export type ReportMaxAggregateInputType = {
     id?: true
     userId?: true
+    targetStoreId?: true
     reportType?: true
     description?: true
     submittedAt?: true
@@ -10488,6 +10531,7 @@ export namespace Prisma {
   export type ReportCountAggregateInputType = {
     id?: true
     userId?: true
+    targetStoreId?: true
     reportType?: true
     description?: true
     submittedAt?: true
@@ -10570,6 +10614,7 @@ export namespace Prisma {
   export type ReportGroupByOutputType = {
     id: string
     userId: string
+    targetStoreId: string | null
     reportType: string
     description: string | null
     submittedAt: Date
@@ -10596,11 +10641,13 @@ export namespace Prisma {
   export type ReportSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
     id?: boolean
     userId?: boolean
+    targetStoreId?: boolean
     reportType?: boolean
     description?: boolean
     submittedAt?: boolean
     status?: boolean
     user?: boolean | UserDefaultArgs<ExtArgs>
+    targetStore?: boolean | Report$targetStoreArgs<ExtArgs>
   }, ExtArgs["result"]["report"]>
 
 
@@ -10608,25 +10655,29 @@ export namespace Prisma {
   export type ReportSelectScalar = {
     id?: boolean
     userId?: boolean
+    targetStoreId?: boolean
     reportType?: boolean
     description?: boolean
     submittedAt?: boolean
     status?: boolean
   }
 
-  export type ReportOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "userId" | "reportType" | "description" | "submittedAt" | "status", ExtArgs["result"]["report"]>
+  export type ReportOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "userId" | "targetStoreId" | "reportType" | "description" | "submittedAt" | "status", ExtArgs["result"]["report"]>
   export type ReportInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     user?: boolean | UserDefaultArgs<ExtArgs>
+    targetStore?: boolean | Report$targetStoreArgs<ExtArgs>
   }
 
   export type $ReportPayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     name: "Report"
     objects: {
       user: Prisma.$UserPayload<ExtArgs>
+      targetStore: Prisma.$StorePayload<ExtArgs> | null
     }
     scalars: $Extensions.GetPayloadResult<{
       id: string
       userId: string
+      targetStoreId: string | null
       reportType: string
       description: string | null
       submittedAt: Date
@@ -10995,6 +11046,7 @@ export namespace Prisma {
   export interface Prisma__ReportClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
     readonly [Symbol.toStringTag]: "PrismaPromise"
     user<T extends UserDefaultArgs<ExtArgs> = {}>(args?: Subset<T, UserDefaultArgs<ExtArgs>>): Prisma__UserClient<$Result.GetResult<Prisma.$UserPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
+    targetStore<T extends Report$targetStoreArgs<ExtArgs> = {}>(args?: Subset<T, Report$targetStoreArgs<ExtArgs>>): Prisma__StoreClient<$Result.GetResult<Prisma.$StorePayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
     /**
      * Attaches callbacks for the resolution and/or rejection of the Promise.
      * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -11026,6 +11078,7 @@ export namespace Prisma {
   interface ReportFieldRefs {
     readonly id: FieldRef<"Report", 'String'>
     readonly userId: FieldRef<"Report", 'String'>
+    readonly targetStoreId: FieldRef<"Report", 'String'>
     readonly reportType: FieldRef<"Report", 'String'>
     readonly description: FieldRef<"Report", 'String'>
     readonly submittedAt: FieldRef<"Report", 'DateTime'>
@@ -11397,6 +11450,25 @@ export namespace Prisma {
      * Additional options to pass to the `aggregate` command ${@link https://docs.mongodb.com/manual/reference/command/aggregate/#command-fields MongoDB Docs}.
      */
     options?: InputJsonValue
+  }
+
+  /**
+   * Report.targetStore
+   */
+  export type Report$targetStoreArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the Store
+     */
+    select?: StoreSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the Store
+     */
+    omit?: StoreOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: StoreInclude<ExtArgs> | null
+    where?: StoreWhereInput
   }
 
   /**
@@ -12570,6 +12642,7 @@ export namespace Prisma {
   export const ReportScalarFieldEnum: {
     id: 'id',
     userId: 'userId',
+    targetStoreId: 'targetStoreId',
     reportType: 'reportType',
     description: 'description',
     submittedAt: 'submittedAt',
@@ -12861,6 +12934,7 @@ export namespace Prisma {
     products?: ProductListRelationFilter
     subOrders?: SubOrderListRelationFilter
     adminTargetedActions?: AdminActionListRelationFilter
+    reports?: ReportListRelationFilter
   }
 
   export type StoreOrderByWithRelationInput = {
@@ -12874,6 +12948,7 @@ export namespace Prisma {
     products?: ProductOrderByRelationAggregateInput
     subOrders?: SubOrderOrderByRelationAggregateInput
     adminTargetedActions?: AdminActionOrderByRelationAggregateInput
+    reports?: ReportOrderByRelationAggregateInput
   }
 
   export type StoreWhereUniqueInput = Prisma.AtLeast<{
@@ -12890,6 +12965,7 @@ export namespace Prisma {
     products?: ProductListRelationFilter
     subOrders?: SubOrderListRelationFilter
     adminTargetedActions?: AdminActionListRelationFilter
+    reports?: ReportListRelationFilter
   }, "id">
 
   export type StoreOrderByWithAggregationInput = {
@@ -13318,21 +13394,25 @@ export namespace Prisma {
     NOT?: ReportWhereInput | ReportWhereInput[]
     id?: StringFilter<"Report"> | string
     userId?: StringFilter<"Report"> | string
+    targetStoreId?: StringNullableFilter<"Report"> | string | null
     reportType?: StringFilter<"Report"> | string
     description?: StringNullableFilter<"Report"> | string | null
     submittedAt?: DateTimeFilter<"Report"> | Date | string
     status?: EnumReportStatusFilter<"Report"> | $Enums.ReportStatus
     user?: XOR<UserScalarRelationFilter, UserWhereInput>
+    targetStore?: XOR<StoreNullableScalarRelationFilter, StoreWhereInput> | null
   }
 
   export type ReportOrderByWithRelationInput = {
     id?: SortOrder
     userId?: SortOrder
+    targetStoreId?: SortOrder
     reportType?: SortOrder
     description?: SortOrder
     submittedAt?: SortOrder
     status?: SortOrder
     user?: UserOrderByWithRelationInput
+    targetStore?: StoreOrderByWithRelationInput
   }
 
   export type ReportWhereUniqueInput = Prisma.AtLeast<{
@@ -13341,16 +13421,19 @@ export namespace Prisma {
     OR?: ReportWhereInput[]
     NOT?: ReportWhereInput | ReportWhereInput[]
     userId?: StringFilter<"Report"> | string
+    targetStoreId?: StringNullableFilter<"Report"> | string | null
     reportType?: StringFilter<"Report"> | string
     description?: StringNullableFilter<"Report"> | string | null
     submittedAt?: DateTimeFilter<"Report"> | Date | string
     status?: EnumReportStatusFilter<"Report"> | $Enums.ReportStatus
     user?: XOR<UserScalarRelationFilter, UserWhereInput>
+    targetStore?: XOR<StoreNullableScalarRelationFilter, StoreWhereInput> | null
   }, "id">
 
   export type ReportOrderByWithAggregationInput = {
     id?: SortOrder
     userId?: SortOrder
+    targetStoreId?: SortOrder
     reportType?: SortOrder
     description?: SortOrder
     submittedAt?: SortOrder
@@ -13366,6 +13449,7 @@ export namespace Prisma {
     NOT?: ReportScalarWhereWithAggregatesInput | ReportScalarWhereWithAggregatesInput[]
     id?: StringWithAggregatesFilter<"Report"> | string
     userId?: StringWithAggregatesFilter<"Report"> | string
+    targetStoreId?: StringNullableWithAggregatesFilter<"Report"> | string | null
     reportType?: StringWithAggregatesFilter<"Report"> | string
     description?: StringNullableWithAggregatesFilter<"Report"> | string | null
     submittedAt?: DateTimeWithAggregatesFilter<"Report"> | Date | string
@@ -13539,6 +13623,7 @@ export namespace Prisma {
     products?: ProductCreateNestedManyWithoutStoreInput
     subOrders?: SubOrderCreateNestedManyWithoutStoreInput
     adminTargetedActions?: AdminActionCreateNestedManyWithoutTargetStoreInput
+    reports?: ReportCreateNestedManyWithoutTargetStoreInput
   }
 
   export type StoreUncheckedCreateInput = {
@@ -13551,6 +13636,7 @@ export namespace Prisma {
     products?: ProductUncheckedCreateNestedManyWithoutStoreInput
     subOrders?: SubOrderUncheckedCreateNestedManyWithoutStoreInput
     adminTargetedActions?: AdminActionUncheckedCreateNestedManyWithoutTargetStoreInput
+    reports?: ReportUncheckedCreateNestedManyWithoutTargetStoreInput
   }
 
   export type StoreUpdateInput = {
@@ -13562,6 +13648,7 @@ export namespace Prisma {
     products?: ProductUpdateManyWithoutStoreNestedInput
     subOrders?: SubOrderUpdateManyWithoutStoreNestedInput
     adminTargetedActions?: AdminActionUpdateManyWithoutTargetStoreNestedInput
+    reports?: ReportUpdateManyWithoutTargetStoreNestedInput
   }
 
   export type StoreUncheckedUpdateInput = {
@@ -13573,6 +13660,7 @@ export namespace Prisma {
     products?: ProductUncheckedUpdateManyWithoutStoreNestedInput
     subOrders?: SubOrderUncheckedUpdateManyWithoutStoreNestedInput
     adminTargetedActions?: AdminActionUncheckedUpdateManyWithoutTargetStoreNestedInput
+    reports?: ReportUncheckedUpdateManyWithoutTargetStoreNestedInput
   }
 
   export type StoreCreateManyInput = {
@@ -13979,11 +14067,13 @@ export namespace Prisma {
     submittedAt?: Date | string
     status?: $Enums.ReportStatus
     user: UserCreateNestedOneWithoutReportsInput
+    targetStore?: StoreCreateNestedOneWithoutReportsInput
   }
 
   export type ReportUncheckedCreateInput = {
     id?: string
     userId: string
+    targetStoreId?: string | null
     reportType: string
     description?: string | null
     submittedAt?: Date | string
@@ -13996,10 +14086,12 @@ export namespace Prisma {
     submittedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     status?: EnumReportStatusFieldUpdateOperationsInput | $Enums.ReportStatus
     user?: UserUpdateOneRequiredWithoutReportsNestedInput
+    targetStore?: StoreUpdateOneWithoutReportsNestedInput
   }
 
   export type ReportUncheckedUpdateInput = {
     userId?: StringFieldUpdateOperationsInput | string
+    targetStoreId?: NullableStringFieldUpdateOperationsInput | string | null
     reportType?: StringFieldUpdateOperationsInput | string
     description?: NullableStringFieldUpdateOperationsInput | string | null
     submittedAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -14009,6 +14101,7 @@ export namespace Prisma {
   export type ReportCreateManyInput = {
     id?: string
     userId: string
+    targetStoreId?: string | null
     reportType: string
     description?: string | null
     submittedAt?: Date | string
@@ -14024,6 +14117,7 @@ export namespace Prisma {
 
   export type ReportUncheckedUpdateManyInput = {
     userId?: StringFieldUpdateOperationsInput | string
+    targetStoreId?: NullableStringFieldUpdateOperationsInput | string | null
     reportType?: StringFieldUpdateOperationsInput | string
     description?: NullableStringFieldUpdateOperationsInput | string | null
     submittedAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -14747,9 +14841,15 @@ export namespace Prisma {
     not?: NestedEnumReportStatusFilter<$PrismaModel> | $Enums.ReportStatus
   }
 
+  export type StoreNullableScalarRelationFilter = {
+    is?: StoreWhereInput | null
+    isNot?: StoreWhereInput | null
+  }
+
   export type ReportCountOrderByAggregateInput = {
     id?: SortOrder
     userId?: SortOrder
+    targetStoreId?: SortOrder
     reportType?: SortOrder
     description?: SortOrder
     submittedAt?: SortOrder
@@ -14759,6 +14859,7 @@ export namespace Prisma {
   export type ReportMaxOrderByAggregateInput = {
     id?: SortOrder
     userId?: SortOrder
+    targetStoreId?: SortOrder
     reportType?: SortOrder
     description?: SortOrder
     submittedAt?: SortOrder
@@ -14768,6 +14869,7 @@ export namespace Prisma {
   export type ReportMinOrderByAggregateInput = {
     id?: SortOrder
     userId?: SortOrder
+    targetStoreId?: SortOrder
     reportType?: SortOrder
     description?: SortOrder
     submittedAt?: SortOrder
@@ -14787,11 +14889,6 @@ export namespace Prisma {
   export type UserNullableScalarRelationFilter = {
     is?: UserWhereInput | null
     isNot?: UserWhereInput | null
-  }
-
-  export type StoreNullableScalarRelationFilter = {
-    is?: StoreWhereInput | null
-    isNot?: StoreWhereInput | null
   }
 
   export type AdminActionCountOrderByAggregateInput = {
@@ -15078,6 +15175,13 @@ export namespace Prisma {
     connect?: AdminActionWhereUniqueInput | AdminActionWhereUniqueInput[]
   }
 
+  export type ReportCreateNestedManyWithoutTargetStoreInput = {
+    create?: XOR<ReportCreateWithoutTargetStoreInput, ReportUncheckedCreateWithoutTargetStoreInput> | ReportCreateWithoutTargetStoreInput[] | ReportUncheckedCreateWithoutTargetStoreInput[]
+    connectOrCreate?: ReportCreateOrConnectWithoutTargetStoreInput | ReportCreateOrConnectWithoutTargetStoreInput[]
+    createMany?: ReportCreateManyTargetStoreInputEnvelope
+    connect?: ReportWhereUniqueInput | ReportWhereUniqueInput[]
+  }
+
   export type ProductUncheckedCreateNestedManyWithoutStoreInput = {
     create?: XOR<ProductCreateWithoutStoreInput, ProductUncheckedCreateWithoutStoreInput> | ProductCreateWithoutStoreInput[] | ProductUncheckedCreateWithoutStoreInput[]
     connectOrCreate?: ProductCreateOrConnectWithoutStoreInput | ProductCreateOrConnectWithoutStoreInput[]
@@ -15097,6 +15201,13 @@ export namespace Prisma {
     connectOrCreate?: AdminActionCreateOrConnectWithoutTargetStoreInput | AdminActionCreateOrConnectWithoutTargetStoreInput[]
     createMany?: AdminActionCreateManyTargetStoreInputEnvelope
     connect?: AdminActionWhereUniqueInput | AdminActionWhereUniqueInput[]
+  }
+
+  export type ReportUncheckedCreateNestedManyWithoutTargetStoreInput = {
+    create?: XOR<ReportCreateWithoutTargetStoreInput, ReportUncheckedCreateWithoutTargetStoreInput> | ReportCreateWithoutTargetStoreInput[] | ReportUncheckedCreateWithoutTargetStoreInput[]
+    connectOrCreate?: ReportCreateOrConnectWithoutTargetStoreInput | ReportCreateOrConnectWithoutTargetStoreInput[]
+    createMany?: ReportCreateManyTargetStoreInputEnvelope
+    connect?: ReportWhereUniqueInput | ReportWhereUniqueInput[]
   }
 
   export type EnumCommonStatusFieldUpdateOperationsInput = {
@@ -15153,6 +15264,20 @@ export namespace Prisma {
     deleteMany?: AdminActionScalarWhereInput | AdminActionScalarWhereInput[]
   }
 
+  export type ReportUpdateManyWithoutTargetStoreNestedInput = {
+    create?: XOR<ReportCreateWithoutTargetStoreInput, ReportUncheckedCreateWithoutTargetStoreInput> | ReportCreateWithoutTargetStoreInput[] | ReportUncheckedCreateWithoutTargetStoreInput[]
+    connectOrCreate?: ReportCreateOrConnectWithoutTargetStoreInput | ReportCreateOrConnectWithoutTargetStoreInput[]
+    upsert?: ReportUpsertWithWhereUniqueWithoutTargetStoreInput | ReportUpsertWithWhereUniqueWithoutTargetStoreInput[]
+    createMany?: ReportCreateManyTargetStoreInputEnvelope
+    set?: ReportWhereUniqueInput | ReportWhereUniqueInput[]
+    disconnect?: ReportWhereUniqueInput | ReportWhereUniqueInput[]
+    delete?: ReportWhereUniqueInput | ReportWhereUniqueInput[]
+    connect?: ReportWhereUniqueInput | ReportWhereUniqueInput[]
+    update?: ReportUpdateWithWhereUniqueWithoutTargetStoreInput | ReportUpdateWithWhereUniqueWithoutTargetStoreInput[]
+    updateMany?: ReportUpdateManyWithWhereWithoutTargetStoreInput | ReportUpdateManyWithWhereWithoutTargetStoreInput[]
+    deleteMany?: ReportScalarWhereInput | ReportScalarWhereInput[]
+  }
+
   export type ProductUncheckedUpdateManyWithoutStoreNestedInput = {
     create?: XOR<ProductCreateWithoutStoreInput, ProductUncheckedCreateWithoutStoreInput> | ProductCreateWithoutStoreInput[] | ProductUncheckedCreateWithoutStoreInput[]
     connectOrCreate?: ProductCreateOrConnectWithoutStoreInput | ProductCreateOrConnectWithoutStoreInput[]
@@ -15193,6 +15318,20 @@ export namespace Prisma {
     update?: AdminActionUpdateWithWhereUniqueWithoutTargetStoreInput | AdminActionUpdateWithWhereUniqueWithoutTargetStoreInput[]
     updateMany?: AdminActionUpdateManyWithWhereWithoutTargetStoreInput | AdminActionUpdateManyWithWhereWithoutTargetStoreInput[]
     deleteMany?: AdminActionScalarWhereInput | AdminActionScalarWhereInput[]
+  }
+
+  export type ReportUncheckedUpdateManyWithoutTargetStoreNestedInput = {
+    create?: XOR<ReportCreateWithoutTargetStoreInput, ReportUncheckedCreateWithoutTargetStoreInput> | ReportCreateWithoutTargetStoreInput[] | ReportUncheckedCreateWithoutTargetStoreInput[]
+    connectOrCreate?: ReportCreateOrConnectWithoutTargetStoreInput | ReportCreateOrConnectWithoutTargetStoreInput[]
+    upsert?: ReportUpsertWithWhereUniqueWithoutTargetStoreInput | ReportUpsertWithWhereUniqueWithoutTargetStoreInput[]
+    createMany?: ReportCreateManyTargetStoreInputEnvelope
+    set?: ReportWhereUniqueInput | ReportWhereUniqueInput[]
+    disconnect?: ReportWhereUniqueInput | ReportWhereUniqueInput[]
+    delete?: ReportWhereUniqueInput | ReportWhereUniqueInput[]
+    connect?: ReportWhereUniqueInput | ReportWhereUniqueInput[]
+    update?: ReportUpdateWithWhereUniqueWithoutTargetStoreInput | ReportUpdateWithWhereUniqueWithoutTargetStoreInput[]
+    updateMany?: ReportUpdateManyWithWhereWithoutTargetStoreInput | ReportUpdateManyWithWhereWithoutTargetStoreInput[]
+    deleteMany?: ReportScalarWhereInput | ReportScalarWhereInput[]
   }
 
   export type StoreCreateNestedOneWithoutProductsInput = {
@@ -15540,6 +15679,12 @@ export namespace Prisma {
     connect?: UserWhereUniqueInput
   }
 
+  export type StoreCreateNestedOneWithoutReportsInput = {
+    create?: XOR<StoreCreateWithoutReportsInput, StoreUncheckedCreateWithoutReportsInput>
+    connectOrCreate?: StoreCreateOrConnectWithoutReportsInput
+    connect?: StoreWhereUniqueInput
+  }
+
   export type EnumReportStatusFieldUpdateOperationsInput = {
     set?: $Enums.ReportStatus
   }
@@ -15550,6 +15695,16 @@ export namespace Prisma {
     upsert?: UserUpsertWithoutReportsInput
     connect?: UserWhereUniqueInput
     update?: XOR<XOR<UserUpdateToOneWithWhereWithoutReportsInput, UserUpdateWithoutReportsInput>, UserUncheckedUpdateWithoutReportsInput>
+  }
+
+  export type StoreUpdateOneWithoutReportsNestedInput = {
+    create?: XOR<StoreCreateWithoutReportsInput, StoreUncheckedCreateWithoutReportsInput>
+    connectOrCreate?: StoreCreateOrConnectWithoutReportsInput
+    upsert?: StoreUpsertWithoutReportsInput
+    disconnect?: boolean
+    delete?: StoreWhereInput | boolean
+    connect?: StoreWhereUniqueInput
+    update?: XOR<XOR<StoreUpdateToOneWithWhereWithoutReportsInput, StoreUpdateWithoutReportsInput>, StoreUncheckedUpdateWithoutReportsInput>
   }
 
   export type UserCreateNestedOneWithoutAdminActionsInput = {
@@ -15908,6 +16063,7 @@ export namespace Prisma {
     products?: ProductCreateNestedManyWithoutStoreInput
     subOrders?: SubOrderCreateNestedManyWithoutStoreInput
     adminTargetedActions?: AdminActionCreateNestedManyWithoutTargetStoreInput
+    reports?: ReportCreateNestedManyWithoutTargetStoreInput
   }
 
   export type StoreUncheckedCreateWithoutOwnerInput = {
@@ -15919,6 +16075,7 @@ export namespace Prisma {
     products?: ProductUncheckedCreateNestedManyWithoutStoreInput
     subOrders?: SubOrderUncheckedCreateNestedManyWithoutStoreInput
     adminTargetedActions?: AdminActionUncheckedCreateNestedManyWithoutTargetStoreInput
+    reports?: ReportUncheckedCreateNestedManyWithoutTargetStoreInput
   }
 
   export type StoreCreateOrConnectWithoutOwnerInput = {
@@ -15963,10 +16120,12 @@ export namespace Prisma {
     description?: string | null
     submittedAt?: Date | string
     status?: $Enums.ReportStatus
+    targetStore?: StoreCreateNestedOneWithoutReportsInput
   }
 
   export type ReportUncheckedCreateWithoutUserInput = {
     id?: string
+    targetStoreId?: string | null
     reportType: string
     description?: string | null
     submittedAt?: Date | string
@@ -16113,6 +16272,7 @@ export namespace Prisma {
     NOT?: ReportScalarWhereInput | ReportScalarWhereInput[]
     id?: StringFilter<"Report"> | string
     userId?: StringFilter<"Report"> | string
+    targetStoreId?: StringNullableFilter<"Report"> | string | null
     reportType?: StringFilter<"Report"> | string
     description?: StringNullableFilter<"Report"> | string | null
     submittedAt?: DateTimeFilter<"Report"> | Date | string
@@ -16288,6 +16448,33 @@ export namespace Prisma {
     data: AdminActionCreateManyTargetStoreInput | AdminActionCreateManyTargetStoreInput[]
   }
 
+  export type ReportCreateWithoutTargetStoreInput = {
+    id?: string
+    reportType: string
+    description?: string | null
+    submittedAt?: Date | string
+    status?: $Enums.ReportStatus
+    user: UserCreateNestedOneWithoutReportsInput
+  }
+
+  export type ReportUncheckedCreateWithoutTargetStoreInput = {
+    id?: string
+    userId: string
+    reportType: string
+    description?: string | null
+    submittedAt?: Date | string
+    status?: $Enums.ReportStatus
+  }
+
+  export type ReportCreateOrConnectWithoutTargetStoreInput = {
+    where: ReportWhereUniqueInput
+    create: XOR<ReportCreateWithoutTargetStoreInput, ReportUncheckedCreateWithoutTargetStoreInput>
+  }
+
+  export type ReportCreateManyTargetStoreInputEnvelope = {
+    data: ReportCreateManyTargetStoreInput | ReportCreateManyTargetStoreInput[]
+  }
+
   export type UserUpsertWithoutStoresInput = {
     update: XOR<UserUpdateWithoutStoresInput, UserUncheckedUpdateWithoutStoresInput>
     create: XOR<UserCreateWithoutStoresInput, UserUncheckedCreateWithoutStoresInput>
@@ -16401,6 +16588,22 @@ export namespace Prisma {
     data: XOR<AdminActionUpdateManyMutationInput, AdminActionUncheckedUpdateManyWithoutTargetStoreInput>
   }
 
+  export type ReportUpsertWithWhereUniqueWithoutTargetStoreInput = {
+    where: ReportWhereUniqueInput
+    update: XOR<ReportUpdateWithoutTargetStoreInput, ReportUncheckedUpdateWithoutTargetStoreInput>
+    create: XOR<ReportCreateWithoutTargetStoreInput, ReportUncheckedCreateWithoutTargetStoreInput>
+  }
+
+  export type ReportUpdateWithWhereUniqueWithoutTargetStoreInput = {
+    where: ReportWhereUniqueInput
+    data: XOR<ReportUpdateWithoutTargetStoreInput, ReportUncheckedUpdateWithoutTargetStoreInput>
+  }
+
+  export type ReportUpdateManyWithWhereWithoutTargetStoreInput = {
+    where: ReportScalarWhereInput
+    data: XOR<ReportUpdateManyMutationInput, ReportUncheckedUpdateManyWithoutTargetStoreInput>
+  }
+
   export type StoreCreateWithoutProductsInput = {
     id?: string
     storeName: string
@@ -16410,6 +16613,7 @@ export namespace Prisma {
     owner: UserCreateNestedOneWithoutStoresInput
     subOrders?: SubOrderCreateNestedManyWithoutStoreInput
     adminTargetedActions?: AdminActionCreateNestedManyWithoutTargetStoreInput
+    reports?: ReportCreateNestedManyWithoutTargetStoreInput
   }
 
   export type StoreUncheckedCreateWithoutProductsInput = {
@@ -16421,6 +16625,7 @@ export namespace Prisma {
     status?: $Enums.CommonStatus
     subOrders?: SubOrderUncheckedCreateNestedManyWithoutStoreInput
     adminTargetedActions?: AdminActionUncheckedCreateNestedManyWithoutTargetStoreInput
+    reports?: ReportUncheckedCreateNestedManyWithoutTargetStoreInput
   }
 
   export type StoreCreateOrConnectWithoutProductsInput = {
@@ -16470,6 +16675,7 @@ export namespace Prisma {
     owner?: UserUpdateOneRequiredWithoutStoresNestedInput
     subOrders?: SubOrderUpdateManyWithoutStoreNestedInput
     adminTargetedActions?: AdminActionUpdateManyWithoutTargetStoreNestedInput
+    reports?: ReportUpdateManyWithoutTargetStoreNestedInput
   }
 
   export type StoreUncheckedUpdateWithoutProductsInput = {
@@ -16480,6 +16686,7 @@ export namespace Prisma {
     status?: EnumCommonStatusFieldUpdateOperationsInput | $Enums.CommonStatus
     subOrders?: SubOrderUncheckedUpdateManyWithoutStoreNestedInput
     adminTargetedActions?: AdminActionUncheckedUpdateManyWithoutTargetStoreNestedInput
+    reports?: ReportUncheckedUpdateManyWithoutTargetStoreNestedInput
   }
 
   export type OrderItemUpsertWithWhereUniqueWithoutProductInput = {
@@ -16700,6 +16907,7 @@ export namespace Prisma {
     owner: UserCreateNestedOneWithoutStoresInput
     products?: ProductCreateNestedManyWithoutStoreInput
     adminTargetedActions?: AdminActionCreateNestedManyWithoutTargetStoreInput
+    reports?: ReportCreateNestedManyWithoutTargetStoreInput
   }
 
   export type StoreUncheckedCreateWithoutSubOrdersInput = {
@@ -16711,6 +16919,7 @@ export namespace Prisma {
     status?: $Enums.CommonStatus
     products?: ProductUncheckedCreateNestedManyWithoutStoreInput
     adminTargetedActions?: AdminActionUncheckedCreateNestedManyWithoutTargetStoreInput
+    reports?: ReportUncheckedCreateNestedManyWithoutTargetStoreInput
   }
 
   export type StoreCreateOrConnectWithoutSubOrdersInput = {
@@ -16806,6 +17015,7 @@ export namespace Prisma {
     owner?: UserUpdateOneRequiredWithoutStoresNestedInput
     products?: ProductUpdateManyWithoutStoreNestedInput
     adminTargetedActions?: AdminActionUpdateManyWithoutTargetStoreNestedInput
+    reports?: ReportUpdateManyWithoutTargetStoreNestedInput
   }
 
   export type StoreUncheckedUpdateWithoutSubOrdersInput = {
@@ -16816,6 +17026,7 @@ export namespace Prisma {
     status?: EnumCommonStatusFieldUpdateOperationsInput | $Enums.CommonStatus
     products?: ProductUncheckedUpdateManyWithoutStoreNestedInput
     adminTargetedActions?: AdminActionUncheckedUpdateManyWithoutTargetStoreNestedInput
+    reports?: ReportUncheckedUpdateManyWithoutTargetStoreNestedInput
   }
 
   export type OrderItemUpsertWithWhereUniqueWithoutSubOrderInput = {
@@ -17110,6 +17321,35 @@ export namespace Prisma {
     create: XOR<UserCreateWithoutReportsInput, UserUncheckedCreateWithoutReportsInput>
   }
 
+  export type StoreCreateWithoutReportsInput = {
+    id?: string
+    storeName: string
+    storeDescription?: string | null
+    registerDate?: Date | string
+    status?: $Enums.CommonStatus
+    owner: UserCreateNestedOneWithoutStoresInput
+    products?: ProductCreateNestedManyWithoutStoreInput
+    subOrders?: SubOrderCreateNestedManyWithoutStoreInput
+    adminTargetedActions?: AdminActionCreateNestedManyWithoutTargetStoreInput
+  }
+
+  export type StoreUncheckedCreateWithoutReportsInput = {
+    id?: string
+    ownerId: string
+    storeName: string
+    storeDescription?: string | null
+    registerDate?: Date | string
+    status?: $Enums.CommonStatus
+    products?: ProductUncheckedCreateNestedManyWithoutStoreInput
+    subOrders?: SubOrderUncheckedCreateNestedManyWithoutStoreInput
+    adminTargetedActions?: AdminActionUncheckedCreateNestedManyWithoutTargetStoreInput
+  }
+
+  export type StoreCreateOrConnectWithoutReportsInput = {
+    where: StoreWhereUniqueInput
+    create: XOR<StoreCreateWithoutReportsInput, StoreUncheckedCreateWithoutReportsInput>
+  }
+
   export type UserUpsertWithoutReportsInput = {
     update: XOR<UserUpdateWithoutReportsInput, UserUncheckedUpdateWithoutReportsInput>
     create: XOR<UserCreateWithoutReportsInput, UserUncheckedCreateWithoutReportsInput>
@@ -17145,6 +17385,39 @@ export namespace Prisma {
     orders?: OrderUncheckedUpdateManyWithoutBuyerNestedInput
     adminActions?: AdminActionUncheckedUpdateManyWithoutAdminNestedInput
     adminTargetedActions?: AdminActionUncheckedUpdateManyWithoutTargetUserNestedInput
+  }
+
+  export type StoreUpsertWithoutReportsInput = {
+    update: XOR<StoreUpdateWithoutReportsInput, StoreUncheckedUpdateWithoutReportsInput>
+    create: XOR<StoreCreateWithoutReportsInput, StoreUncheckedCreateWithoutReportsInput>
+    where?: StoreWhereInput
+  }
+
+  export type StoreUpdateToOneWithWhereWithoutReportsInput = {
+    where?: StoreWhereInput
+    data: XOR<StoreUpdateWithoutReportsInput, StoreUncheckedUpdateWithoutReportsInput>
+  }
+
+  export type StoreUpdateWithoutReportsInput = {
+    storeName?: StringFieldUpdateOperationsInput | string
+    storeDescription?: NullableStringFieldUpdateOperationsInput | string | null
+    registerDate?: DateTimeFieldUpdateOperationsInput | Date | string
+    status?: EnumCommonStatusFieldUpdateOperationsInput | $Enums.CommonStatus
+    owner?: UserUpdateOneRequiredWithoutStoresNestedInput
+    products?: ProductUpdateManyWithoutStoreNestedInput
+    subOrders?: SubOrderUpdateManyWithoutStoreNestedInput
+    adminTargetedActions?: AdminActionUpdateManyWithoutTargetStoreNestedInput
+  }
+
+  export type StoreUncheckedUpdateWithoutReportsInput = {
+    ownerId?: StringFieldUpdateOperationsInput | string
+    storeName?: StringFieldUpdateOperationsInput | string
+    storeDescription?: NullableStringFieldUpdateOperationsInput | string | null
+    registerDate?: DateTimeFieldUpdateOperationsInput | Date | string
+    status?: EnumCommonStatusFieldUpdateOperationsInput | $Enums.CommonStatus
+    products?: ProductUncheckedUpdateManyWithoutStoreNestedInput
+    subOrders?: SubOrderUncheckedUpdateManyWithoutStoreNestedInput
+    adminTargetedActions?: AdminActionUncheckedUpdateManyWithoutTargetStoreNestedInput
   }
 
   export type UserCreateWithoutAdminActionsInput = {
@@ -17222,6 +17495,7 @@ export namespace Prisma {
     owner: UserCreateNestedOneWithoutStoresInput
     products?: ProductCreateNestedManyWithoutStoreInput
     subOrders?: SubOrderCreateNestedManyWithoutStoreInput
+    reports?: ReportCreateNestedManyWithoutTargetStoreInput
   }
 
   export type StoreUncheckedCreateWithoutAdminTargetedActionsInput = {
@@ -17233,6 +17507,7 @@ export namespace Prisma {
     status?: $Enums.CommonStatus
     products?: ProductUncheckedCreateNestedManyWithoutStoreInput
     subOrders?: SubOrderUncheckedCreateNestedManyWithoutStoreInput
+    reports?: ReportUncheckedCreateNestedManyWithoutTargetStoreInput
   }
 
   export type StoreCreateOrConnectWithoutAdminTargetedActionsInput = {
@@ -17333,6 +17608,7 @@ export namespace Prisma {
     owner?: UserUpdateOneRequiredWithoutStoresNestedInput
     products?: ProductUpdateManyWithoutStoreNestedInput
     subOrders?: SubOrderUpdateManyWithoutStoreNestedInput
+    reports?: ReportUpdateManyWithoutTargetStoreNestedInput
   }
 
   export type StoreUncheckedUpdateWithoutAdminTargetedActionsInput = {
@@ -17343,6 +17619,7 @@ export namespace Prisma {
     status?: EnumCommonStatusFieldUpdateOperationsInput | $Enums.CommonStatus
     products?: ProductUncheckedUpdateManyWithoutStoreNestedInput
     subOrders?: SubOrderUncheckedUpdateManyWithoutStoreNestedInput
+    reports?: ReportUncheckedUpdateManyWithoutTargetStoreNestedInput
   }
 
   export type StoreCreateManyOwnerInput = {
@@ -17362,6 +17639,7 @@ export namespace Prisma {
 
   export type ReportCreateManyUserInput = {
     id?: string
+    targetStoreId?: string | null
     reportType: string
     description?: string | null
     submittedAt?: Date | string
@@ -17394,6 +17672,7 @@ export namespace Prisma {
     products?: ProductUpdateManyWithoutStoreNestedInput
     subOrders?: SubOrderUpdateManyWithoutStoreNestedInput
     adminTargetedActions?: AdminActionUpdateManyWithoutTargetStoreNestedInput
+    reports?: ReportUpdateManyWithoutTargetStoreNestedInput
   }
 
   export type StoreUncheckedUpdateWithoutOwnerInput = {
@@ -17404,6 +17683,7 @@ export namespace Prisma {
     products?: ProductUncheckedUpdateManyWithoutStoreNestedInput
     subOrders?: SubOrderUncheckedUpdateManyWithoutStoreNestedInput
     adminTargetedActions?: AdminActionUncheckedUpdateManyWithoutTargetStoreNestedInput
+    reports?: ReportUncheckedUpdateManyWithoutTargetStoreNestedInput
   }
 
   export type StoreUncheckedUpdateManyWithoutOwnerInput = {
@@ -17440,9 +17720,11 @@ export namespace Prisma {
     description?: NullableStringFieldUpdateOperationsInput | string | null
     submittedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     status?: EnumReportStatusFieldUpdateOperationsInput | $Enums.ReportStatus
+    targetStore?: StoreUpdateOneWithoutReportsNestedInput
   }
 
   export type ReportUncheckedUpdateWithoutUserInput = {
+    targetStoreId?: NullableStringFieldUpdateOperationsInput | string | null
     reportType?: StringFieldUpdateOperationsInput | string
     description?: NullableStringFieldUpdateOperationsInput | string | null
     submittedAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -17450,6 +17732,7 @@ export namespace Prisma {
   }
 
   export type ReportUncheckedUpdateManyWithoutUserInput = {
+    targetStoreId?: NullableStringFieldUpdateOperationsInput | string | null
     reportType?: StringFieldUpdateOperationsInput | string
     description?: NullableStringFieldUpdateOperationsInput | string | null
     submittedAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -17531,6 +17814,15 @@ export namespace Prisma {
     targetUserId?: string | null
     timestamp?: Date | string
     description?: string | null
+  }
+
+  export type ReportCreateManyTargetStoreInput = {
+    id?: string
+    userId: string
+    reportType: string
+    description?: string | null
+    submittedAt?: Date | string
+    status?: $Enums.ReportStatus
   }
 
   export type ProductUpdateWithoutStoreInput = {
@@ -17615,6 +17907,30 @@ export namespace Prisma {
     targetUserId?: NullableStringFieldUpdateOperationsInput | string | null
     timestamp?: DateTimeFieldUpdateOperationsInput | Date | string
     description?: NullableStringFieldUpdateOperationsInput | string | null
+  }
+
+  export type ReportUpdateWithoutTargetStoreInput = {
+    reportType?: StringFieldUpdateOperationsInput | string
+    description?: NullableStringFieldUpdateOperationsInput | string | null
+    submittedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    status?: EnumReportStatusFieldUpdateOperationsInput | $Enums.ReportStatus
+    user?: UserUpdateOneRequiredWithoutReportsNestedInput
+  }
+
+  export type ReportUncheckedUpdateWithoutTargetStoreInput = {
+    userId?: StringFieldUpdateOperationsInput | string
+    reportType?: StringFieldUpdateOperationsInput | string
+    description?: NullableStringFieldUpdateOperationsInput | string | null
+    submittedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    status?: EnumReportStatusFieldUpdateOperationsInput | $Enums.ReportStatus
+  }
+
+  export type ReportUncheckedUpdateManyWithoutTargetStoreInput = {
+    userId?: StringFieldUpdateOperationsInput | string
+    reportType?: StringFieldUpdateOperationsInput | string
+    description?: NullableStringFieldUpdateOperationsInput | string | null
+    submittedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    status?: EnumReportStatusFieldUpdateOperationsInput | $Enums.ReportStatus
   }
 
   export type OrderItemCreateManyProductInput = {

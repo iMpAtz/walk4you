@@ -265,11 +265,11 @@ export default function StoreManagementLayout({ storeData, userData, onSave }: S
 
               {/* Navigation */}
               <nav className="space-y-1">
-                <button className="w-full flex items-center gap-2 sm:gap-3 p-2 sm:p-3 text-left bg-gradient-to-r from-[#0B44A3] to-[#1a5fd4] text-white rounded-lg shadow-sm touch-manipulation min-h-[44px]">
+                <button className="w-full flex items-center gap-2 sm:gap-3 p-2 sm:p-3 text-left bg-gradient-to-r from-[#0B44A3] to-[#1a5fd4] text-white rounded-lg shadow-sm touch-manipulation min-h-[44px] active:text-white-300">
                   <div className="w-8 h-8 sm:w-9 sm:h-9 bg-white bg-opacity-20 rounded-lg flex items-center justify-center flex-shrink-0">
                     <Building2 className="w-4 h-4 sm:w-5 sm:h-5 text-gray-600" />
                   </div>
-                  <span className="font-semibold text-sm sm:text-base">ข้อมูลร้านค้า</span>
+                  <span className="font-semibold text-sm sm:text-base text-white">ข้อมูลร้านค้า</span>
                 </button>
 
                 <button 
