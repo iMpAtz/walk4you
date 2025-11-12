@@ -355,12 +355,30 @@ export default function ProductPage() {
                 </h1>
 
                 <div className="flex items-center gap-2 mb-4">
-                  <div className="flex">
-                    {[...Array(5)].map((_, i) => (
-                      <Star key={i} className="w-4 h-4 lg:w-5 lg:h-5 fill-yellow-400 text-yellow-400" />
-                    ))}
-                  </div>
-                  <span className="text-sm lg:text-base text-gray-600">(4.9 จาก {reviews.length} รีวิว)</span>
+                  {reviews.length > 0 ? (
+                    <>
+                      <div className="flex">
+                        {[...Array(5)].map((_, i) => {
+                          const averageRating = reviews.reduce((sum, review) => sum + review.rating, 0) / reviews.length;
+                          return (
+                            <Star 
+                              key={i} 
+                              className={`w-4 h-4 lg:w-5 lg:h-5 ${
+                                i < Math.round(averageRating)
+                                  ? 'fill-yellow-400 text-yellow-400'
+                                  : 'text-gray-300'
+                              }`}
+                            />
+                          );
+                        })}
+                      </div>
+                      <span className="text-sm lg:text-base text-gray-600">
+                        ({(reviews.reduce((sum, review) => sum + review.rating, 0) / reviews.length).toFixed(1)} จาก {reviews.length} รีวิว)
+                      </span>
+                    </>
+                  ) : (
+                    <span className="text-sm lg:text-base text-gray-500">ยังไม่ได้รับการรีวิว</span>
+                  )}
                 </div>
 
                 <p className="text-sm lg:text-base text-gray-600 leading-relaxed mb-6">
@@ -377,17 +395,6 @@ export default function ProductPage() {
                   </p>
                 </div>
 
-                <div className="grid grid-cols-3 gap-2 lg:gap-3 mb-6">
-                  
-                  <div className="flex flex-col items-center p-2 lg:p-3 bg-gray-50 rounded-lg">
-                    <Shield className="w-5 h-5 lg:w-6 lg:h-6 text-green-600 mb-1 lg:mb-2" />
-                    <span className="text-xs text-gray-600 text-center">รับประกัน</span>
-                  </div>
-                  <div className="flex flex-col items-center p-2 lg:p-3 bg-gray-50 rounded-lg">
-                    <Package className="w-5 h-5 lg:w-6 lg:h-6 text-[#0B44A3] mb-1 lg:mb-2" />
-                    <span className="text-xs text-gray-600 text-center">คืนสินค้าได้</span>
-                  </div>
-                </div>
 
                 {inStock && (
                   <div className="mb-6">
@@ -656,6 +663,7 @@ export default function ProductPage() {
               {recommendedProducts?.map((item) => (
                 <div
                   key={item.id}
+                  onClick={() => router.push(`/products/${item.id}`)}
                   className="group cursor-pointer border border-gray-200 rounded-xl overflow-hidden hover:shadow-lg transition"
                 >
                   <div className="relative overflow-hidden bg-gray-50">
@@ -671,7 +679,13 @@ export default function ProductPage() {
                         <p className="text-sm">ไม่มีรูปภาพ</p>
                       </div>
                     )}
-                    <button className="absolute top-2 right-2 p-2 bg-white rounded-full shadow-md opacity-0 group-hover:opacity-100 transition">
+                    <button 
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setIsFavorite(!isFavorite);
+                      }}
+                      className="absolute top-2 right-2 p-2 bg-white rounded-full shadow-md opacity-0 group-hover:opacity-100 transition"
+                    >
                       <Heart className="w-4 h-4 text-gray-700" />
                     </button>
                   </div>

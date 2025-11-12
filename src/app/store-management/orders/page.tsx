@@ -41,6 +41,22 @@ interface Order {
   shippingId?: string;
 }
 
+// Helper function to get customer's selected delivery method from notes
+const getCustomerDeliveryMethod = (order: Order): string => {
+  if (!order.notes) return '—';
+  
+  try {
+    const parsed = JSON.parse(order.notes);
+    const selectedShipping = parsed?.selection?.selectedShipping?.[order.storeId];
+    
+    if (selectedShipping === 'post') return 'ส่งไปรษณีย์';
+    if (selectedShipping === 'meet') return 'นัดรับ';
+    return '—';
+  } catch {
+    return '—';
+  }
+};
+
 interface UserData {
   id: string;
   username: string;
@@ -149,6 +165,27 @@ export default function StoreOrdersPage() {
       const token = localStorage.getItem('access_token');
       if (!token) return;
       setShowStatusError(null);
+
+      // If approving order, check that shipping info is complete
+      if (newStatus === 'APPROVED') {
+        const order = orders.find(o => o.id === orderId);
+        const draft = shippingDrafts[orderId];
+        
+        const shippingMethod = draft?.shippingMethod || order?.shippingMethod || '';
+        const shippingCarrier = draft?.shippingCarrier || order?.shippingCarrier || '';
+        const shippingId = draft?.shippingId || order?.shippingId || '';
+
+        if (!shippingMethod.trim() || !shippingCarrier.trim() || !shippingId.trim()) {
+          setShowStatusError('กรุณากรอกข้อมูลการจัดส่งให้ครบถ้วนก่อนยืนยันคำสั่งซื้อ (รูปแบบการจัดส่ง, ชื่อขนส่ง, และ Tracking No.)');
+          return;
+        }
+
+        // Save shipping info first if there are unsaved changes
+        if (draft) {
+          await updateOrderShipping(orderId, draft);
+        }
+      }
+
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE || 'http://localhost:8000'}/orders/${orderId}/status`, {
         method: 'PUT',
         headers: {
@@ -374,6 +411,12 @@ export default function StoreOrdersPage() {
                             <div className="text-xs sm:text-sm text-gray-600 break-words">{order.shippingAddress || '—'}</div>
                           </div>
 
+                          {/* Customer's selected delivery method */}
+                          <div className="mt-3 sm:mt-4 bg-purple-50 rounded-lg p-3 sm:p-4 border-l-4 border-purple-500">
+                            <div className="text-xs sm:text-sm font-semibold text-gray-700 mb-1">วิธีจัดส่งที่ลูกค้าเลือก</div>
+                            <div className="text-xs sm:text-sm text-purple-700 font-medium">{getCustomerDeliveryMethod(order)}</div>
+                          </div>
+
                           {/* Shipping details entry for seller */}
                           <div className="mt-3 sm:mt-4 bg-gray-50 rounded-lg p-3 sm:p-4">
                             <div className="text-xs sm:text-sm font-semibold text-gray-700 mb-2 sm:mb-3">ข้อมูลการจัดส่ง</div>
@@ -457,8 +500,8 @@ export default function StoreOrdersPage() {
                           )}
 
                           {showStatusError && (
-                            <div className="mt-3 sm:mt-4 flex items-center gap-2 text-xs sm:text-sm text-red-600 bg-red-50 p-3 rounded-lg border border-red-200">
-                              <AlertTriangle className="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0" /> <span className="break-words">{showStatusError}</span>
+                            <div className="mt-3 sm:mt-4 flex items-start gap-2 text-xs sm:text-sm text-red-600 bg-red-50 p-3 rounded-lg border border-red-200">
+                              <AlertTriangle className="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0 mt-0.5" /> <span className="break-words flex-1">{showStatusError}</span>
                             </div>
                           )}
                         </div>

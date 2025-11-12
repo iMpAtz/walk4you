@@ -354,10 +354,10 @@ export default function ProfilePage() {
                 : 'bg-white text-gray-700 shadow-sm'
             }`}
           >
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className={`w-5 h-5 ${activeTab === 'profile' ? 'text-white' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
             </svg>
-            <span className="font-medium">ข้อมูลส่วนตัว</span>
+            <span className={`font-medium ${activeTab === 'profile' ? 'text-white' : ''}`}>ข้อมูลส่วนตัว</span>
           </button>
 
           <button 
@@ -368,10 +368,10 @@ export default function ProfilePage() {
                 : 'bg-white text-gray-700 shadow-sm'
             }`}
           >
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className={`w-5 h-5 ${activeTab === 'password' ? 'text-white' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
             </svg>
-            <span className="font-medium">ตั้งค่ารหัสผ่าน</span>
+            <span className={`font-medium ${activeTab === 'password' ? 'text-white' : ''}`}>ตั้งค่ารหัสผ่าน</span>
           </button>
 
           <button 
@@ -382,11 +382,11 @@ export default function ProfilePage() {
                 : 'bg-white text-gray-700 shadow-sm'
             }`}
           >
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className={`w-5 h-5 ${activeTab === 'address' ? 'text-white' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
             </svg>
-            <span className="font-medium">รายการที่อยู่</span>
+            <span className={`font-medium ${activeTab === 'address' ? 'text-white' : ''}`}>รายการที่อยู่</span>
           </button>
 
           {hasStore ? (
@@ -398,10 +398,10 @@ export default function ProfilePage() {
                   : 'bg-white text-gray-700 shadow-sm'
               }`}
             >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className={`w-5 h-5 ${activeTab === 'store' ? 'text-white' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
               </svg>
-              <span className="font-medium">ร้านค้าของฉัน</span>
+              <span className={`font-medium ${activeTab === 'store' ? 'text-white' : ''}`}>ร้านค้าของฉัน</span>
             </button>
           ) : (
             <button 
@@ -423,10 +423,10 @@ export default function ProfilePage() {
                 : 'bg-white text-gray-700 shadow-sm'
             }`}
           >
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className={`w-5 h-5 ${activeTab === 'purchase' ? 'text-white' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
             </svg>
-            <span className="font-medium">การซื้อของฉัน</span>
+            <span className={`font-medium ${activeTab === 'purchase' ? 'text-white' : ''}`}>การซื้อของฉัน</span>
           </button>
         </div>
 
@@ -666,7 +666,7 @@ export default function ProfilePage() {
                       onClick={handlePasswordChange}
                       className="w-full px-4 py-3 bg-[#0B44A3] text-white rounded-lg hover:bg-[#093782] transition-colors font-medium min-h-[48px] touch-manipulation active:scale-95 text-base"
                     >
-                      เปลี่ยนรหัสผ่าน
+                      <span className="text-white">เปลี่ยนรหัสผ่าน</span>
                     </button>
                   </div>
                 </div>
@@ -702,7 +702,7 @@ export default function ProfilePage() {
                       onClick={handleAddressSave}
                       className="w-full px-4 py-3 bg-[#0B44A3] text-white rounded-lg hover:bg-[#093782] transition-colors font-medium min-h-[48px] touch-manipulation active:scale-95 text-base"
                     >
-                      บันทึกที่อยู่
+                      <span className="text-white">บันทึกที่อยู่</span>
                     </button>
                   </div>
                 </div>
@@ -907,10 +907,10 @@ export default function ProfilePage() {
                       : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
                   }`}
                 >
-                  <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className={`w-4 h-4 sm:w-5 sm:h-5 ${isEditing ? 'text-white' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                   </svg>
-                  Edit Profile
+                  <span className={isEditing ? 'text-white' : ''}>Edit Profile</span>
                 </button>
 
                 {/* Navigation */}
@@ -925,7 +925,7 @@ export default function ProfilePage() {
                         : 'text-gray-700 hover:bg-gray-50'
                     }`}
                   >
-                    Profile
+                    <span className={activeTab === 'profile' ? 'text-white' : ''}>Profile</span>
                   </button>
                   
                   <button 
@@ -936,7 +936,7 @@ export default function ProfilePage() {
                         : 'text-gray-700 hover:bg-gray-50'
                     }`}
                   >
-                    Change Password
+                    <span className={activeTab === 'password' ? 'text-white' : ''}>Change Password</span>
                   </button>
                   
                   <button 
@@ -947,7 +947,7 @@ export default function ProfilePage() {
                         : 'text-gray-700 hover:bg-gray-50'
                     }`}
                   >
-                    Address
+                    <span className={activeTab === 'address' ? 'text-white' : ''}>Address</span>
                   </button>
                   
                   <div className="text-xs sm:text-sm font-medium text-gray-500 mb-2 sm:mb-3 mt-4 sm:mt-6">Store</div>
@@ -961,8 +961,8 @@ export default function ProfilePage() {
                         : 'text-gray-700 hover:bg-gray-50'
                     }`}
                   >
-                    <Building2 className="w-4 h-4 sm:w-5 sm:h-5" />
-                    My Store
+                    <Building2 className={`w-4 h-4 sm:w-5 sm:h-5 ${activeTab === 'store' ? 'text-white' : ''}`} />
+                    <span className={activeTab === 'store' ? 'text-white' : ''}>My Store</span>
                   </button>
                 ) : (
                   <button 
@@ -982,8 +982,8 @@ export default function ProfilePage() {
                       : 'text-gray-700 hover:bg-gray-50'
                   }`}
                 >
-                  <FileText className="w-4 h-4 sm:w-5 sm:h-5" />
-                  My Purchase
+                  <FileText className={`w-4 h-4 sm:w-5 sm:h-5 ${activeTab === 'purchase' ? 'text-white' : ''}`} />
+                  <span className={activeTab === 'purchase' ? 'text-white' : ''}>My Purchase</span>
                 </button>
               </nav>
             </div>
@@ -1155,9 +1155,9 @@ export default function ProfilePage() {
                     <div className="flex justify-center pt-6">
                       <button
                         onClick={handleSave}
-                        className="px-8 py-3 bg-gradient-to-r from-[#0B44A3] to-[#1a5fd4] text-white rounded-lg hover:from-[#093782] hover:to-[#1557c0] transition-colors font-medium"
+                        className="px-8 py-3 bg-gradient-to-r from-[#0B44A3] to-[#1a5fd4] !text-white rounded-lg hover:from-[#093782] hover:to-[#1557c0] transition-colors font-medium"
                       >
-                        Save
+                        <span className="text-white">Save</span>
                       </button>
                     </div>
                   )}
@@ -1224,7 +1224,7 @@ export default function ProfilePage() {
                       onClick={handlePasswordChange}
                       className="w-full px-4 py-2 bg-gradient-to-r from-[#0B44A3] to-[#1a5fd4] text-white rounded-lg hover:from-[#093782] hover:to-[#1557c0] transition-colors font-medium"
                     >
-                      เปลี่ยนรหัสผ่าน
+                      <span className="text-white">เปลี่ยนรหัสผ่าน</span>
                     </button>
                   </div>
                 </div>
@@ -1258,7 +1258,7 @@ export default function ProfilePage() {
                       onClick={handleAddressSave}
                       className="w-full px-4 py-2 bg-gradient-to-r from-[#0B44A3] to-[#1a5fd4] text-white rounded-lg hover:from-[#093782] hover:to-[#1557c0] transition-colors font-medium"
                     >
-                      บันทึกที่อยู่
+                      <span className="text-white">บันทึกที่อยู่</span>
                     </button>
                   </div>
                 </div>

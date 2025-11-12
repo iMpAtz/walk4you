@@ -107,24 +107,6 @@ export default function MobileSidebar({ isOpen, onClose, userProfile, onLogout, 
         <div className="p-4">
           <nav className="space-y-2">
             {/* Notifications */}
-            <button className="w-full flex items-center gap-3 p-3 text-left hover:bg-gray-100 rounded-lg transition-colors">
-              <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center relative">
-                <Bell className="w-5 h-5 text-[#0B44A3]" />
-                {unreadCount > 0 && (
-                  <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-4 w-4 flex items-center justify-center font-medium text-[10px]">
-                    {unreadCount > 99 ? '99+' : unreadCount}
-                  </span>
-                )}
-              </div>
-              <div className="flex items-center justify-between flex-1">
-                <span className="font-medium text-gray-900">การแจ้งเตือน</span>
-                {unreadCount > 0 && (
-                  <span className="text-sm text-gray-500">
-                    {unreadCount} รายการ
-                  </span>
-                )}
-              </div>
-            </button>
 
             {/* Cart */}
             <button 
@@ -144,11 +126,6 @@ export default function MobileSidebar({ isOpen, onClose, userProfile, onLogout, 
               </div>
               <div className="flex items-center justify-between flex-1">
                 <span className="font-medium text-gray-900">ตระกร้าสินค้า</span>
-                {itemCount > 0 && (
-                  <span className="text-sm text-gray-500">
-                    {itemCount} รายการ
-                  </span>
-                )}
               </div>
             </button>
 

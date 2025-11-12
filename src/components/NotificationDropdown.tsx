@@ -51,6 +51,52 @@ export default function NotificationDropdown({ isOpen, onClose }: NotificationDr
     return `${Math.floor(diffInSeconds / 86400)} วันที่แล้ว`;
   };
 
+  const handleNotificationClick = async (notification: any) => {
+    // Mark as read
+    await markAsRead(notification.id);
+
+    // Navigate based on notification type, title, and data
+    if (notification.data) {
+      switch (notification.type) {
+        case 'order':
+          // Check notification title/message to determine destination
+          const isStoreOwnerNotification = 
+            notification.title?.includes('มีคำสั่งซื้อใหม่') || 
+            notification.title?.includes('ลูกค้ายืนยันได้รับสินค้า');
+          
+          if (isStoreOwnerNotification) {
+            // Store owner notifications - go to store management orders
+            router.push(`/store-management/orders`);
+          } else {
+            // Customer notifications - go to my orders
+            router.push(`/my-orders`);
+          }
+          break;
+        
+        case 'review':
+          // Navigate to product page
+          if (notification.data.productId) {
+            router.push(`/products/${notification.data.productId}`);
+          }
+          break;
+        
+        case 'message':
+          // Navigate to messages or store page
+          if (notification.data.storeId) {
+            router.push(`/stores/${notification.data.storeId}`);
+          }
+          break;
+        
+        default:
+          // For other types, just mark as read
+          break;
+      }
+    }
+    
+    // Close dropdown
+    onClose();
+  };
+
   if (!isOpen) return null;
 
   return (
@@ -87,7 +133,7 @@ export default function NotificationDropdown({ isOpen, onClose }: NotificationDr
                   className={`p-4 hover:bg-gray-50 transition-colors cursor-pointer ${
                     !notification.isRead ? 'bg-blue-50' : ''
                   }`}
-                  onClick={() => markAsRead(notification.id)}
+                  onClick={() => handleNotificationClick(notification)}
                 >
                   <div className="flex items-start gap-3">
                     <div className="flex-shrink-0 mt-1">
