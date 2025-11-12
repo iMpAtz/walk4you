@@ -520,6 +520,7 @@ class UserResponse(BaseModel):
     registerDate: datetime
     status: Optional[str] = "ACTIVE"
     avatar: Optional[dict] = None
+    address: Optional[str] = None
 
 
 class AuthResponse(BaseModel):
@@ -723,8 +724,95 @@ async def get_my_profile(current_user=Depends(get_current_user)):
         role=current_user["role"],
         registerDate=current_user["registerDate"],
         status=current_user.get("status", "ACTIVE"),
-        avatar=current_user.get("avatar")
+        avatar=current_user.get("avatar"),
+        address=current_user.get("address")
     )
+
+
+# ===== Change Password Endpoint =====
+class ChangePasswordRequest(BaseModel):
+    current_password: str
+    new_password: str
+
+
+@app.put("/users/change-password")
+async def change_password(
+    password_data: ChangePasswordRequest,
+    db: AsyncIOMotorDatabase = Depends(get_db),
+    current_user=Depends(get_current_user)
+):
+    """Change user password"""
+    try:
+        # Verify current password
+        current_password_hash = hashlib.sha256(password_data.current_password.encode()).hexdigest()
+        
+        if current_user["password"] != current_password_hash:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="รหัสผ่านปัจจุบันไม่ถูกต้อง"
+            )
+        
+        # Hash new password
+        new_password_hash = hashlib.sha256(password_data.new_password.encode()).hexdigest()
+        
+        # Update password
+        result = await db.User.update_one(
+            {"_id": current_user["_id"]},
+            {"$set": {"password": new_password_hash}}
+        )
+        
+        if result.modified_count == 0:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="ไม่สามารถเปลี่ยนรหัสผ่านได้"
+            )
+        
+        return {"message": "เปลี่ยนรหัสผ่านสำเร็จ"}
+    
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error changing password: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="เกิดข้อผิดพลาดในการเปลี่ยนรหัสผ่าน"
+        )
+
+
+# ===== Address Management Endpoint =====
+class AddressUpdate(BaseModel):
+    address: str
+
+
+@app.put("/users/address")
+async def update_address(
+    address_data: AddressUpdate,
+    db: AsyncIOMotorDatabase = Depends(get_db),
+    current_user=Depends(get_current_user)
+):
+    """Update user address"""
+    try:
+        result = await db.User.update_one(
+            {"_id": current_user["_id"]},
+            {"$set": {"address": address_data.address}}
+        )
+        
+        if result.modified_count == 0 and result.matched_count == 0:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="ไม่พบผู้ใช้"
+            )
+        
+        return {"message": "บันทึกที่อยู่สำเร็จ", "address": address_data.address}
+    
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error updating address: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="เกิดข้อผิดพลาดในการบันทึกที่อยู่"
+        )
 
 
 # Add remaining endpoints following the same optimization patterns:
@@ -3497,4 +3585,206 @@ async def update_user_info(
         raise
     except Exception as e:
         logger.error(f"Error updating user: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error")
+
+
+# ===== BANNER MANAGEMENT =====
+class BannerCreate(BaseModel):
+    title: str
+    subtitle: str
+    image_url: str
+    order: int = 0
+    is_active: bool = True
+
+class BannerUpdate(BaseModel):
+    title: Optional[str] = None
+    subtitle: Optional[str] = None
+    image_url: Optional[str] = None
+    order: Optional[int] = None
+    is_active: Optional[bool] = None
+
+class BannerResponse(BaseModel):
+    id: str
+    title: str
+    subtitle: str
+    image_url: str
+    order: int
+    is_active: bool
+    created_at: datetime
+    updated_at: datetime
+
+@app.get("/banners", response_model=list[BannerResponse])
+async def get_banners(
+    active_only: bool = True,
+    db: AsyncIOMotorDatabase = Depends(get_db)
+):
+    """Get all banners (public endpoint)"""
+    try:
+        query = {"is_active": True} if active_only else {}
+        banners = await db.Banner.find(query).sort("order", 1).to_list(None)
+        
+        return [
+            BannerResponse(
+                id=str(banner["_id"]),
+                title=banner["title"],
+                subtitle=banner["subtitle"],
+                image_url=banner["image_url"],
+                order=banner.get("order", 0),
+                is_active=banner.get("is_active", True),
+                created_at=banner.get("created_at", datetime.utcnow()),
+                updated_at=banner.get("updated_at", datetime.utcnow())
+            )
+            for banner in banners
+        ]
+    except Exception as e:
+        logger.error(f"Error getting banners: {e}")
+        return []
+
+@app.post("/admin/banners", response_model=BannerResponse)
+async def create_banner(
+    banner_data: BannerCreate,
+    current_user: dict = Depends(get_current_user),
+    db: AsyncIOMotorDatabase = Depends(get_db)
+):
+    """Create a new banner (Admin only)"""
+    try:
+        # Check if user is admin
+        if current_user.get("role") != "ADMIN":
+            raise HTTPException(status_code=403, detail="Admin access required")
+        
+        banner_doc = {
+            "title": banner_data.title,
+            "subtitle": banner_data.subtitle,
+            "image_url": banner_data.image_url,
+            "order": banner_data.order,
+            "is_active": banner_data.is_active,
+            "created_at": datetime.utcnow(),
+            "updated_at": datetime.utcnow()
+        }
+        
+        result = await db.Banner.insert_one(banner_doc)
+        banner_doc["_id"] = result.inserted_id
+        
+        # Log admin action
+        await db.AdminAction.insert_one({
+            "adminId": current_user["_id"],
+            "action": "CREATE_BANNER",
+            "targetId": str(result.inserted_id),
+            "timestamp": datetime.utcnow()
+        })
+        
+        return BannerResponse(
+            id=str(banner_doc["_id"]),
+            title=banner_doc["title"],
+            subtitle=banner_doc["subtitle"],
+            image_url=banner_doc["image_url"],
+            order=banner_doc["order"],
+            is_active=banner_doc["is_active"],
+            created_at=banner_doc["created_at"],
+            updated_at=banner_doc["updated_at"]
+        )
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error creating banner: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error")
+
+@app.put("/admin/banners/{banner_id}", response_model=BannerResponse)
+async def update_banner(
+    banner_id: str,
+    banner_data: BannerUpdate,
+    current_user: dict = Depends(get_current_user),
+    db: AsyncIOMotorDatabase = Depends(get_db)
+):
+    """Update a banner (Admin only)"""
+    try:
+        # Check if user is admin
+        if current_user.get("role") != "ADMIN":
+            raise HTTPException(status_code=403, detail="Admin access required")
+        
+        # Find banner
+        banner = await db.Banner.find_one({"_id": ObjectId(banner_id)})
+        if not banner:
+            raise HTTPException(status_code=404, detail="Banner not found")
+        
+        # Build update document
+        update_doc = {"updated_at": datetime.utcnow()}
+        if banner_data.title is not None:
+            update_doc["title"] = banner_data.title
+        if banner_data.subtitle is not None:
+            update_doc["subtitle"] = banner_data.subtitle
+        if banner_data.image_url is not None:
+            update_doc["image_url"] = banner_data.image_url
+        if banner_data.order is not None:
+            update_doc["order"] = banner_data.order
+        if banner_data.is_active is not None:
+            update_doc["is_active"] = banner_data.is_active
+        
+        # Update banner
+        await db.Banner.update_one(
+            {"_id": ObjectId(banner_id)},
+            {"$set": update_doc}
+        )
+        
+        # Get updated banner
+        updated_banner = await db.Banner.find_one({"_id": ObjectId(banner_id)})
+        
+        # Log admin action
+        await db.AdminAction.insert_one({
+            "adminId": current_user["_id"],
+            "action": "UPDATE_BANNER",
+            "targetId": banner_id,
+            "changes": update_doc,
+            "timestamp": datetime.utcnow()
+        })
+        
+        return BannerResponse(
+            id=str(updated_banner["_id"]),
+            title=updated_banner["title"],
+            subtitle=updated_banner["subtitle"],
+            image_url=updated_banner["image_url"],
+            order=updated_banner["order"],
+            is_active=updated_banner["is_active"],
+            created_at=updated_banner.get("created_at", datetime.utcnow()),
+            updated_at=updated_banner["updated_at"]
+        )
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error updating banner: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error")
+
+@app.delete("/admin/banners/{banner_id}")
+async def delete_banner(
+    banner_id: str,
+    current_user: dict = Depends(get_current_user),
+    db: AsyncIOMotorDatabase = Depends(get_db)
+):
+    """Delete a banner (Admin only)"""
+    try:
+        # Check if user is admin
+        if current_user.get("role") != "ADMIN":
+            raise HTTPException(status_code=403, detail="Admin access required")
+        
+        # Find banner
+        banner = await db.Banner.find_one({"_id": ObjectId(banner_id)})
+        if not banner:
+            raise HTTPException(status_code=404, detail="Banner not found")
+        
+        # Delete banner
+        await db.Banner.delete_one({"_id": ObjectId(banner_id)})
+        
+        # Log admin action
+        await db.AdminAction.insert_one({
+            "adminId": current_user["_id"],
+            "action": "DELETE_BANNER",
+            "targetId": banner_id,
+            "timestamp": datetime.utcnow()
+        })
+        
+        return {"message": "Banner deleted successfully"}
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error deleting banner: {e}")
         raise HTTPException(status_code=500, detail="Internal server error")

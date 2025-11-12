@@ -225,20 +225,20 @@ export default function StoreManagementLayout({ storeData, userData, onSave }: S
       {/* Navbar */}
       <TopBar />
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="flex flex-col lg:flex-row gap-6">
+      <div className="max-w-7xl mx-auto px-3 sm:px-4 md:px-6 lg:px-8 py-4 sm:py-6 md:py-8">
+        <div className="flex flex-col lg:flex-row gap-4 sm:gap-6">
           {/* Sidebar */}
           <div className="lg:w-64">
-            <div className="bg-white rounded-xl shadow-md border border-gray-200 p-4 sticky top-24">
+            <div className="bg-white rounded-xl shadow-md border border-gray-200 p-3 sm:p-4 sticky top-20 sm:top-24">
               {/* Store Info */}
-              <div className="flex items-center gap-3 mb-6 pb-4 border-b border-gray-200">
+              <div className="flex items-center gap-2 sm:gap-3 mb-4 sm:mb-6 pb-3 sm:pb-4 border-b border-gray-200">
                 {logoPreview ? (
                   <Image 
                     src={logoPreview} 
                     alt="Store Logo" 
                     width={48} 
                     height={48} 
-                    className="rounded-xl object-cover w-12 h-12 shadow-sm border border-gray-200"
+                    className="rounded-xl object-cover w-10 h-10 sm:w-12 sm:h-12 shadow-sm border border-gray-200"
                   />
                 ) : userData?.avatar?.url ? (
                   <Image 
@@ -246,18 +246,18 @@ export default function StoreManagementLayout({ storeData, userData, onSave }: S
                     alt="Store Owner" 
                     width={48} 
                     height={48} 
-                    className="rounded-xl object-cover w-12 h-12 shadow-sm"
+                    className="rounded-xl object-cover w-10 h-10 sm:w-12 sm:h-12 shadow-sm"
                   />
                 ) : (
-                  <div className="w-12 h-12 bg-gradient-to-br from-[#0B44A3] to-[#1a5fd4] rounded-xl flex items-center justify-center shadow-sm">
-                    <Building2 className="w-6 h-6 text-white" />
+                  <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-br from-[#0B44A3] to-[#1a5fd4] rounded-xl flex items-center justify-center shadow-sm">
+                    <Building2 className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
                   </div>
                 )}
-                <div>
-                  <div className="font-bold text-gray-900">
+                <div className="min-w-0 flex-1">
+                  <div className="font-bold text-gray-900 text-sm sm:text-base truncate">
                     {storeData?.storeName || userData?.username || 'ร้านค้า'}
                   </div>
-                  <div className="text-xs text-gray-500">
+                  <div className="text-xs text-gray-500 truncate">
                     {userData?.username ? `${userData.username}` : 'Store Owner'}
                   </div>
                 </div>
@@ -265,41 +265,41 @@ export default function StoreManagementLayout({ storeData, userData, onSave }: S
 
               {/* Navigation */}
               <nav className="space-y-1">
-                <button className="w-full flex items-center gap-3 p-3 text-left bg-gradient-to-r from-[#0B44A3] to-[#1a5fd4] text-white rounded-lg shadow-sm">
-                  <div className="w-9 h-9 bg-white bg-opacity-20 rounded-lg flex items-center justify-center">
-                    <Building2 className="w-5 h-5 text-gray-600" />
+                <button className="w-full flex items-center gap-2 sm:gap-3 p-2 sm:p-3 text-left bg-gradient-to-r from-[#0B44A3] to-[#1a5fd4] text-white rounded-lg shadow-sm touch-manipulation min-h-[44px]">
+                  <div className="w-8 h-8 sm:w-9 sm:h-9 bg-white bg-opacity-20 rounded-lg flex items-center justify-center flex-shrink-0">
+                    <Building2 className="w-4 h-4 sm:w-5 sm:h-5 text-gray-600" />
                   </div>
-                  <span className="font-semibold">ข้อมูลร้านค้า</span>
+                  <span className="font-semibold text-sm sm:text-base">ข้อมูลร้านค้า</span>
                 </button>
 
                 <button 
                   onClick={() => router.push('/store-management/dashboard')}
-                  className="w-full flex items-center gap-3 p-3 text-left hover:bg-gray-50 rounded-lg transition-all group"
+                  className="w-full flex items-center gap-2 sm:gap-3 p-2 sm:p-3 text-left hover:bg-gray-50 rounded-lg transition-all group touch-manipulation min-h-[44px]"
                 >
-                  <div className="w-9 h-9 bg-gray-100 group-hover:bg-gray-200 rounded-lg flex items-center justify-center transition-colors">
-                    <BarChart3 className="w-5 h-5 text-gray-600" />
+                  <div className="w-8 h-8 sm:w-9 sm:h-9 bg-gray-100 group-hover:bg-gray-200 rounded-lg flex items-center justify-center transition-colors flex-shrink-0">
+                    <BarChart3 className="w-4 h-4 sm:w-5 sm:h-5 text-gray-600" />
                   </div>
-                  <span className="font-medium text-gray-700 group-hover:text-gray-900">ยอดขายของฉัน</span>
+                  <span className="font-medium text-gray-700 group-hover:text-gray-900 text-sm sm:text-base">ยอดขายของฉัน</span>
                 </button>
 
                 <button 
                   onClick={() => router.push('/store-management/products')}
-                  className="w-full flex items-center gap-3 p-3 text-left hover:bg-gray-50 rounded-lg transition-all group"
+                  className="w-full flex items-center gap-2 sm:gap-3 p-2 sm:p-3 text-left hover:bg-gray-50 rounded-lg transition-all group touch-manipulation min-h-[44px]"
                 >
-                  <div className="w-9 h-9 bg-gray-100 group-hover:bg-gray-200 rounded-lg flex items-center justify-center transition-colors">
-                    <Package className="w-5 h-5 text-gray-600" />
+                  <div className="w-8 h-8 sm:w-9 sm:h-9 bg-gray-100 group-hover:bg-gray-200 rounded-lg flex items-center justify-center transition-colors flex-shrink-0">
+                    <Package className="w-4 h-4 sm:w-5 sm:h-5 text-gray-600" />
                   </div>
-                  <span className="font-medium text-gray-700 group-hover:text-gray-900">สินค้าของฉัน</span>
+                  <span className="font-medium text-gray-700 group-hover:text-gray-900 text-sm sm:text-base">สินค้าของฉัน</span>
                 </button>
                 
                 <button 
                   onClick={() => router.push('/store-management/orders')}
-                  className="w-full flex items-center gap-3 p-3 text-left hover:bg-gray-50 rounded-lg transition-all group"
+                  className="w-full flex items-center gap-2 sm:gap-3 p-2 sm:p-3 text-left hover:bg-gray-50 rounded-lg transition-all group touch-manipulation min-h-[44px]"
                 >
-                  <div className="w-9 h-9 bg-gray-100 group-hover:bg-gray-200 rounded-lg flex items-center justify-center transition-colors">
-                    <Clipboard className="w-5 h-5 text-gray-600" />
+                  <div className="w-8 h-8 sm:w-9 sm:h-9 bg-gray-100 group-hover:bg-gray-200 rounded-lg flex items-center justify-center transition-colors flex-shrink-0">
+                    <Clipboard className="w-4 h-4 sm:w-5 sm:h-5 text-gray-600" />
                   </div>
-                  <span className="font-medium text-gray-700 group-hover:text-gray-900">รายการสั่งซื้อ</span>
+                  <span className="font-medium text-gray-700 group-hover:text-gray-900 text-sm sm:text-base">รายการสั่งซื้อ</span>
                 </button>
               </nav>
             </div>
@@ -309,20 +309,20 @@ export default function StoreManagementLayout({ storeData, userData, onSave }: S
           <div className="flex-1">
             <div className="bg-white rounded-xl shadow-md border border-gray-200">
               {/* Header */}
-              <div className="px-8 py-6 border-b border-gray-200">
-                <h1 className="text-3xl font-bold bg-gradient-to-r from-[#0B44A3] to-[#1a5fd4] bg-clip-text text-transparent">ร้านค้าของฉัน</h1>
-                <p className="text-gray-600 mt-2">จัดการข้อมูลร้านค้าของคุณ</p>
+              <div className="px-4 sm:px-6 md:px-8 py-4 sm:py-5 md:py-6 border-b border-gray-200">
+                <h1 className="text-xl sm:text-2xl md:text-3xl font-bold bg-gradient-to-r from-[#0B44A3] to-[#1a5fd4] bg-clip-text text-transparent">ร้านค้าของฉัน</h1>
+                <p className="text-gray-600 mt-1 sm:mt-2 text-sm sm:text-base">จัดการข้อมูลร้านค้าของคุณ</p>
               </div>
 
               {/* Form */}
-              <div className="p-8">
+              <div className="p-4 sm:p-6 md:p-8">
                 <div className="space-y-6">
                   {/* Store Logo */}
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-2">
                       โลโก้ร้านค้า
                     </label>
-                    <div className="flex items-center gap-4">
+                    <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4">
                       {logoPreview ? (
                         <div className="relative group">
                           <Image 
@@ -330,21 +330,21 @@ export default function StoreManagementLayout({ storeData, userData, onSave }: S
                             alt="Store Logo" 
                             width={120} 
                             height={120} 
-                            className="rounded-xl border-2 border-gray-200 object-cover shadow-md"
+                            className="rounded-xl border-2 border-gray-200 object-cover shadow-md w-20 h-20 sm:w-[120px] sm:h-[120px]"
                           />
                           <button
                             onClick={handleRemoveLogo}
-                            className="absolute top-1 right-1 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                            className="absolute top-1 right-1 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity touch-manipulation"
                           >
                             ×
                           </button>
                         </div>
                       ) : (
-                        <div className="w-[120px] h-[120px] bg-gradient-to-br from-gray-100 to-gray-200 rounded-xl flex items-center justify-center text-gray-400 border-2 border-dashed border-gray-300">
-                          <Building2 className="w-12 h-12" />
+                        <div className="w-20 h-20 sm:w-[120px] sm:h-[120px] bg-gradient-to-br from-gray-100 to-gray-200 rounded-xl flex items-center justify-center text-gray-400 border-2 border-dashed border-gray-300">
+                          <Building2 className="w-8 h-8 sm:w-12 sm:h-12" />
                         </div>
                       )}
-                      <div className="flex-1">
+                      <div className="flex-1 w-full">
                         <input 
                           type="file" 
                           accept="image/*" 
@@ -354,7 +354,7 @@ export default function StoreManagementLayout({ storeData, userData, onSave }: S
                         />
                         <label 
                           htmlFor="logo-upload"
-                          className="inline-block px-4 py-2 bg-gray-100 border-2 border-gray-300 text-gray-700 rounded-lg hover:bg-gray-200 transition cursor-pointer"
+                          className="inline-block px-3 sm:px-4 py-2 sm:py-2.5 bg-gray-100 border-2 border-gray-300 text-gray-700 rounded-lg hover:bg-gray-200 transition cursor-pointer text-sm sm:text-base min-h-[44px] flex items-center justify-center touch-manipulation"
                         >
                           เลือกรูปภาพ
                         </label>
@@ -363,12 +363,12 @@ export default function StoreManagementLayout({ storeData, userData, onSave }: S
                             type="button"
                             onClick={handleUploadLogo}
                             disabled={uploadingLogo}
-                            className="ml-2 px-4 py-2 bg-gradient-to-r from-[#0B44A3] to-[#1a5fd4] text-white rounded-lg hover:opacity-90 transition shadow-md disabled:opacity-50"
+                            className="mt-2 sm:mt-0 sm:ml-2 w-full sm:w-auto px-3 sm:px-4 py-2 sm:py-2.5 bg-gradient-to-r from-[#0B44A3] to-[#1a5fd4] text-white rounded-lg hover:opacity-90 transition shadow-md disabled:opacity-50 text-sm sm:text-base min-h-[44px] touch-manipulation"
                           >
                             {uploadingLogo ? 'กำลังอัปโหลด...' : 'อัปโหลดโลโก้'}
                           </button>
                         )}
-                        <div className="text-sm text-gray-500 mt-2">
+                        <div className="text-xs sm:text-sm text-gray-500 mt-2">
                           แนะนำขนาด 500x500px, ไฟล์ JPG, PNG (สูงสุด 5MB)
                         </div>
                       </div>
@@ -377,29 +377,29 @@ export default function StoreManagementLayout({ storeData, userData, onSave }: S
 
                   {/* Shop Name */}
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-2">
                       ชื่อของร้านค้า
                     </label>
-                    <div className="text-lg font-semibold text-gray-900">
+                    <div className="text-base sm:text-lg font-semibold text-gray-900 break-words">
                       {storeData?.storeName || userData?.username || 'ยังไม่ได้ตั้งชื่อร้านค้า'}
                     </div>
                   </div>
 
                   {/* Shop Description */}
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-2">
                       คำอธิบายร้านค้า
                     </label>
                     {isEditing ? (
                       <textarea
                         value={formData.storeDescription}
                         onChange={(e) => handleInputChange('storeDescription', e.target.value)}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent resize-none"
+                        className="w-full px-3 py-2.5 sm:py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent resize-none text-sm sm:text-base touch-manipulation"
                         rows={4}
                         placeholder="กรอกคำอธิบายร้านค้า..."
                       />
                     ) : (
-                      <div className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-50 min-h-[100px]">
+                      <div className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-50 min-h-[100px] text-sm sm:text-base break-words">
                         {storeData?.storeDescription || 'ยังไม่มีคำอธิบายร้านค้า'}
                       </div>
                     )}
@@ -467,18 +467,18 @@ export default function StoreManagementLayout({ storeData, userData, onSave }: S
                 </div>
 
                 {/* Action Buttons */}
-                <div className="mt-8 flex justify-end">
+                <div className="mt-6 sm:mt-8 flex justify-end">
                   {isEditing ? (
-                    <div className="flex gap-3">
+                    <div className="flex gap-2 sm:gap-3 w-full sm:w-auto">
                       <button
                         onClick={() => setIsEditing(false)}
-                        className="px-6 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors"
+                        className="flex-1 sm:flex-none px-4 sm:px-6 py-2.5 sm:py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors text-sm sm:text-base min-h-[44px] touch-manipulation"
                       >
                         ยกเลิก
                       </button>
                       <button
                         onClick={handleSave}
-                        className="px-6 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+                        className="flex-1 sm:flex-none px-4 sm:px-6 py-2.5 sm:py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors text-sm sm:text-base min-h-[44px] touch-manipulation"
                       >
                         บันทึก
                       </button>
@@ -486,7 +486,7 @@ export default function StoreManagementLayout({ storeData, userData, onSave }: S
                   ) : (
                     <button
                       onClick={() => setIsEditing(true)}
-                      className="px-6 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
+                      className="w-full sm:w-auto px-4 sm:px-6 py-2.5 sm:py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors text-sm sm:text-base min-h-[44px] touch-manipulation"
                     >
                       แก้ไข
                     </button>

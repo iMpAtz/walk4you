@@ -112,18 +112,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // Login function
   const login = async (username: string, password: string): Promise<boolean> => {
     try {
-      const formData = new URLSearchParams();
-      formData.append('username', username);
-      formData.append('password', password);
-
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_BASE || 'http://localhost:8000'}/token`,
+        `${process.env.NEXT_PUBLIC_API_BASE || 'http://localhost:8000'}/auth/login`,
         {
           method: 'POST',
           headers: {
-            'Content-Type': 'application/x-www-form-urlencoded',
+            'Content-Type': 'application/json',
           },
-          body: formData,
+          body: JSON.stringify({ username, password }),
         }
       );
 

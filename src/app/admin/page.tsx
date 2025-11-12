@@ -15,7 +15,8 @@ import {
   Edit,
   Search,
   Filter,
-  BarChart3
+  BarChart3,
+  Image
 } from 'lucide-react';
 import UserEditModal from '@/components/UserEditModal';
 
@@ -416,6 +417,21 @@ export default function AdminPage() {
                       ร้านค้า
                     </span>
                     <div className="text-xs opacity-75">{stores.length} ร้าน</div>
+                  </div>
+                </button>
+
+                <button 
+                  onClick={() => router.push('/admin/banners')}
+                  className="w-full flex items-center gap-3 p-3 text-left rounded-lg transition-all group hover:bg-gray-50"
+                >
+                  <div className="w-9 h-9 bg-gray-100 rounded-lg flex items-center justify-center group-hover:bg-gray-200 transition-colors">
+                    <Image className="w-5 h-5 text-gray-600" />
+                  </div>
+                  <div className="flex-1">
+                    <span className="font-medium text-gray-700 group-hover:text-gray-900">
+                      จัดการแบนเนอร์
+                    </span>
+                    <div className="text-xs text-gray-500">พื้นที่โฆษณา</div>
                   </div>
                 </button>
               </nav>

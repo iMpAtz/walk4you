@@ -208,20 +208,20 @@ export default function StoreOrdersPage() {
       {/* Header */}
       <TopBar />
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="flex flex-col lg:flex-row gap-6">
+      <div className="max-w-7xl mx-auto px-3 sm:px-4 md:px-6 lg:px-8 py-4 sm:py-6 md:py-8">
+        <div className="flex flex-col lg:flex-row gap-4 sm:gap-6">
           {/* Sidebar */}
           <div className="lg:w-64">
-            <div className="bg-white rounded-xl shadow-md border border-gray-200 p-4 sticky top-24">
+            <div className="bg-white rounded-xl shadow-md border border-gray-200 p-3 sm:p-4 sticky top-20 sm:top-24">
               {/* Store Info */}
-              <div className="flex items-center gap-3 mb-6 pb-4 border-b border-gray-200">
+              <div className="flex items-center gap-2 sm:gap-3 mb-4 sm:mb-6 pb-3 sm:pb-4 border-b border-gray-200">
                 {storeData?.logoUrl ? (
                   <Image 
                     src={storeData.logoUrl} 
                     alt="Store Logo" 
                     width={48} 
                     height={48} 
-                    className="rounded-xl object-cover w-12 h-12 shadow-sm"
+                    className="rounded-xl object-cover w-10 h-10 sm:w-12 sm:h-12 shadow-sm"
                   />
                 ) : userData?.avatar?.url ? (
                   <Image 
@@ -229,16 +229,16 @@ export default function StoreOrdersPage() {
                     alt="Store Owner" 
                     width={48} 
                     height={48} 
-                    className="rounded-xl object-cover w-12 h-12 shadow-sm"
+                    className="rounded-xl object-cover w-10 h-10 sm:w-12 sm:h-12 shadow-sm"
                   />
                 ) : (
-                  <div className="w-12 h-12 bg-gradient-to-br from-[#0B44A3] to-[#1a5fd4] rounded-xl flex items-center justify-center shadow-sm">
-                    <Building2 className="w-6 h-6 text-white" />
+                  <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-br from-[#0B44A3] to-[#1a5fd4] rounded-xl flex items-center justify-center shadow-sm">
+                    <Building2 className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
                   </div>
                 )}
-                <div>
-                  <div className="font-bold text-gray-900">จัดการร้านค้า</div>
-                  <div className="text-xs text-gray-500">
+                <div className="min-w-0 flex-1">
+                  <div className="font-bold text-gray-900 text-sm sm:text-base truncate">จัดการร้านค้า</div>
+                  <div className="text-xs text-gray-500 truncate">
                     {userData?.username || 'Store Management'}
                   </div>
                 </div>
@@ -248,39 +248,39 @@ export default function StoreOrdersPage() {
               <nav className="space-y-1">
                 <button 
                   onClick={() => router.push('/store-management')}
-                  className="w-full flex items-center gap-3 p-3 text-left hover:bg-gray-50 rounded-lg transition-all group"
+                  className="w-full flex items-center gap-2 sm:gap-3 p-2 sm:p-3 text-left hover:bg-gray-50 rounded-lg transition-all group touch-manipulation min-h-[44px]"
                 >
-                  <div className="w-9 h-9 bg-gray-100 group-hover:bg-gray-200 rounded-lg flex items-center justify-center transition-colors">
-                    <Clipboard className="w-5 h-5 text-gray-600" />
+                  <div className="w-8 h-8 sm:w-9 sm:h-9 bg-gray-100 group-hover:bg-gray-200 rounded-lg flex items-center justify-center transition-colors flex-shrink-0">
+                    <Clipboard className="w-4 h-4 sm:w-5 sm:h-5 text-gray-600" />
                   </div>
-                  <span className="font-medium text-gray-700 group-hover:text-gray-900">ข้อมูลร้านค้า</span>
+                  <span className="font-medium text-gray-700 group-hover:text-gray-900 text-sm sm:text-base">ข้อมูลร้านค้า</span>
                 </button>
 
                 <button 
                   onClick={() => router.push('/store-management/dashboard')}
-                  className="w-full flex items-center gap-3 p-3 text-left hover:bg-gray-50 rounded-lg transition-all group"
+                  className="w-full flex items-center gap-2 sm:gap-3 p-2 sm:p-3 text-left hover:bg-gray-50 rounded-lg transition-all group touch-manipulation min-h-[44px]"
                 >
-                  <div className="w-9 h-9 bg-gray-100 group-hover:bg-gray-200 rounded-lg flex items-center justify-center transition-colors">
-                    <BarChart3 className="w-5 h-5 text-gray-600" />
+                  <div className="w-8 h-8 sm:w-9 sm:h-9 bg-gray-100 group-hover:bg-gray-200 rounded-lg flex items-center justify-center transition-colors flex-shrink-0">
+                    <BarChart3 className="w-4 h-4 sm:w-5 sm:h-5 text-gray-600" />
                   </div>
-                  <span className="font-medium text-gray-700 group-hover:text-gray-900">ยอดขายของฉัน</span>
+                  <span className="font-medium text-gray-700 group-hover:text-gray-900 text-sm sm:text-base">ยอดขายของฉัน</span>
                 </button>
 
                 <button 
                   onClick={() => router.push('/store-management/products')}
-                  className="w-full flex items-center gap-3 p-3 text-left hover:bg-gray-50 rounded-lg transition-all group"
+                  className="w-full flex items-center gap-2 sm:gap-3 p-2 sm:p-3 text-left hover:bg-gray-50 rounded-lg transition-all group touch-manipulation min-h-[44px]"
                 >
-                  <div className="w-9 h-9 bg-gray-100 group-hover:bg-gray-200 rounded-lg flex items-center justify-center transition-colors">
-                    <Package className="w-5 h-5 text-gray-600" />
+                  <div className="w-8 h-8 sm:w-9 sm:h-9 bg-gray-100 group-hover:bg-gray-200 rounded-lg flex items-center justify-center transition-colors flex-shrink-0">
+                    <Package className="w-4 h-4 sm:w-5 sm:h-5 text-gray-600" />
                   </div>
-                  <span className="font-medium text-gray-700 group-hover:text-gray-900">สินค้าของฉัน</span>
+                  <span className="font-medium text-gray-700 group-hover:text-gray-900 text-sm sm:text-base">สินค้าของฉัน</span>
                 </button>
 
-                <button className="w-full flex items-center gap-3 p-3 text-left bg-gradient-to-r from-[#0B44A3] to-[#1a5fd4] text-white rounded-lg shadow-sm">
-                  <div className="w-9 h-9 bg-white bg-opacity-20 rounded-lg flex items-center justify-center">
-                    <Clipboard className="w-5 h-5 text-gray-600" />
+                <button className="w-full flex items-center gap-2 sm:gap-3 p-2 sm:p-3 text-left bg-gradient-to-r from-[#0B44A3] to-[#1a5fd4] text-white rounded-lg shadow-sm touch-manipulation min-h-[44px]">
+                  <div className="w-8 h-8 sm:w-9 sm:h-9 bg-white bg-opacity-20 rounded-lg flex items-center justify-center flex-shrink-0">
+                    <Clipboard className="w-4 h-4 sm:w-5 sm:h-5 text-gray-600" />
                   </div>
-                  <span className="font-semibold">รายการสั่งซื้อ</span>
+                  <span className="font-semibold text-sm sm:text-base">รายการสั่งซื้อ</span>
                 </button>
               </nav>
             </div>
@@ -290,13 +290,13 @@ export default function StoreOrdersPage() {
           <div className="flex-1">
             <div className="bg-white rounded-xl shadow-md border border-gray-200">
               {/* Header */}
-              <div className="px-8 py-6 border-b border-gray-200">
-                <h1 className="text-3xl font-bold bg-gradient-to-r from-[#0B44A3] to-[#1a5fd4] bg-clip-text text-transparent">รายการสั่งซื้อ</h1>
-                <p className="text-gray-600 mt-2">จัดการคำสั่งซื้อที่เข้ามาทั้งหมด</p>
+              <div className="px-4 sm:px-6 md:px-8 py-4 sm:py-5 md:py-6 border-b border-gray-200">
+                <h1 className="text-xl sm:text-2xl md:text-3xl font-bold bg-gradient-to-r from-[#0B44A3] to-[#1a5fd4] bg-clip-text text-transparent">รายการสั่งซื้อ</h1>
+                <p className="text-gray-600 mt-1 sm:mt-2 text-sm sm:text-base">จัดการคำสั่งซื้อที่เข้ามาทั้งหมด</p>
               </div>
 
               {/* Orders List */}
-              <div className="p-8">
+              <div className="p-4 sm:p-6 md:p-8">
                 {orders.length === 0 ? (
                   <div className="text-center py-12">
                     <div className="w-24 h-24 mx-auto mb-4 bg-gray-100 rounded-full flex items-center justify-center">
@@ -306,17 +306,17 @@ export default function StoreOrdersPage() {
                     <p className="text-gray-500">เมื่อมีคำสั่งซื้อเข้ามาจะแสดงที่นี่</p>
                   </div>
                 ) : (
-                  <div className="space-y-6">
+                  <div className="space-y-4 sm:space-y-6">
                     {orders.map((order) => (
-                      <div key={order.id} className="p-6 border-2 border-gray-200 rounded-xl hover:shadow-lg transition-all bg-gradient-to-br from-white to-gray-50">
-                        <div className="flex items-start justify-between mb-4">
-                          <div>
+                      <div key={order.id} className="p-4 sm:p-5 md:p-6 border-2 border-gray-200 rounded-xl hover:shadow-lg transition-all bg-gradient-to-br from-white to-gray-50">
+                        <div className="flex flex-col sm:flex-row items-start justify-between mb-3 sm:mb-4 gap-3 sm:gap-0">
+                          <div className="w-full sm:w-auto">
                             <div className="flex items-center gap-2 mb-2">
                               <span className="text-xs font-bold text-gray-500 uppercase">Order ID:</span>
-                              <span className="font-mono text-sm text-gray-700">#{order.id.slice(-8)}</span>
+                              <span className="font-mono text-xs sm:text-sm text-gray-700">#{order.id.slice(-8)}</span>
                             </div>
-                            <div className="text-sm text-gray-600">ผู้สั่งซื้อ: <span className="font-semibold">{order.username || order.userId}</span></div>
-                            <div className="text-2xl font-bold text-[#0B44A3] mt-1">฿{order.totalAmount?.toLocaleString()}</div>
+                            <div className="text-xs sm:text-sm text-gray-600 break-words">ผู้สั่งซื้อ: <span className="font-semibold">{order.username || order.userId}</span></div>
+                            <div className="text-xl sm:text-2xl font-bold text-[#0B44A3] mt-1">฿{order.totalAmount?.toLocaleString()}</div>
                             <div className="mt-2">
                               {order.status === 'PENDING' && (
                                 <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-yellow-100 text-yellow-800">
@@ -345,41 +345,41 @@ export default function StoreOrdersPage() {
                               )}
                             </div>
                           </div>
-                          <div className="text-right text-xs text-gray-500">
+                          <div className="text-right text-xs text-gray-500 w-full sm:w-auto">
                             {order.createdAt ? new Date(order.createdAt).toLocaleString('th-TH') : ''}
                           </div>
                         </div>
 
-                        <div className="border-t-2 border-gray-200 pt-4 mt-4">
-                          <div className="font-semibold text-gray-900 mb-3">รายการสินค้า</div>
-                          <div className="space-y-2 bg-white rounded-lg p-4 shadow-sm">
+                        <div className="border-t-2 border-gray-200 pt-3 sm:pt-4 mt-3 sm:mt-4">
+                          <div className="font-semibold text-gray-900 mb-2 sm:mb-3 text-sm sm:text-base">รายการสินค้า</div>
+                          <div className="space-y-2 bg-white rounded-lg p-3 sm:p-4 shadow-sm">
                             {order.items.map((it, idx) => (
-                              <div key={idx} className="flex justify-between text-sm hover:bg-gray-50 p-2 rounded transition-colors">
+                              <div key={idx} className="flex justify-between text-xs sm:text-sm hover:bg-gray-50 p-2 rounded transition-colors gap-2">
                                 <div className="flex-1 truncate font-medium text-gray-700">{it.productName || it.productId} <span className="text-gray-500">× {it.quantity}</span></div>
-                                <div className="font-bold text-[#0B44A3]">฿{(it.total ?? it.price * it.quantity).toLocaleString()}</div>
+                                <div className="font-bold text-[#0B44A3] flex-shrink-0">฿{(it.total ?? it.price * it.quantity).toLocaleString()}</div>
                               </div>
                             ))}
                           </div>
 
                           {order.paymentProofUrl && (
-                            <div className="mt-4 bg-gray-50 rounded-lg p-4">
-                              <div className="text-sm font-semibold text-gray-700 mb-3">หลักฐานการชำระเงิน</div>
-                              <Image src={order.paymentProofUrl} alt="proof" width={280} height={280} className="object-contain rounded-lg border-2 border-gray-200 shadow-sm" />
+                            <div className="mt-3 sm:mt-4 bg-gray-50 rounded-lg p-3 sm:p-4">
+                              <div className="text-xs sm:text-sm font-semibold text-gray-700 mb-2 sm:mb-3">หลักฐานการชำระเงิน</div>
+                              <Image src={order.paymentProofUrl} alt="proof" width={280} height={280} className="object-contain rounded-lg border-2 border-gray-200 shadow-sm w-full max-w-[280px]" />
                             </div>
                           )}
 
-                          <div className="mt-4 bg-blue-50 rounded-lg p-4">
-                            <div className="text-sm font-semibold text-gray-700 mb-1">ที่อยู่จัดส่ง</div>
-                            <div className="text-sm text-gray-600">{order.shippingAddress || '—'}</div>
+                          <div className="mt-3 sm:mt-4 bg-blue-50 rounded-lg p-3 sm:p-4">
+                            <div className="text-xs sm:text-sm font-semibold text-gray-700 mb-1">ที่อยู่จัดส่ง</div>
+                            <div className="text-xs sm:text-sm text-gray-600 break-words">{order.shippingAddress || '—'}</div>
                           </div>
 
                           {/* Shipping details entry for seller */}
-                          <div className="mt-4 bg-gray-50 rounded-lg p-4">
-                            <div className="text-sm font-semibold text-gray-700 mb-3">ข้อมูลการจัดส่ง</div>
-                            <div className="space-y-3">
-                              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                          <div className="mt-3 sm:mt-4 bg-gray-50 rounded-lg p-3 sm:p-4">
+                            <div className="text-xs sm:text-sm font-semibold text-gray-700 mb-2 sm:mb-3">ข้อมูลการจัดส่ง</div>
+                            <div className="space-y-2 sm:space-y-3">
+                              <div className="grid grid-cols-1 gap-2 sm:gap-3">
                                 <input
-                                  className="border-2 border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:border-[#0B44A3] focus:ring-2 focus:ring-[#0B44A3] focus:ring-opacity-20 transition-all"
+                                  className="border-2 border-gray-200 rounded-lg px-3 sm:px-4 py-2 sm:py-2.5 text-xs sm:text-sm focus:border-[#0B44A3] focus:ring-2 focus:ring-[#0B44A3] focus:ring-opacity-20 transition-all touch-manipulation"
                                   placeholder="รูปแบบการจัดส่ง เช่น ปกติ/ด่วน"
                                   value={shippingDrafts[order.id]?.shippingMethod ?? order.shippingMethod ?? ''}
                                   onChange={(e) => setShippingDrafts((prev) => ({
@@ -392,7 +392,7 @@ export default function StoreOrdersPage() {
                                   }))}
                                 />
                                 <input
-                                  className="border-2 border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:border-[#0B44A3] focus:ring-2 focus:ring-[#0B44A3] focus:ring-opacity-20 transition-all"
+                                  className="border-2 border-gray-200 rounded-lg px-3 sm:px-4 py-2 sm:py-2.5 text-xs sm:text-sm focus:border-[#0B44A3] focus:ring-2 focus:ring-[#0B44A3] focus:ring-opacity-20 transition-all touch-manipulation"
                                   placeholder="ชื่อขนส่ง เช่น Kerry, J&T, Flash"
                                   value={shippingDrafts[order.id]?.shippingCarrier ?? order.shippingCarrier ?? ''}
                                   onChange={(e) => setShippingDrafts((prev) => ({
@@ -405,7 +405,7 @@ export default function StoreOrdersPage() {
                                   }))}
                                 />
                                 <input
-                                  className="border-2 border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:border-[#0B44A3] focus:ring-2 focus:ring-[#0B44A3] focus:ring-opacity-20 transition-all"
+                                  className="border-2 border-gray-200 rounded-lg px-3 sm:px-4 py-2 sm:py-2.5 text-xs sm:text-sm focus:border-[#0B44A3] focus:ring-2 focus:ring-[#0B44A3] focus:ring-opacity-20 transition-all touch-manipulation"
                                   placeholder="Shipping ID / Tracking No."
                                   value={shippingDrafts[order.id]?.shippingId ?? order.shippingId ?? ''}
                                   onChange={(e) => setShippingDrafts((prev) => ({
@@ -424,7 +424,7 @@ export default function StoreOrdersPage() {
                                   shippingCarrier: shippingDrafts[order.id]?.shippingCarrier ?? order.shippingCarrier,
                                   shippingId: shippingDrafts[order.id]?.shippingId ?? order.shippingId
                                 })}
-                                className="w-full px-4 py-2.5 bg-gradient-to-r from-[#0B44A3] to-[#1a5fd4] text-white rounded-lg text-sm font-semibold hover:opacity-90 transition-all shadow-md"
+                                className="w-full px-3 sm:px-4 py-2 sm:py-2.5 bg-gradient-to-r from-[#0B44A3] to-[#1a5fd4] text-white rounded-lg text-xs sm:text-sm font-semibold hover:opacity-90 transition-all shadow-md touch-manipulation min-h-[44px]"
                               >
                                 บันทึก
                               </button>
@@ -432,32 +432,32 @@ export default function StoreOrdersPage() {
                           </div>
 
                           {/* Read-only shipping summary */}
-                          <div className="mt-3 text-sm text-gray-600 bg-white rounded-lg p-3 border border-gray-200">
-                            <div>รูปแบบการจัดส่ง: {order.shippingMethod || shippingDrafts[order.id]?.shippingMethod || '—'}</div>
-                            <div>ชื่อขนส่ง: {order.shippingCarrier || shippingDrafts[order.id]?.shippingCarrier || '—'}</div>
-                            <div>Shipping ID: {order.shippingId || shippingDrafts[order.id]?.shippingId || '—'}</div>
+                          <div className="mt-2 sm:mt-3 text-xs sm:text-sm text-gray-600 bg-white rounded-lg p-3 border border-gray-200 space-y-1">
+                            <div className="break-words">รูปแบบการจัดส่ง: {order.shippingMethod || shippingDrafts[order.id]?.shippingMethod || '—'}</div>
+                            <div className="break-words">ชื่อขนส่ง: {order.shippingCarrier || shippingDrafts[order.id]?.shippingCarrier || '—'}</div>
+                            <div className="break-words">Shipping ID: {order.shippingId || shippingDrafts[order.id]?.shippingId || '—'}</div>
                           </div>
 
                           {order.status === 'PENDING' && (
-                            <div className="mt-5 flex gap-3">
+                            <div className="mt-4 sm:mt-5 flex flex-col sm:flex-row gap-2 sm:gap-3">
                               <button 
                                 onClick={() => updateOrderStatus(order.id, 'APPROVED')}
-                                className="flex-1 px-4 py-3 bg-gradient-to-r from-green-500 to-green-600 text-white rounded-xl hover:opacity-90 transition-all flex items-center justify-center gap-2 font-semibold shadow-md"
+                                className="flex-1 px-3 sm:px-4 py-2.5 sm:py-3 bg-gradient-to-r from-green-500 to-green-600 text-white rounded-xl hover:opacity-90 transition-all flex items-center justify-center gap-2 font-semibold shadow-md text-sm sm:text-base min-h-[44px] touch-manipulation"
                               >
-                                <Check className="w-5 h-5" /> ยืนยันคำสั่งซื้อ
+                                <Check className="w-4 h-4 sm:w-5 sm:h-5" /> ยืนยันคำสั่งซื้อ
                               </button>
                               <button 
                                 onClick={() => updateOrderStatus(order.id, 'REJECTED')}
-                                className="flex-1 px-4 py-3 border-2 border-red-300 text-red-600 rounded-xl hover:bg-red-50 transition-all flex items-center justify-center gap-2 font-semibold"
+                                className="flex-1 px-3 sm:px-4 py-2.5 sm:py-3 border-2 border-red-300 text-red-600 rounded-xl hover:bg-red-50 transition-all flex items-center justify-center gap-2 font-semibold text-sm sm:text-base min-h-[44px] touch-manipulation"
                               >
-                                <X className="w-5 h-5" /> ปฏิเสธคำสั่งซื้อ
+                                <X className="w-4 h-4 sm:w-5 sm:h-5" /> ปฏิเสธคำสั่งซื้อ
                               </button>
                             </div>
                           )}
 
                           {showStatusError && (
-                            <div className="mt-4 flex items-center gap-2 text-sm text-red-600 bg-red-50 p-3 rounded-lg border border-red-200">
-                              <AlertTriangle className="w-5 h-5" /> {showStatusError}
+                            <div className="mt-3 sm:mt-4 flex items-center gap-2 text-xs sm:text-sm text-red-600 bg-red-50 p-3 rounded-lg border border-red-200">
+                              <AlertTriangle className="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0" /> <span className="break-words">{showStatusError}</span>
                             </div>
                           )}
                         </div>

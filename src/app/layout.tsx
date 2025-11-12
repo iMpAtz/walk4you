@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./styles/globals.css";
 import { CartProvider } from "@/contexts/CartContext";
@@ -19,13 +19,21 @@ export const metadata: Metadata = {
   description: "Senior Project by Team Walk4You",
 };
 
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 5,
+  userScalable: true,
+  viewportFit: 'cover', // For iPhone notch support
+};
+
 export default function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html lang="th">
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >

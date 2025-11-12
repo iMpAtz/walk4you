@@ -93,7 +93,7 @@ export default function RegisterPage() {
   };
 
   return (
-    <div className="relative flex min-h-screen items-center justify-end bg-gradient-to-br from-[#191919] to-[#1f1f1f] overflow-hidden pr-16">
+    <div className="relative flex min-h-screen items-center justify-center sm:justify-end bg-gradient-to-br from-[#191919] to-[#1f1f1f] overflow-hidden px-4 sm:pr-16 py-8">
       {/* Bubbles */}
       <div className="bubble"></div>
       <div className="bubble"></div>
@@ -101,16 +101,16 @@ export default function RegisterPage() {
       <div className="bubble"></div>
 
       {/* Register Card */}
-      <div className="w-full max-w-md rounded-3xl bg-white/10 p-8 shadow-2xl backdrop-blur-md relative z-10 border border-white/20 max-h-[90vh] overflow-y-auto">
-        <h1 className="mb-6 text-center text-4xl font-bold text-white">Sign Up 🎉</h1>
+      <div className="w-full max-w-md rounded-3xl bg-white/10 p-6 sm:p-8 shadow-2xl backdrop-blur-md relative z-10 border border-white/20 max-h-[90vh] overflow-y-auto">
+        <h1 className="mb-4 sm:mb-6 text-center text-2xl sm:text-4xl font-bold text-white">Sign Up 🎉</h1>
         
-        <form onSubmit={onSubmit} className="space-y-4">
+        <form onSubmit={onSubmit} className="space-y-3 sm:space-y-4">
           <input
             type="text"
             placeholder="Full Name"
             value={fullName}
             onChange={(e) => setFullName(e.target.value)}
-            className="w-full rounded-lg border border-gray-700 bg-[#2a2a2a] p-3 text-white placeholder-gray-400 focus:border-[#0B44A3] focus:outline-none focus:ring-2 focus:ring-[#0B44A3]/50 transition"
+            className="w-full rounded-lg border border-gray-700 bg-[#2a2a2a] p-3 text-white placeholder-gray-400 focus:border-[#0B44A3] focus:outline-none focus:ring-2 focus:ring-[#0B44A3]/50 transition text-base touch-manipulation"
           />
 
           <input
@@ -118,7 +118,7 @@ export default function RegisterPage() {
             placeholder="Username"
             value={username}
             onChange={(e) => setUsername(sanitizeSql(e.target.value))}
-            className="w-full rounded-lg border border-gray-700 bg-[#2a2a2a] p-3 text-white placeholder-gray-400 focus:border-[#0B44A3] focus:outline-none focus:ring-2 focus:ring-[#0B44A3]/50 transition"
+            className="w-full rounded-lg border border-gray-700 bg-[#2a2a2a] p-3 text-white placeholder-gray-400 focus:border-[#0B44A3] focus:outline-none focus:ring-2 focus:ring-[#0B44A3]/50 transition text-base touch-manipulation"
             autoCorrect="off"
             autoCapitalize="none"
             spellCheck={false}
@@ -131,7 +131,7 @@ export default function RegisterPage() {
             placeholder="Password"
             value={password}
             onChange={(e) => setPassword(sanitizeSql(e.target.value))}
-            className="w-full rounded-lg border border-gray-700 bg-[#2a2a2a] p-3 text-white placeholder-gray-400 focus:border-[#0B44A3] focus:outline-none focus:ring-2 focus:ring-[#0B44A3]/50 transition"
+            className="w-full rounded-lg border border-gray-700 bg-[#2a2a2a] p-3 text-white placeholder-gray-400 focus:border-[#0B44A3] focus:outline-none focus:ring-2 focus:ring-[#0B44A3]/50 transition text-base touch-manipulation"
             autoCorrect="off"
             autoCapitalize="none"
             spellCheck={false}
@@ -144,7 +144,7 @@ export default function RegisterPage() {
             placeholder="Confirm Password"
             value={confirm}
             onChange={(e) => setConfirm(sanitizeSql(e.target.value))}
-            className="w-full rounded-lg border border-gray-700 bg-[#2a2a2a] p-3 text-white placeholder-gray-400 focus:border-[#0B44A3] focus:outline-none focus:ring-2 focus:ring-[#0B44A3]/50 transition"
+            className="w-full rounded-lg border border-gray-700 bg-[#2a2a2a] p-3 text-white placeholder-gray-400 focus:border-[#0B44A3] focus:outline-none focus:ring-2 focus:ring-[#0B44A3]/50 transition text-base touch-manipulation"
             autoCorrect="off"
             autoCapitalize="none"
             spellCheck={false}
@@ -157,7 +157,7 @@ export default function RegisterPage() {
             placeholder="Email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            className="w-full rounded-lg border border-gray-700 bg-[#2a2a2a] p-3 text-white placeholder-gray-400 focus:border-[#0B44A3] focus:outline-none focus:ring-2 focus:ring-[#0B44A3]/50 transition"
+            className="w-full rounded-lg border border-gray-700 bg-[#2a2a2a] p-3 text-white placeholder-gray-400 focus:border-[#0B44A3] focus:outline-none focus:ring-2 focus:ring-[#0B44A3]/50 transition text-base touch-manipulation"
             required
           />
 
@@ -166,17 +166,17 @@ export default function RegisterPage() {
             placeholder="Phone Number"
             value={phone}
             onChange={(e) => setPhone(e.target.value)}
-            className="w-full rounded-lg border border-gray-700 bg-[#2a2a2a] p-3 text-white placeholder-gray-400 focus:border-[#0B44A3] focus:outline-none focus:ring-2 focus:ring-[#0B44A3]/50 transition"
+            className="w-full rounded-lg border border-gray-700 bg-[#2a2a2a] p-3 text-white placeholder-gray-400 focus:border-[#0B44A3] focus:outline-none focus:ring-2 focus:ring-[#0B44A3]/50 transition text-base touch-manipulation"
             required
           />
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-sm text-gray-300 mb-1">Gender</label>
+              <label className="block text-xs sm:text-sm text-gray-300 mb-1">Gender</label>
               <select
                 value={gender}
                 onChange={(e) => setGender(e.target.value as any)}
-                className="w-full rounded-lg border border-gray-700 bg-[#2a2a2a] p-3 text-white focus:border-[#0B44A3] focus:outline-none focus:ring-2 focus:ring-[#0B44A3]/50 transition"
+                className="w-full rounded-lg border border-gray-700 bg-[#2a2a2a] p-3 text-white focus:border-[#0B44A3] focus:outline-none focus:ring-2 focus:ring-[#0B44A3]/50 transition text-base touch-manipulation"
               >
                 <option value="Male">Male</option>
                 <option value="Female">Female</option>
@@ -186,12 +186,12 @@ export default function RegisterPage() {
           </div>
 
           <div>
-            <label className="block text-sm text-gray-300 mb-1">Birth Date</label>
+            <label className="block text-xs sm:text-sm text-gray-300 mb-1">Birth Date</label>
             <div className="grid grid-cols-3 gap-2">
               <select 
                 value={day} 
                 onChange={(e) => setDay(e.target.value)} 
-                className="w-full rounded-lg border border-gray-700 bg-[#2a2a2a] p-3 text-white focus:border-[#0B44A3] focus:outline-none focus:ring-2 focus:ring-[#0B44A3]/50 transition"
+                className="w-full rounded-lg border border-gray-700 bg-[#2a2a2a] p-2.5 sm:p-3 text-white focus:border-[#0B44A3] focus:outline-none focus:ring-2 focus:ring-[#0B44A3]/50 transition text-sm sm:text-base touch-manipulation"
               >
                 <option value="">Day</option>
                 {days.map((d) => (
@@ -202,18 +202,18 @@ export default function RegisterPage() {
               <select 
                 value={month} 
                 onChange={(e) => setMonth(e.target.value)} 
-                className="w-full rounded-lg border border-gray-700 bg-[#2a2a2a] p-3 text-white focus:border-[#0B44A3] focus:outline-none focus:ring-2 focus:ring-[#0B44A3]/50 transition"
+                className="w-full rounded-lg border border-gray-700 bg-[#2a2a2a] p-2.5 sm:p-3 text-white focus:border-[#0B44A3] focus:outline-none focus:ring-2 focus:ring-[#0B44A3]/50 transition text-sm sm:text-base touch-manipulation"
               >
-                <option value="">Month</option>
+                <option value="">Mon</option>
                 {months.map((m) => (
-                  <option key={m.v} value={m.v}>{m.t}</option>
+                  <option key={m.v} value={m.v}>{m.t.slice(0, 3)}</option>
                 ))}
               </select>
               
               <select 
                 value={year} 
                 onChange={(e) => setYear(e.target.value)} 
-                className="w-full rounded-lg border border-gray-700 bg-[#2a2a2a] p-3 text-white focus:border-[#0B44A3] focus:outline-none focus:ring-2 focus:ring-[#0B44A3]/50 transition"
+                className="w-full rounded-lg border border-gray-700 bg-[#2a2a2a] p-2.5 sm:p-3 text-white focus:border-[#0B44A3] focus:outline-none focus:ring-2 focus:ring-[#0B44A3]/50 transition text-sm sm:text-base touch-manipulation"
               >
                 <option value="">Year</option>
                 {years.map((y) => (
@@ -223,19 +223,19 @@ export default function RegisterPage() {
             </div>
           </div>
 
-          {error && <p className="text-sm text-red-400">{error}</p>}
+          {error && <p className="text-sm text-red-400 text-center">{error}</p>}
 
           <button
             type="submit"
             disabled={loading}
-            className="w-full rounded-lg bg-white px-4 py-3 font-semibold text-black shadow-md transition transform hover:scale-105 hover:shadow-lg hover:bg-gray-100 disabled:opacity-60 disabled:cursor-not-allowed"
+            className="w-full rounded-lg bg-white px-4 py-3 font-semibold text-black shadow-md transition active:scale-95 hover:shadow-lg hover:bg-gray-100 disabled:opacity-60 disabled:cursor-not-allowed touch-manipulation text-base min-h-[48px]"
           >
             {loading ? 'Loading...' : 'Sign Up'}
           </button>
         </form>
 
-        <p className="mt-6 text-center text-sm text-gray-300">
-          Already have an account? <a href="/login" className="text-[#0B44A3] underline font-semibold">Login</a>
+        <p className="mt-4 sm:mt-6 text-center text-sm text-gray-300">
+          Already have an account? <a href="/login" className="text-[#0B44A3] underline font-semibold touch-manipulation">Login</a>
         </p>
       </div>
 
@@ -248,10 +248,17 @@ export default function RegisterPage() {
           border-radius: 50%;
           animation: rise 20s infinite ease-in;
         }
-        .bubble:nth-child(1) { width: 80px; height: 80px; left: 20%; animation-duration: 18s; }
-        .bubble:nth-child(2) { width: 50px; height: 50px; left: 40%; animation-duration: 22s; }
-        .bubble:nth-child(3) { width: 100px; height: 100px; left: 60%; animation-duration: 25s; }
-        .bubble:nth-child(4) { width: 70px; height: 70px; left: 80%; animation-duration: 20s; }
+        .bubble:nth-child(1) { width: 60px; height: 60px; left: 20%; animation-duration: 18s; }
+        .bubble:nth-child(2) { width: 40px; height: 40px; left: 40%; animation-duration: 22s; }
+        .bubble:nth-child(3) { width: 80px; height: 80px; left: 60%; animation-duration: 25s; }
+        .bubble:nth-child(4) { width: 50px; height: 50px; left: 80%; animation-duration: 20s; }
+
+        @media (min-width: 640px) {
+          .bubble:nth-child(1) { width: 80px; height: 80px; }
+          .bubble:nth-child(2) { width: 50px; height: 50px; }
+          .bubble:nth-child(3) { width: 100px; height: 100px; }
+          .bubble:nth-child(4) { width: 70px; height: 70px; }
+        }
 
         @keyframes rise {
           0% { transform: translateY(0) scale(1); opacity: 0.6; }
