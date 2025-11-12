@@ -34,6 +34,7 @@ interface DashboardData {
     status: string;
     total: number;
     itemCount: number;
+    productNames: string;
   }>;
   dailySales: Array<{
     date: string;
@@ -77,6 +78,8 @@ export default function StoreDashboardPage() {
       }
 
       const dashboardData = await res.json();
+      console.log('Dashboard data:', dashboardData); // Debug log
+      console.log('Recent orders:', dashboardData.recentOrders); // Debug log
       setData(dashboardData);
     } catch (err: any) {
       setError(err.message || 'เกิดข้อผิดพลาด');
@@ -122,12 +125,15 @@ export default function StoreDashboardPage() {
   };
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('th-TH', {
+    // Backend sends UTC time, need to add 'Z' to indicate UTC timezone
+    const utcDate = dateString.endsWith('Z') ? dateString : dateString + 'Z';
+    return new Date(utcDate).toLocaleDateString('th-TH', {
       year: 'numeric',
       month: 'short',
       day: 'numeric',
       hour: '2-digit',
-      minute: '2-digit'
+      minute: '2-digit',
+      timeZone: 'Asia/Bangkok'
     });
   };
 
@@ -311,8 +317,8 @@ export default function StoreDashboardPage() {
             </div>
             <h2 className="text-lg font-bold text-gray-900">คำสั่งซื้อล่าสุด</h2>
           </div>
-          <div className="space-y-2">
-            {data.recentOrders.length === 0 ? (
+          <div className="space-y-2 max-h-[400px] overflow-y-auto pr-2">
+            {!data.recentOrders || data.recentOrders.length === 0 ? (
               <div className="text-center py-8">
                 <ShoppingCart className="w-12 h-12 text-gray-300 mx-auto mb-2" />
                 <p className="text-gray-500">ยังไม่มีคำสั่งซื้อ</p>
@@ -322,10 +328,10 @@ export default function StoreDashboardPage() {
                 <div key={order.orderId} className="flex items-center justify-between p-3 hover:bg-gray-50 rounded-lg transition-colors border border-gray-100">
                   <div className="flex-1">
                     <div className="flex items-center gap-2 mb-1">
-                      <p className="text-sm font-semibold text-gray-900">#{order.orderId.slice(-8)}</p>
+                      <p className="text-sm font-semibold text-gray-900">{order.productNames}</p>
                       {getStatusBadge(order.status)}
                     </div>
-                    <p className="text-xs text-gray-500">{formatDate(order.orderDate)} • {order.itemCount} รายการ</p>
+                    <p className="text-xs text-gray-500">{formatDate(order.orderDate)}</p>
                   </div>
                   <p className="font-bold text-[#0B44A3]">{formatCurrency(order.total)}</p>
                 </div>
@@ -343,8 +349,8 @@ export default function StoreDashboardPage() {
           </div>
           <h2 className="text-lg font-bold text-gray-900">ยอดขายรายวัน (30 วันล่าสุด)</h2>
         </div>
-        <div className="overflow-x-auto">
-          <div className="flex gap-2 min-w-max">
+        <div className="w-full">
+          <div className="flex gap-1 justify-between w-full">
             {data.dailySales.length === 0 ? (
               <div className="text-center py-8 w-full">
                 <TrendingUp className="w-12 h-12 text-gray-300 mx-auto mb-2" />
@@ -353,19 +359,21 @@ export default function StoreDashboardPage() {
             ) : (
               data.dailySales.map((day) => {
                 const maxRevenue = Math.max(...data.dailySales.map(d => d.revenue), 1);
-                const height = (day.revenue / maxRevenue) * 180;
+                const height = (day.revenue / maxRevenue) * 250;
                 return (
-                  <div key={day.date} className="flex flex-col items-center gap-2">
-                    <div className="text-xs font-bold text-gray-900">
-                      {formatCurrency(day.revenue)}
+                  <div key={day.date} className="flex flex-col items-center gap-1">
+                    <div className="flex-1 flex items-end" style={{ height: '250px' }}>
+                      <div 
+                        className="w-8 bg-gradient-to-t from-[#0B44A3] to-[#1a5fd4] rounded-t-lg transition-all hover:opacity-80 shadow-sm"
+                        style={{ height: `${height}px`, minHeight: day.revenue > 0 ? '20px' : '0px' }}
+                        title={`${day.date}: ${formatCurrency(day.revenue)}`}
+                      ></div>
                     </div>
-                    <div 
-                      className="w-12 bg-gradient-to-t from-[#0B44A3] to-[#1a5fd4] rounded-t-xl transition-all hover:opacity-80 shadow-sm"
-                      style={{ height: `${height}px`, minHeight: '30px' }}
-                      title={`${day.date}: ${formatCurrency(day.revenue)}`}
-                    ></div>
-                    <div className="text-xs text-gray-500 rotate-45 origin-left whitespace-nowrap">
-                      {new Date(day.date).toLocaleDateString('th-TH', { month: 'short', day: 'numeric' })}
+                    <div className="text-[7px] text-gray-500 rotate-45 origin-left whitespace-nowrap">
+                      {new Date(day.date + 'T00:00:00Z').toLocaleDateString('th-TH', { 
+                        day: 'numeric',
+                        timeZone: 'Asia/Bangkok'
+                      })}
                     </div>
                   </div>
                 );
@@ -396,7 +404,11 @@ export default function StoreDashboardPage() {
               return (
                 <div key={month.month} className="flex items-center gap-4">
                   <div className="w-24 text-sm font-semibold text-gray-700">
-                    {new Date(month.month + '-01').toLocaleDateString('th-TH', { year: 'numeric', month: 'short' })}
+                    {new Date(month.month + '-01T00:00:00Z').toLocaleDateString('th-TH', { 
+                      year: 'numeric', 
+                      month: 'short',
+                      timeZone: 'Asia/Bangkok'
+                    })}
                   </div>
                   <div className="flex-1">
                     <div className="bg-gray-100 rounded-full h-10 overflow-hidden shadow-inner">

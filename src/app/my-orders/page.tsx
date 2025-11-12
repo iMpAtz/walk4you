@@ -138,7 +138,8 @@ export default function MyOrdersPage() {
                         <div className="text-sm text-gray-500">สถานะ: {order.status || '—'}</div>
                       </div>
                       <div className="text-right text-sm text-gray-500">
-                        {order.createdAt ? new Date(order.createdAt).toLocaleString() : ''}
+                        {order.updatedAt ? new Date(order.updatedAt.endsWith('Z') ? order.updatedAt : order.updatedAt + 'Z').toLocaleString('th-TH', { timeZone: 'Asia/Bangkok' }) :
+                         order.createdAt ? new Date(order.createdAt.endsWith('Z') ? order.createdAt : order.createdAt + 'Z').toLocaleString('th-TH', { timeZone: 'Asia/Bangkok' }) : ''}
                       </div>
                     </div>
 

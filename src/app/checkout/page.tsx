@@ -298,9 +298,13 @@ export default function CheckoutPage() {
                   <input
                     type="tel"
                     value={phoneNumber}
-                    onChange={(e) => setPhoneNumber(e.target.value)}
+                    onChange={(e) => {
+                      const value = e.target.value.replace(/\D/g, '');
+                      setPhoneNumber(value);
+                    }}
                     placeholder="กรอกเบอร์โทรติดต่อผู้รับ"
                     className="w-full border rounded-lg px-3 py-2.5 text-base touch-manipulation"
+                    maxLength={10}
                   />
                 </div>
                 <div className="border-t pt-2 sm:pt-3">

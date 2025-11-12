@@ -138,9 +138,9 @@ export default function TopBar() {
                   onClick={() => setIsSidebarOpen(true)}
                   className="flex items-center gap-2 lg:gap-3 px-3 lg:px-4 py-2 hover:bg-[#093782] rounded-full transition cursor-pointer"
                 >
-                  {userProfile?.avatar?.url ? (
+                  {userProfile?.avatar?.secure_url || userProfile?.avatar?.url ? (
                     <img
-                      src={userProfile.avatar.url}
+                      src={userProfile.avatar.secure_url || userProfile.avatar.url}
                       alt={userProfile.username}
                       className="w-8 h-8 rounded-full object-cover"
                     />

@@ -37,6 +37,37 @@ export default function CheckoutConfirmPage() {
   const [selection, setSelection] = useState<any>(null);
   const [address, setAddress] = useState('');
   const [phoneNumber, setPhoneNumber] = useState('');
+  const [userProfile, setUserProfile] = useState<any>(null);
+  const [useCustomAddress, setUseCustomAddress] = useState(false);
+
+  // Fetch user profile to get saved address
+  useEffect(() => {
+    const fetchUserProfile = async () => {
+      try {
+        const token = localStorage.getItem('access_token');
+        if (!token) return;
+
+        const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE || 'http://localhost:8000'}/users/me`, {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+          },
+        });
+
+        if (response.ok) {
+          const profile = await response.json();
+          setUserProfile(profile);
+          // Set default address from profile if available
+          if (profile.address && !useCustomAddress) {
+            setAddress(profile.address);
+          }
+        }
+      } catch (error) {
+        console.error('Failed to fetch user profile:', error);
+      }
+    };
+
+    fetchUserProfile();
+  }, [useCustomAddress]);
 
   useEffect(() => {
     const stored = sessionStorage.getItem('checkoutData');
@@ -181,21 +212,66 @@ export default function CheckoutConfirmPage() {
 
           <div className="bg-white p-4 rounded shadow">
             <h3 className="font-semibold mb-2">ที่อยู่สำหรับจัดส่ง</h3>
-            <textarea
-              value={address}
-              onChange={(e) => setAddress(e.target.value)}
-              rows={4}
-              className="w-full p-2 border rounded"
-              placeholder="กรอกที่อยู่จัดส่งของผู้รับ"
-            />
+            
+            {/* Address selection options */}
+            {userProfile?.address && (
+              <div className="mb-4 space-y-2">
+                <label className="flex items-center gap-2 p-3 border rounded cursor-pointer hover:bg-gray-50 transition">
+                  <input
+                    type="radio"
+                    name="addressOption"
+                    checked={!useCustomAddress}
+                    onChange={() => {
+                      setUseCustomAddress(false);
+                      setAddress(userProfile.address);
+                    }}
+                    className="w-4 h-4"
+                  />
+                  <div className="flex-1">
+                    <div className="font-medium text-sm">ใช้ที่อยู่ที่บันทึกไว้</div>
+                    <div className="text-sm text-gray-600 mt-1">{userProfile.address}</div>
+                  </div>
+                </label>
+                
+                <label className="flex items-center gap-2 p-3 border rounded cursor-pointer hover:bg-gray-50 transition">
+                  <input
+                    type="radio"
+                    name="addressOption"
+                    checked={useCustomAddress}
+                    onChange={() => {
+                      setUseCustomAddress(true);
+                      setAddress('');
+                    }}
+                    className="w-4 h-4"
+                  />
+                  <div className="font-medium text-sm">กรอกที่อยู่ใหม่</div>
+                </label>
+              </div>
+            )}
+            
+            {/* Address textarea - shown when custom address is selected or no saved address */}
+            {(useCustomAddress || !userProfile?.address) && (
+              <textarea
+                value={address}
+                onChange={(e) => setAddress(e.target.value)}
+                rows={4}
+                className="w-full p-2 border rounded"
+                placeholder="กรอกที่อยู่จัดส่งของผู้รับ"
+              />
+            )}
+            
           <div className="mt-3">
             <label className="block text-sm font-medium mb-1">เบอร์โทรผู้รับ</label>
             <input
               type="tel"
               value={phoneNumber}
-              onChange={(e) => setPhoneNumber(e.target.value)}
+              onChange={(e) => {
+                const value = e.target.value.replace(/\D/g, '');
+                setPhoneNumber(value);
+              }}
               className="w-full p-2 border rounded"
               placeholder="กรอกเบอร์โทร"
+              maxLength={10}
             />
           </div>
           </div>

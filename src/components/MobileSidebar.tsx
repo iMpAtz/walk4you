@@ -73,9 +73,9 @@ export default function MobileSidebar({ isOpen, onClose, userProfile, onLogout, 
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b">
           <div className="flex items-center gap-3">
-            {userProfile?.avatar?.url ? (
+            {userProfile?.avatar?.secure_url || userProfile?.avatar?.url ? (
               <Image 
-                src={userProfile.avatar.url} 
+                src={(userProfile.avatar.secure_url || userProfile.avatar.url)!} 
                 alt="Profile" 
                 width={40} 
                 height={40} 

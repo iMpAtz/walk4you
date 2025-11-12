@@ -117,12 +117,16 @@ export default function RegisterPage() {
             type="text"
             placeholder="Username"
             value={username}
-            onChange={(e) => setUsername(sanitizeSql(e.target.value))}
+            onChange={(e) => {
+              // Allow only English letters, numbers, underscore, and hyphen
+              const value = e.target.value.replace(/[^a-zA-Z0-9_-]/g, '');
+              setUsername(value);
+            }}
             className="w-full rounded-lg border border-gray-700 bg-[#2a2a2a] p-3 text-white placeholder-gray-400 focus:border-[#0B44A3] focus:outline-none focus:ring-2 focus:ring-[#0B44A3]/50 transition text-base touch-manipulation"
             autoCorrect="off"
             autoCapitalize="none"
             spellCheck={false}
-            title="ห้ามใช้อักขระพิเศษเช่น ', \\ , ;, --"
+            title="ใช้ได้เฉพาะภาษาอังกฤษ ตัวเลข _ และ -"
             required
           />
 
@@ -193,7 +197,7 @@ export default function RegisterPage() {
                 onChange={(e) => setDay(e.target.value)} 
                 className="w-full rounded-lg border border-gray-700 bg-[#2a2a2a] p-2.5 sm:p-3 text-white focus:border-[#0B44A3] focus:outline-none focus:ring-2 focus:ring-[#0B44A3]/50 transition text-sm sm:text-base touch-manipulation"
               >
-                <option value="">Day</option>
+                <option value="" disabled hidden>Day</option>
                 {days.map((d) => (
                   <option key={d} value={d}>{d}</option>
                 ))}
@@ -204,9 +208,9 @@ export default function RegisterPage() {
                 onChange={(e) => setMonth(e.target.value)} 
                 className="w-full rounded-lg border border-gray-700 bg-[#2a2a2a] p-2.5 sm:p-3 text-white focus:border-[#0B44A3] focus:outline-none focus:ring-2 focus:ring-[#0B44A3]/50 transition text-sm sm:text-base touch-manipulation"
               >
-                <option value="">Mon</option>
+                <option value="" disabled hidden>Month</option>
                 {months.map((m) => (
-                  <option key={m.v} value={m.v}>{m.t.slice(0, 3)}</option>
+                  <option key={m.v} value={m.v}>{m.v}</option>
                 ))}
               </select>
               
@@ -215,7 +219,7 @@ export default function RegisterPage() {
                 onChange={(e) => setYear(e.target.value)} 
                 className="w-full rounded-lg border border-gray-700 bg-[#2a2a2a] p-2.5 sm:p-3 text-white focus:border-[#0B44A3] focus:outline-none focus:ring-2 focus:ring-[#0B44A3]/50 transition text-sm sm:text-base touch-manipulation"
               >
-                <option value="">Year</option>
+                <option value="" disabled hidden>Year</option>
                 {years.map((y) => (
                   <option key={y} value={y}>{y}</option>
                 ))}

@@ -52,6 +52,8 @@ export default function AvatarUpload({ currentAvatar, onAvatarUpdate, username }
 
       const uploadResult = await uploadResponse.json();
       
+      console.log('Cloudinary upload result:', uploadResult); // Debug log
+      
       if (uploadResult.secure_url) {
         // Update avatar in database
         const token = localStorage.getItem('access_token');
@@ -73,14 +75,23 @@ export default function AvatarUpload({ currentAvatar, onAvatarUpdate, username }
         });
 
         if (updateResponse.ok) {
+          const result = await updateResponse.json();
+          console.log('Avatar updated successfully:', result);
+          alert('อัปโหลดรูปโปรไฟล์สำเร็จ ✓');
           onAvatarUpdate(uploadResult);
           setPreviewUrl(null);
         } else {
-          console.error('Failed to update avatar in database');
+          const errorData = await updateResponse.json();
+          console.error('Failed to update avatar in database:', errorData);
+          alert(`เกิดข้อผิดพลาด: ${errorData.detail || 'ไม่สามารถอัปโหลดรูปได้'}`);
         }
+      } else {
+        console.error('No secure_url in upload result:', uploadResult);
+        alert('เกิดข้อผิดพลาดในการอัปโหลดไปยัง Cloudinary');
       }
     } catch (error) {
       console.error('Avatar upload failed:', error);
+      alert(`เกิดข้อผิดพลาด: ${error instanceof Error ? error.message : 'ไม่สามารถอัปโหลดรูปได้'}`);
     } finally {
       setIsUploading(false);
     }

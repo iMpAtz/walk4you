@@ -27,14 +27,16 @@ export type UserProfile = {
     status?: string;
     address?: string;
     avatar?: {
-        url: string;
-        publicId: string;
+        url?: string;
+        secure_url?: string;
+        publicId?: string;
+        public_id?: string;
         folder?: string;
         width?: number;
         height?: number;
         bytes?: number;
         format?: string;
-        updatedAt: string;
+        updatedAt?: string;
     };
 };
 

@@ -1,6 +1,6 @@
 'use client';
 
-import { useSearchParams } from 'next/navigation';
+import { useSearchParams, useRouter } from 'next/navigation';
 import SearchBar from '@/components/Searchbar';
 import TopBar from '@/components/TopBar';
 import { useEffect, useState } from 'react';
@@ -16,6 +16,7 @@ interface Product {
 
 export default function SearchPage() {
   const searchParams = useSearchParams();
+  const router = useRouter();
   const query = searchParams.get('query') || '';
   const [results, setResults] = useState<Product[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -63,7 +64,11 @@ export default function SearchPage() {
         ) : (
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {results.map(p => (
-              <div key={p.id} className="bg-white border rounded-lg shadow-sm hover:shadow-lg cursor-pointer transition">
+              <div 
+                key={p.id} 
+                onClick={() => router.push(`/products/${p.id}`)}
+                className="bg-white border rounded-lg shadow-sm hover:shadow-lg cursor-pointer transition"
+              >
                 <div className="h-[180px] overflow-hidden rounded-t-lg relative">
                   {p.image_url ? <Image src={p.image_url} alt={p.name} fill className="object-cover hover:scale-110 transition" /> : <div className="bg-gray-200 w-full h-full" />}
                 </div>

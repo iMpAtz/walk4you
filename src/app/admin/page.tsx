@@ -527,7 +527,7 @@ export default function AdminPage() {
                               <p className="text-gray-600 mb-2">{report.description}</p>
                             )}
                             <div className="text-xs text-gray-500">
-                              ส่งเมื่อ: {new Date(report.submittedAt).toLocaleString('th-TH')}
+                              ส่งเมื่อ: {new Date(report.submittedAt.endsWith('Z') ? report.submittedAt : report.submittedAt + 'Z').toLocaleString('th-TH', { timeZone: 'Asia/Bangkok' })}
                             </div>
                           </div>
                           <div className="flex items-center gap-2">
@@ -604,7 +604,7 @@ export default function AdminPage() {
                         </td>
                         <td className="px-4 py-3 text-sm text-gray-600">{user.storeCount}</td>
                         <td className="px-4 py-3 text-sm text-gray-600">
-                          {new Date(user.registerDate).toLocaleDateString('th-TH')}
+                          {new Date(user.registerDate.endsWith('Z') ? user.registerDate : user.registerDate + 'Z').toLocaleDateString('th-TH', { timeZone: 'Asia/Bangkok' })}
                         </td>
                         <td className="px-4 py-3 text-sm">
                           <div className="flex gap-2">
@@ -661,7 +661,7 @@ export default function AdminPage() {
                               <span className="font-medium">เจ้าของ:</span> {store.ownerUsername}
                             </div>
                             <div className="text-xs text-gray-500 mt-2">
-                              เปิดร้าน: {new Date(store.registerDate).toLocaleDateString('th-TH')}
+                              เปิดร้าน: {new Date(store.registerDate.endsWith('Z') ? store.registerDate : store.registerDate + 'Z').toLocaleDateString('th-TH', { timeZone: 'Asia/Bangkok' })}
                             </div>
                           </div>
                           <span className={`px-3 py-1 rounded-full text-sm font-medium ${statusColor.text} ${statusColor.bg}`}>

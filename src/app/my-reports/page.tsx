@@ -146,7 +146,7 @@ export default function MyReportsPage() {
                             <p className="text-gray-700 mb-2">{report.description}</p>
                           )}
                           <div className="text-xs text-gray-500">
-                            ส่งเมื่อ: {new Date(report.submittedAt).toLocaleString('th-TH')}
+                            ส่งเมื่อ: {new Date(report.submittedAt.endsWith('Z') ? report.submittedAt : report.submittedAt + 'Z').toLocaleString('th-TH', { timeZone: 'Asia/Bangkok' })}
                           </div>
                           {report.targetStoreId && (
                             <a

@@ -118,23 +118,10 @@ export default function ProfilePage() {
     // Show success message
   };
 
-  const handleAvatarUpdate = (avatarData: any) => {
-    // Update the user profile with new avatar data
-    if (userProfile) {
-      setUserProfile({
-        ...userProfile,
-        avatar: {
-          url: avatarData.secure_url,
-          publicId: avatarData.public_id,
-          folder: avatarData.folder,
-          width: avatarData.width,
-          height: avatarData.height,
-          bytes: avatarData.bytes,
-          format: avatarData.format,
-          updatedAt: new Date().toISOString(),
-        }
-      });
-    }
+  const handleAvatarUpdate = async (avatarData: any) => {
+    // Refresh user profile from backend to get the latest data
+    console.log('Avatar update callback received:', avatarData);
+    await fetchUserProfile();
   };
 
   const checkUserStore = async () => {
@@ -349,7 +336,7 @@ export default function ProfilePage() {
               {userProfile?.username || 'User'}
             </h3>
             <AvatarUpload 
-              currentAvatar={userProfile?.avatar?.url}
+              currentAvatar={userProfile?.avatar?.secure_url || userProfile?.avatar?.url}
               onAvatarUpdate={handleAvatarUpdate}
               username={userProfile?.username}
             />
@@ -778,10 +765,11 @@ export default function ProfilePage() {
                             Registration Date
                           </label>
                           <div className="text-gray-900">
-                            {new Date(userStore.registerDate).toLocaleDateString('th-TH', {
+                            {new Date(userStore.registerDate.endsWith('Z') ? userStore.registerDate : userStore.registerDate + 'Z').toLocaleDateString('th-TH', {
                               year: 'numeric',
                               month: 'long',
-                              day: 'numeric'
+                              day: 'numeric',
+                              timeZone: 'Asia/Bangkok'
                             })}
                           </div>
                         </div>
@@ -847,7 +835,8 @@ export default function ProfilePage() {
                             </div>
                           </div>
                           <div className="text-right text-xs text-gray-500">
-                            {order.createdAt ? new Date(order.createdAt).toLocaleDateString('th-TH') : ''}
+                            {order.updatedAt ? new Date(order.updatedAt.endsWith('Z') ? order.updatedAt : order.updatedAt + 'Z').toLocaleDateString('th-TH', { timeZone: 'Asia/Bangkok' }) : 
+                             order.createdAt ? new Date(order.createdAt.endsWith('Z') ? order.createdAt : order.createdAt + 'Z').toLocaleDateString('th-TH', { timeZone: 'Asia/Bangkok' }) : ''}
                           </div>
                         </div>
 
@@ -902,7 +891,7 @@ export default function ProfilePage() {
                     {userProfile?.username || 'User'}
                   </h3>
                   <AvatarUpload 
-                    currentAvatar={userProfile?.avatar?.url}
+                    currentAvatar={userProfile?.avatar?.secure_url || userProfile?.avatar?.url}
                     onAvatarUpdate={handleAvatarUpdate}
                     username={userProfile?.username}
                   />
@@ -1331,10 +1320,11 @@ export default function ProfilePage() {
                               Registration Date
                             </label>
                             <div className="text-gray-900">
-                              {new Date(userStore.registerDate).toLocaleDateString('th-TH', {
+                              {new Date(userStore.registerDate.endsWith('Z') ? userStore.registerDate : userStore.registerDate + 'Z').toLocaleDateString('th-TH', {
                                 year: 'numeric',
                                 month: 'long',
-                                day: 'numeric'
+                                day: 'numeric',
+                                timeZone: 'Asia/Bangkok'
                               })}
                             </div>
                           </div>
@@ -1404,7 +1394,8 @@ export default function ProfilePage() {
                               </div>
                             </div>
                             <div className="text-right text-sm text-gray-500">
-                              {order.createdAt ? new Date(order.createdAt).toLocaleString('th-TH') : ''}
+                              {order.updatedAt ? new Date(order.updatedAt.endsWith('Z') ? order.updatedAt : order.updatedAt + 'Z').toLocaleString('th-TH', { timeZone: 'Asia/Bangkok' }) :
+                               order.createdAt ? new Date(order.createdAt.endsWith('Z') ? order.createdAt : order.createdAt + 'Z').toLocaleString('th-TH', { timeZone: 'Asia/Bangkok' }) : ''}
                             </div>
                           </div>
 

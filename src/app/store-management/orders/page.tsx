@@ -35,6 +35,7 @@ interface Order {
   notes?: string;
   paymentProofUrl?: string;
   createdAt?: string;
+  updatedAt?: string;
   shippingMethod?: string;
   shippingCarrier?: string;
   shippingId?: string;
@@ -346,7 +347,7 @@ export default function StoreOrdersPage() {
                             </div>
                           </div>
                           <div className="text-right text-xs text-gray-500 w-full sm:w-auto">
-                            {order.createdAt ? new Date(order.createdAt).toLocaleString('th-TH') : ''}
+                            {order.updatedAt ? new Date(order.updatedAt.endsWith('Z') ? order.updatedAt : order.updatedAt + 'Z').toLocaleString('th-TH', { timeZone: 'Asia/Bangkok' }) : ''}
                           </div>
                         </div>
 

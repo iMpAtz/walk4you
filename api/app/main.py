@@ -102,10 +102,16 @@ async def shutdown_event() -> None:
     if mongo_client is not None:
         mongo_client.close()
 
-# CORS
+# CORS - Allow LAN access
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000", "http://127.0.0.1:3000"],
+    allow_origins=[
+        "http://localhost:3000",
+        "http://127.0.0.1:3000",
+        "http://192.168.1.110:3000",  # Your machine IP
+        "http://192.168.1.146:3000",  # Client machine IP
+        "*"  # Allow all origins (for development only)
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -815,6 +821,65 @@ async def update_address(
         )
 
 
+# ===== Avatar Upload Endpoint =====
+class AvatarUpdate(BaseModel):
+    secure_url: str
+    public_id: str
+    folder: Optional[str] = None
+    width: Optional[int] = None
+    height: Optional[int] = None
+    bytes: Optional[int] = None
+    format: Optional[str] = None
+
+
+@app.post("/users/me/avatar")
+async def update_avatar(
+    avatar_data: AvatarUpdate,
+    db: AsyncIOMotorDatabase = Depends(get_db),
+    current_user=Depends(get_current_user)
+):
+    """Update user avatar"""
+    try:
+        avatar_dict = {
+            "secure_url": avatar_data.secure_url,
+            "public_id": avatar_data.public_id,
+        }
+        
+        # Add optional fields if provided
+        if avatar_data.folder:
+            avatar_dict["folder"] = avatar_data.folder
+        if avatar_data.width:
+            avatar_dict["width"] = avatar_data.width
+        if avatar_data.height:
+            avatar_dict["height"] = avatar_data.height
+        if avatar_data.bytes:
+            avatar_dict["bytes"] = avatar_data.bytes
+        if avatar_data.format:
+            avatar_dict["format"] = avatar_data.format
+        
+        result = await db.User.update_one(
+            {"_id": current_user["_id"]},
+            {"$set": {"avatar": avatar_dict}}
+        )
+        
+        if result.modified_count == 0 and result.matched_count == 0:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="ไม่พบผู้ใช้"
+            )
+        
+        return {"message": "อัปโหลดรูปโปรไฟล์สำเร็จ", "avatar": avatar_dict}
+    
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error updating avatar: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="เกิดข้อผิดพลาดในการอัปโหลดรูปโปรไฟล์"
+        )
+
+
 # Add remaining endpoints following the same optimization patterns:
 # - Use indexed fields in queries
 # - Add projections to limit returned fields
@@ -1277,6 +1342,9 @@ async def get_store_dashboard(
             ]
         }).to_list(None)
         
+        logger.info(f"Store {store_id} - Found {len(orders)} orders")
+        logger.info(f"Product IDs: {product_ids_str}")
+        
         # Calculate statistics (only COMPLETED orders)
         total_revenue = 0
         total_orders = 0
@@ -1288,7 +1356,7 @@ async def get_store_dashboard(
         
         for order in orders:
             order_status = order.get("status", "PENDING")
-            order_date = order.get("orderDate", datetime.utcnow())
+            order_date = order.get("updatedAt") or order.get("orderDate", datetime.utcnow())
             day_key = order_date.strftime("%Y-%m-%d")
             month_key = order_date.strftime("%Y-%m")
             
@@ -1352,24 +1420,63 @@ async def get_store_dashboard(
                 item["name"] = product.get("name", "Unknown")
                 item["price"] = product.get("price", 0)
         
-        # Get recent 10 orders (only COMPLETED orders)
+        # Get recent 10 orders (all statuses)
         recent_orders_list = []
-        completed_orders_with_items = [
-            order for order in orders 
-            if order.get("status") == "COMPLETED" and 
-            any(item.get("productId") in product_ids for item in order.get("items", []))
-        ]
         
-        for order in sorted(completed_orders_with_items, key=lambda x: x.get("orderDate", datetime.min), reverse=True)[:10]:
-            store_items = [item for item in order.get("items", []) if item.get("productId") in product_ids]
+        # Helper function to check if productId matches
+        def is_product_in_store(item_product_id, product_ids, product_ids_str):
+            if isinstance(item_product_id, ObjectId):
+                return item_product_id in product_ids or str(item_product_id) in product_ids_str
+            else:
+                return item_product_id in product_ids_str or (ObjectId(item_product_id) if ObjectId.is_valid(item_product_id) else None) in product_ids
+        
+        orders_with_store_items = []
+        for order in orders:
+            has_store_item = False
+            for item in order.get("items", []):
+                if is_product_in_store(item.get("productId"), product_ids, product_ids_str):
+                    has_store_item = True
+                    break
+            if has_store_item:
+                orders_with_store_items.append(order)
+        
+        logger.info(f"Store {store_id} - Found {len(orders_with_store_items)} orders with store items")
+        
+        for order in sorted(orders_with_store_items, key=lambda x: x.get("updatedAt") or x.get("orderDate", datetime.min), reverse=True)[:5]:
+            store_items = []
+            for item in order.get("items", []):
+                if is_product_in_store(item.get("productId"), product_ids, product_ids_str):
+                    store_items.append(item)
+            
             if store_items:
                 order_total = sum(item.get("price", 0) * item.get("quantity", 0) for item in store_items)
+                
+                # Get product names
+                product_names = []
+                for item in store_items:
+                    product_id = item.get("productId")
+                    if isinstance(product_id, ObjectId):
+                        product_id = product_id
+                    else:
+                        product_id = ObjectId(product_id) if ObjectId.is_valid(str(product_id)) else None
+                    
+                    if product_id:
+                        product = await db.Product.find_one({"_id": product_id})
+                        if product:
+                            qty = item.get("quantity", 1)
+                            product_name = product.get("name", "สินค้า")
+                            if qty > 1:
+                                product_names.append(f"{product_name} x{qty}")
+                            else:
+                                product_names.append(product_name)
+                
                 recent_orders_list.append({
                     "orderId": str(order["_id"]),
-                    "orderDate": order.get("orderDate", datetime.utcnow()).isoformat(),
+                    "orderDate": (order.get("updatedAt") or order.get("orderDate", datetime.utcnow())).isoformat(),
                     "status": order.get("status", "PENDING"),
                     "total": order_total,
-                    "itemCount": sum(item.get("quantity", 0) for item in store_items)
+                    "itemCount": sum(item.get("quantity", 0) for item in store_items),
+                    "productNames": ", ".join(product_names) if product_names else "สินค้า"
                 })
         
         # Format daily sales (last 30 days)
