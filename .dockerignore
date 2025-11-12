@@ -27,8 +27,6 @@ dist/
 .vscode/
 .idea/
 
-# API Backend (excluded from frontend image)
-api/
 
 # Prisma
 prisma/migrations/

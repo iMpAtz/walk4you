@@ -2409,13 +2409,14 @@ async def update_order_status(order_id: str, status_update: OrderStatusUpdate, c
 
         # Notify user
         try:
+            order_id_str = str(order["_id"])
             await create_notification(
                 db=db,
                 user_id=order["userId"],
                 notification_type="order",
                 title="สถานะคำสั่งซื้อเปลี่ยนแปลง",
-                message=f"คำสั่งซื้อของคุณ (ID: {str(order["_id"])}) ถูกเปลี่ยนสถานะเป็น {new_status}",
-                data={"orderId": str(order["_id"]) }
+                message=f"คำสั่งซื้อของคุณ (ID: {order_id_str}) ถูกเปลี่ยนสถานะเป็น {new_status}",
+                data={"orderId": order_id_str}
             )
         except Exception:
             pass

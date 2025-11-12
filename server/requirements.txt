@@ -1,0 +1,19 @@
+# FastAPI Framework
+fastapi
+uvicorn[standard]
+
+# MongoDB Driver
+motor
+pymongo
+
+# Data Validation
+pydantic
+email-validator
+
+# Environment Variables
+python-dotenv
+
+# YOLOv8 for Object Detection
+ultralytics
+
+httpx
