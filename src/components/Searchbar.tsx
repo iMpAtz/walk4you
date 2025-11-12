@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef, KeyboardEvent } from 'react';
 import { useRouter } from 'next/navigation';
 import { Search } from 'lucide-react';
+import { config } from '@/lib/config';
 
 interface SearchSuggestion {
   text: string;
@@ -44,7 +45,7 @@ export default function SearchBar({
 
     debounceRef.current = setTimeout(async () => {
       try {
-        const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE || 'http://localhost:8000'}/products/search/suggestions?q=${encodeURIComponent(query)}&limit=5`);
+        const res = await fetch(`${config.apiBaseUrl}/products/search/suggestions?q=${encodeURIComponent(query)}&limit=5`);
         if (!res.ok) throw new Error('Failed to fetch suggestions');
         const data: SearchSuggestion[] = await res.json();
         setSuggestions(data);

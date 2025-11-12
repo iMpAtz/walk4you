@@ -6,6 +6,7 @@ import { AlertTriangle, CheckCircle, Clock, XCircle, FileText, Store } from 'luc
 import NotificationBell from '@/components/NotificationBell';
 import CartIcon from '@/components/CartIcon';
 import TopBar from '@/components/TopBar';
+import { config } from '@/lib/config';
 
 interface UserData {
   id: string;
@@ -64,7 +65,7 @@ export default function MyReportsPage() {
 
   const fetchUser = async (token: string) => {
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE || 'http://localhost:8000'}/users/me`, {
+      const res = await fetch(`${config.apiBaseUrl}/users/me`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (res.ok) setUserData(await res.json());
@@ -75,7 +76,7 @@ export default function MyReportsPage() {
 
   const fetchMyReports = async (token: string) => {
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE || 'http://localhost:8000'}/reports/my`, {
+      const res = await fetch(`${config.apiBaseUrl}/reports/my`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (res.ok) {

@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
+import { config } from '@/lib/config';
 
 interface Notification {
   id: string;
@@ -23,7 +24,7 @@ export const useNotifications = () => {
       const token = localStorage.getItem('access_token');
       if (!token) return;
 
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE || 'http://localhost:8000'}/notifications`, {
+      const response = await fetch(`${config.apiBaseUrl}/notifications`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
@@ -45,7 +46,7 @@ export const useNotifications = () => {
       const token = localStorage.getItem('access_token');
       if (!token) return;
 
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE || 'http://localhost:8000'}/notifications/unread-count`, {
+      const response = await fetch(`${config.apiBaseUrl}/notifications/unread-count`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
@@ -66,7 +67,7 @@ export const useNotifications = () => {
       const token = localStorage.getItem('access_token');
       if (!token) return;
 
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE || 'http://localhost:8000'}/notifications/${notificationId}/read`, {
+      const response = await fetch(`${config.apiBaseUrl}/notifications/${notificationId}/read`, {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${token}`,

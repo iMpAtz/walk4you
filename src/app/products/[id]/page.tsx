@@ -6,6 +6,7 @@ import { useState, useEffect } from "react";
 import { ShoppingCart, Heart, Share2, Star, Package, Shield, Truck, MessageCircle, AlertTriangle, User } from "lucide-react";
 import { useCart } from "@/contexts/CartContext";
 import TopBar from "@/components/TopBar";
+import { config } from '@/lib/config';
 
 interface Product {
   id: string;
@@ -120,24 +121,24 @@ export default function ProductPage() {
   const { addToCart } = useCart();
 
   const { data: product, error, isLoading } = useSWR<Product>(
-    id ? `${process.env.NEXT_PUBLIC_API_BASE || "http://localhost:8000"}/public/products/${id}` : null,
+    id ? `${config.apiBaseUrl}/public/products/${id}` : null,
     fetcher
   );
 
   // Fetch store information
   const { data: store, error: storeError } = useSWR<Store>(
-    product?.storeId ? `${process.env.NEXT_PUBLIC_API_BASE || "http://localhost:8000"}/stores/${product.storeId}` : null,
+    product?.storeId ? `${config.apiBaseUrl}/stores/${product.storeId}` : null,
     storeFetcher
   );
 
   const { data: recommendedProducts, error: recommendedError } = useSWR<RecommendedProduct[]>(
-    `${process.env.NEXT_PUBLIC_API_BASE || "http://localhost:8000"}/products/featured?limit=4`,
+    `${config.apiBaseUrl}/products/featured?limit=4`,
     recommendedFetcher
   );
 
   const { data: currentUser, error: userError } = useSWR<User>(
     typeof window !== 'undefined' && localStorage.getItem('access_token') 
-      ? `${process.env.NEXT_PUBLIC_API_BASE || "http://localhost:8000"}/users/me`
+      ? `${config.apiBaseUrl}/users/me`
       : null,
     userFetcher
   );
@@ -154,7 +155,7 @@ export default function ProductPage() {
     
     try {
       setReviewsLoading(true);
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE || "http://localhost:8000"}/products/${id}/reviews`);
+      const response = await fetch(`${config.apiBaseUrl}/products/${id}/reviews`);
       if (response.ok) {
         const reviewsData = await response.json();
         setReviews(reviewsData);
@@ -251,7 +252,7 @@ export default function ProductPage() {
         return;
       }
 
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE || "http://localhost:8000"}/products/${id}/reviews`, {
+      const response = await fetch(`${config.apiBaseUrl}/products/${id}/reviews`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,

@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
+import { config } from '@/lib/config';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -34,7 +35,7 @@ export default function LoginPage() {
       // Get user info to determine redirect
       const token = localStorage.getItem('access_token');
       if (token) {
-        const userRes = await fetch(`${process.env.NEXT_PUBLIC_API_BASE || 'http://localhost:8000'}/users/me`, {
+        const userRes = await fetch(`${config.apiBaseUrl}/users/me`, {
           headers: { Authorization: `Bearer ${token}` }
         });
         

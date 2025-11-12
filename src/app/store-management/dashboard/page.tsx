@@ -15,6 +15,7 @@ import {
   BarChart3
 } from 'lucide-react';
 import TopBar from '@/components/TopBar';
+import { config } from '@/lib/config';
 
 interface DashboardData {
   totalRevenue: number;
@@ -64,7 +65,7 @@ export default function StoreDashboardPage() {
         return;
       }
 
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE || 'http://localhost:8000'}/stores/my/dashboard`, {
+      const res = await fetch(`${config.apiBaseUrl}/stores/my/dashboard`, {
         headers: { Authorization: `Bearer ${token}` }
       });
 

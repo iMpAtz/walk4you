@@ -5,6 +5,7 @@ import { useCart, CartItem } from '@/contexts/CartContext';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import TopBar from '@/components/TopBar';
+import { config } from '@/lib/config';
 
 interface StoreGroup {
   storeId: string;
@@ -28,7 +29,7 @@ export default function CartPage() {
         const token = localStorage.getItem('access_token');
         if (!token) return;
 
-        const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE || 'http://localhost:8000'}/users/me`, {
+        const response = await fetch(`${config.apiBaseUrl}/users/me`, {
           headers: {
             'Authorization': `Bearer ${token}`,
           },

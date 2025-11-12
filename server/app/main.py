@@ -30,6 +30,9 @@ YOLO_MODEL_PATH = os.getenv("YOLO_MODEL_PATH", "models/best.pt")
 YOLO_CONFIDENCE_THRESHOLD = float(os.getenv("YOLO_CONFIDENCE_THRESHOLD", "0.6"))
 YOLO_ENABLED = os.getenv("YOLO_ENABLED", "true").lower() == "true"
 
+# ===== CORS Configuration =====
+ALLOWED_ORIGINS = os.getenv("ALLOWED_ORIGINS", "http://localhost:3000,http://127.0.0.1:3000").split(",")
+
 # Load YOLOv8 model
 yolo_model = None
 if YOLO_ENABLED and os.path.exists(YOLO_MODEL_PATH):
@@ -105,13 +108,7 @@ async def shutdown_event() -> None:
 # CORS - Allow LAN access
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://localhost:3000",
-        "http://127.0.0.1:3000",
-        "http://192.168.1.110:3000",  # Your machine IP
-        "http://192.168.1.146:3000",  # Client machine IP
-        "*"  # Allow all origins (for development only)
-    ],
+    allow_origins=ALLOWED_ORIGINS,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import Image from 'next/image';
+import { config } from '@/lib/config';
 
 interface AvatarUploadProps {
   currentAvatar?: string;
@@ -57,7 +58,7 @@ export default function AvatarUpload({ currentAvatar, onAvatarUpdate, username }
       if (uploadResult.secure_url) {
         // Update avatar in database
         const token = localStorage.getItem('access_token');
-        const updateResponse = await fetch(`${process.env.NEXT_PUBLIC_API_BASE || 'http://localhost:8000'}/users/me/avatar`, {
+        const updateResponse = await fetch(`${config.apiBaseUrl}/users/me/avatar`, {
           method: 'POST',
           headers: {
             'Authorization': `Bearer ${token}`,

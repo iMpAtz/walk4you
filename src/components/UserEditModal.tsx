@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { X } from 'lucide-react';
+import { config } from '@/lib/config';
 
 interface UserEditModalProps {
   isOpen: boolean;
@@ -45,7 +46,7 @@ export default function UserEditModal({ isOpen, onClose, onUpdate, user }: UserE
 
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch(`http://localhost:8000/admin/users/${user.id}`, {
+      const response = await fetch(`${config.apiBaseUrl}/admin/users/${user.id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',

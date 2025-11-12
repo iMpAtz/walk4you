@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { config } from '@/lib/config';
 
 export default function DebugPage() {
   const router = useRouter();
@@ -23,7 +24,7 @@ export default function DebugPage() {
 
       console.log('Fetching debug data with token:', token.substring(0, 20) + '...');
 
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE || 'http://localhost:8000'}/stores/my/debug`, {
+      const res = await fetch(`${config.apiBaseUrl}/stores/my/debug`, {
         headers: { 
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'

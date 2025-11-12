@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import TopBar from '@/components/TopBar';
 import { Metadata } from 'next';
+import { config } from '@/lib/config';
 
 interface StoreData {
   id: string;
@@ -52,7 +53,7 @@ export default function StoreManagementLayout({ storeData, userData, onSave }: S
       if (!storeData?.id) return;
       try {
         const token = localStorage.getItem('access_token');
-        const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE || 'http://localhost:8000'}/stores/${storeData.id}`, {
+        const res = await fetch(`${config.apiBaseUrl}/stores/${storeData.id}`, {
           method: 'GET',
           headers: {
             'Authorization': `Bearer ${token}`,
@@ -114,7 +115,7 @@ export default function StoreManagementLayout({ storeData, userData, onSave }: S
         const qrUrl = data.qrUrl;
         // 2. Save QR URL to backend
         const token = localStorage.getItem('access_token');
-        const saveRes = await fetch(`${process.env.NEXT_PUBLIC_API_BASE || 'http://localhost:8000'}/stores/${storeData.id}/qr`, {
+        const saveRes = await fetch(`${config.apiBaseUrl}/stores/${storeData.id}/qr`, {
           method: 'PUT',
           headers: {
             'Authorization': `Bearer ${token}`,
@@ -190,7 +191,7 @@ export default function StoreManagementLayout({ storeData, userData, onSave }: S
       const logoUrl = uploadData.secure_url;
 
       // Save logo URL to backend
-      const saveRes = await fetch(`${process.env.NEXT_PUBLIC_API_BASE || 'http://localhost:8000'}/stores/${storeData.id}/logo`, {
+      const saveRes = await fetch(`${config.apiBaseUrl}/stores/${storeData.id}/logo`, {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${token}`,

@@ -4,6 +4,10 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { useCart } from '@/contexts/CartContext';
+import { config } from '@/lib/config';
+
+// Force dynamic rendering
+export const dynamic = 'force-dynamic';
 
 interface CheckoutItem {
   id: string;
@@ -47,7 +51,7 @@ export default function CheckoutConfirmPage() {
         const token = localStorage.getItem('access_token');
         if (!token) return;
 
-        const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE || 'http://localhost:8000'}/users/me`, {
+        const response = await fetch(`${config.apiBaseUrl}/users/me`, {
           headers: {
             'Authorization': `Bearer ${token}`,
           },
@@ -148,7 +152,7 @@ export default function CheckoutConfirmPage() {
         paymentProofUrl
       };
 
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE || 'http://localhost:8000'}/orders`, {
+      const res = await fetch(`${config.apiBaseUrl}/orders`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -310,7 +314,7 @@ function StoreQrImage({ storeId }: { storeId: string }) {
     let mounted = true;
     const fetchQr = async () => {
       try {
-        const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE || 'http://localhost:8000'}/stores/${storeId}/qr`);
+        const res = await fetch(`${config.apiBaseUrl}/stores/${storeId}/qr`);
         if (res.ok) {
           const data = await res.json();
           if (mounted) setQrUrl(data.qrUrl || null);

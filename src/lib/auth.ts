@@ -1,4 +1,5 @@
 // JWT Authentication Utilities
+import { config } from './config';
 
 interface TokenData {
   access_token: string;
@@ -141,7 +142,7 @@ export async function refreshAccessToken(): Promise<string | null> {
 
   try {
     const response = await fetch(
-      `${process.env.NEXT_PUBLIC_API_BASE || 'http://localhost:8000'}/auth/refresh`,
+      `${config.apiBaseUrl}/auth/refresh`,
       {
         method: 'POST',
         headers: {
@@ -265,7 +266,7 @@ export function setupTokenRefreshTimer(callback?: () => void): () => void {
 export async function login(username: string, password: string): Promise<boolean> {
   try {
     const response = await fetch(
-      `${process.env.NEXT_PUBLIC_API_BASE || 'http://localhost:8000'}/auth/login`,
+      `${config.apiBaseUrl}/auth/login`,
       {
         method: 'POST',
         headers: {

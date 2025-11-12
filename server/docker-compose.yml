@@ -5,6 +5,7 @@ services:
       dockerfile: Dockerfile
     command: "uvicorn app.main:app --reload --host 0.0.0.0 --port 8000"
     container_name: walk4you-api
+    image: impatz/walk4you-connect4-backend:1.0.0
     ports:
       - "8001:8000"
     environment:
@@ -20,6 +21,7 @@ services:
       - YOLO_MODEL_PATH=${YOLO_MODEL_PATH}
       - YOLO_CONFIDENCE_THRESHOLD=${YOLO_CONFIDENCE_THRESHOLD}
       - YOLO_ENABLED=${YOLO_ENABLED}
+      - ALLOWED_ORIGINS=${ALLOWED_ORIGINS}
     volumes:
       - ./models:/app/models:ro  # Mount models as read-only
       - ./logs:/app/logs  # Mount logs directory

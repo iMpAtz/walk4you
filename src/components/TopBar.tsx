@@ -9,6 +9,7 @@ import type { UserProfile } from '@/types';
 import MobileSidebar from './MobileSidebar';
 import NotificationBell from './NotificationBell';
 import CartIcon from './CartIcon';
+import { config } from '@/lib/config';
 
 export default function TopBar() {
   const router = useRouter();
@@ -45,7 +46,7 @@ export default function TopBar() {
 
   const fetchUserProfile = async (token: string) => {
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE || 'http://localhost:8000'}/users/me`, {
+      const response = await fetch(`${config.apiBaseUrl}/users/me`, {
         headers: {
           'Authorization': `Bearer ${token}`,
         },
@@ -70,7 +71,7 @@ export default function TopBar() {
 
   const checkStoreStatus = async (token: string) => {
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE || 'http://localhost:8000'}/users/me/has-store`, {
+      const response = await fetch(`${config.apiBaseUrl}/users/me/has-store`, {
         headers: {
           'Authorization': `Bearer ${token}`,
         },

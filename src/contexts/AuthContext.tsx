@@ -10,6 +10,7 @@ import {
   saveTokens,
   authenticatedFetch,
 } from '@/lib/auth';
+import { config } from '@/lib/config';
 
 interface User {
   id: string;
@@ -56,7 +57,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
 
       const response = await authenticatedFetch(
-        `${process.env.NEXT_PUBLIC_API_BASE || 'http://localhost:8000'}/users/me`
+        `${config.apiBaseUrl}/users/me`
       );
 
       if (response.ok) {
@@ -113,7 +114,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const login = async (username: string, password: string): Promise<boolean> => {
     try {
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_BASE || 'http://localhost:8000'}/auth/login`,
+        `${config.apiBaseUrl}/auth/login`,
         {
           method: 'POST',
           headers: {

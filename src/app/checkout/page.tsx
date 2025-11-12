@@ -4,6 +4,7 @@ import { useState, useEffect, Suspense } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import TopBar from '@/components/TopBar';
+import { config } from '@/lib/config';
 
 
 
@@ -49,7 +50,7 @@ export default function CheckoutPage() {
         const token = localStorage.getItem('access_token');
         if (!token) return;
 
-        const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE || 'http://localhost:8000'}/users/me`, {
+        const response = await fetch(`${config.apiBaseUrl}/users/me`, {
           headers: {
             'Authorization': `Bearer ${token}`,
           },
@@ -80,7 +81,7 @@ export default function CheckoutPage() {
             await Promise.all(
               data.stores.map(async (store: CheckoutStore) => {
                 try {
-                  const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE || 'http://localhost:8000'}/stores/${store.storeId}/qr`);
+                  const res = await fetch(`${config.apiBaseUrl}/stores/${store.storeId}/qr`);
                   if (res.ok) {
                     const paymentData = await res.json();
                     payments[store.storeId] = { qrUrl: paymentData.qrUrl };

@@ -20,8 +20,8 @@ RUN apt-get update && apt-get install -y \
 # Copy requirements file
 COPY requirements.txt .
 
-# Install Python dependencies
-RUN pip install --no-cache-dir -r requirements.txt
+# Install Python dependencies with increased timeout
+RUN pip install --no-cache-dir --default-timeout=300 -r requirements.txt
 
 # Copy application code
 COPY . .
@@ -32,8 +32,8 @@ RUN mkdir -p models
 # Expose port
 EXPOSE 8000
 
-# Health check
-HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+# Health check with longer startup period for YOLO model loading
+HEALTHCHECK --interval=30s --timeout=10s --start-period=120s --retries=3 \
     CMD python -c "import requests; requests.get('http://localhost:8000/health')" || exit 1
 
 # Run the application

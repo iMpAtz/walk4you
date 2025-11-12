@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import NotificationBell from '@/components/NotificationBell';
 import CartIcon from '@/components/CartIcon';
 import TopBar from '@/components/TopBar';
+import { config } from '@/lib/config';
 
 interface OrderItem {
   productId: string;
@@ -64,7 +65,7 @@ export default function MyOrdersPage() {
 
   const fetchUser = async (token: string) => {
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE || 'http://localhost:8000'}/users/me`, {
+      const res = await fetch(`${config.apiBaseUrl}/users/me`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (res.ok) setUserData(await res.json());
@@ -75,7 +76,7 @@ export default function MyOrdersPage() {
 
   const fetchOrders = async (token: string) => {
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE || 'http://localhost:8000'}/orders/my`, {
+      const res = await fetch(`${config.apiBaseUrl}/orders/my`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (res.ok) {
@@ -94,7 +95,7 @@ export default function MyOrdersPage() {
     try {
       const token = localStorage.getItem('access_token');
       if (!token) return;
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE || 'http://localhost:8000'}/orders/${orderId}/complete`, {
+      const res = await fetch(`${config.apiBaseUrl}/orders/${orderId}/complete`, {
         method: 'PUT',
         headers: { Authorization: `Bearer ${token}` },
       });

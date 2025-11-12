@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { config } from '@/lib/config';
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -59,11 +60,10 @@ export default function RegisterPage() {
     }
     
     setLoading(true);
-    const apiBase = process.env.NEXT_PUBLIC_API_BASE ?? 'http://localhost:8000';
     const birth = day && month && year ? `${year}-${month}-${day}` : undefined;
     
     try {
-      const res = await fetch(`${apiBase}/auth/register`, {
+      const res = await fetch(`${config.apiBaseUrl}/auth/register`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 

@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import StoreManagementLayout from '@/app/store-management/StoreManagementLayout';
+import { config } from '@/lib/config';
 
 interface StoreData {
   id: string;
@@ -57,7 +58,7 @@ export default function StoreManagementPage() {
       setIsLoading(true);
       
       // Fetch user profile first to get user info
-      const userResponse = await fetch(`${process.env.NEXT_PUBLIC_API_BASE || 'http://localhost:8000'}/users/me`, {
+      const userResponse = await fetch(`${config.apiBaseUrl}/users/me`, {
         headers: {
           'Authorization': `Bearer ${token}`,
         },
@@ -77,7 +78,7 @@ export default function StoreManagementPage() {
       setUserData(userData);
       
       // Fetch store data
-      const storeResponse = await fetch(`${process.env.NEXT_PUBLIC_API_BASE || 'http://localhost:8000'}/users/me/store`, {
+      const storeResponse = await fetch(`${config.apiBaseUrl}/users/me/store`, {
         headers: {
           'Authorization': `Bearer ${token}`,
         },
@@ -126,7 +127,7 @@ export default function StoreManagementPage() {
       const token = localStorage.getItem('access_token');
       if (!token) return;
 
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE || 'http://localhost:8000'}/users/me/store`, {
+      const response = await fetch(`${config.apiBaseUrl}/users/me/store`, {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${token}`,

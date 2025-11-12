@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { useAuth } from '@/contexts/AuthContext';
 import TopBar from '@/components/TopBar';
+import { config } from '@/lib/config';
 
 interface Banner {
   id: string;
@@ -57,7 +58,7 @@ export default function BannerManagement() {
   const fetchBanners = async () => {
     try {
       setIsFetching(true);
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE || 'http://localhost:8000'}/banners?active_only=false`);
+      const response = await fetch(`${config.apiBaseUrl}/banners?active_only=false`);
       
       if (response.ok) {
         const data = await response.json();
@@ -111,8 +112,8 @@ export default function BannerManagement() {
 
     try {
       const url = editingBanner 
-        ? `${process.env.NEXT_PUBLIC_API_BASE || 'http://localhost:8000'}/admin/banners/${editingBanner.id}`
-        : `${process.env.NEXT_PUBLIC_API_BASE || 'http://localhost:8000'}/admin/banners`;
+        ? `${config.apiBaseUrl}/admin/banners/${editingBanner.id}`
+        : `${config.apiBaseUrl}/admin/banners`;
       
       const method = editingBanner ? 'PUT' : 'POST';
 
@@ -155,7 +156,7 @@ export default function BannerManagement() {
 
     try {
       const response = await authenticatedFetch(
-        `${process.env.NEXT_PUBLIC_API_BASE || 'http://localhost:8000'}/admin/banners/${bannerId}`,
+        `${config.apiBaseUrl}/admin/banners/${bannerId}`,
         {
           method: 'DELETE',
         }
@@ -176,7 +177,7 @@ export default function BannerManagement() {
   const handleToggleActive = async (banner: Banner) => {
     try {
       const response = await authenticatedFetch(
-        `${process.env.NEXT_PUBLIC_API_BASE || 'http://localhost:8000'}/admin/banners/${banner.id}`,
+        `${config.apiBaseUrl}/admin/banners/${banner.id}`,
         {
           method: 'PUT',
           headers: {

@@ -20,6 +20,7 @@ import {
 import ProductFormModal from '@/components/ProductFormModal';
 import ProductEditModal from '@/components/ProductEditModal';
 import TopBar from '@/components/TopBar';
+import { config } from '@/lib/config';
 
 interface Product {
   id: string;
@@ -96,7 +97,7 @@ export default function MyProductsPage() {
 
   const fetchUserData = async (token: string) => {
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE || 'http://localhost:8000'}/users/me`, {
+      const response = await fetch(`${config.apiBaseUrl}/users/me`, {
         headers: {
           'Authorization': `Bearer ${token}`,
         },
@@ -113,7 +114,7 @@ export default function MyProductsPage() {
 
   const fetchStoreData = async (token: string) => {
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE || 'http://localhost:8000'}/users/me/store`, {
+      const response = await fetch(`${config.apiBaseUrl}/users/me/store`, {
         headers: {
           'Authorization': `Bearer ${token}`,
         },
@@ -136,7 +137,7 @@ export default function MyProductsPage() {
     try {
       setIsLoading(true);
       
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE || 'http://localhost:8000'}/products/my-products`, {
+      const response = await fetch(`${config.apiBaseUrl}/products/my-products`, {
         headers: {
           'Authorization': `Bearer ${token}`,
         },
@@ -193,7 +194,7 @@ export default function MyProductsPage() {
         category: formData.category || null
       };
 
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE || 'http://localhost:8000'}/products`, {
+      const response = await fetch(`${config.apiBaseUrl}/products`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -256,7 +257,7 @@ export default function MyProductsPage() {
         return;
       }
 
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE || 'http://localhost:8000'}/products/${productId}`, {
+      const response = await fetch(`${config.apiBaseUrl}/products/${productId}`, {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -321,7 +322,7 @@ export default function MyProductsPage() {
         return;
       }
 
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE || 'http://localhost:8000'}/products/${deletingProductId}`, {
+      const response = await fetch(`${config.apiBaseUrl}/products/${deletingProductId}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${token}`,
