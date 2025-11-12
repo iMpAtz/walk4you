@@ -3,7 +3,7 @@
 import { useSearchParams, useRouter } from 'next/navigation';
 import SearchBar from '@/components/Searchbar';
 import TopBar from '@/components/TopBar';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, Suspense } from 'react';
 import { AlertCircle } from 'lucide-react';
 import Image from 'next/image';
 
@@ -14,7 +14,7 @@ interface Product {
   image_url?: string;
 }
 
-export default function SearchPage() {
+function SearchContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const query = searchParams.get('query') || '';
@@ -82,5 +82,23 @@ export default function SearchPage() {
         )}
       </div>
     </div>
+  );
+}
+
+export default function SearchPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-[#F5F7FA]">
+        <TopBar />
+        <div className="mx-auto max-w-[1200px] px-4 py-6">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900 mx-auto"></div>
+            <p className="mt-4 text-gray-600">กำลังโหลด...</p>
+          </div>
+        </div>
+      </div>
+    }>
+      <SearchContent />
+    </Suspense>
   );
 }

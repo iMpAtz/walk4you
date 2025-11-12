@@ -1,5 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import crypto from 'crypto';
+import cloudinary from 'cloudinary';
+
+// Configure Cloudinary
+cloudinary.v2.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET,
+});
 
 export async function GET(req: NextRequest) {
   const cloudName = process.env.CLOUDINARY_CLOUD_NAME;
@@ -63,11 +71,11 @@ export const config = {
   },
 };
 
-export async function POST(req: NextRequest) {
+export async function POST(req: NextRequest): Promise<NextResponse> {
   const formData = await req.formData();
-  const file = formData.get('qr') as File;
-  const username = formData.get('username') as string;
-  const type = formData.get('type') as string;
+  const file = formData.get('qr') as File | null;
+  const username = (formData.get('username') as string) || undefined;
+  const type = (formData.get('type') as string) || undefined;
 
   if (!file) {
     return NextResponse.json({ error: 'No file uploaded' }, { status: 400 });
@@ -83,30 +91,21 @@ export async function POST(req: NextRequest) {
   else if (username) folder = `user/${username}`;
 
   try {
-    return await new Promise((resolve) => {
-      cloudinary.v2.uploader.upload_stream(
-        { folder },
-        (error, result) => {
-          if (error || !result) {
-            resolve(NextResponse.json({ error: 'Cloudinary upload failed' }, { status: 500 }));
-          } else {
-            resolve(NextResponse.json({ qrUrl: result.secure_url }));
-          }
-        }
-      ).end(buffer);
+    const result: any = await new Promise((resolve, reject) => {
+      cloudinary.v2.uploader.upload_stream({ folder }, (error, res) => {
+        if (error) return reject(error);
+        return resolve(res);
+      }).end(buffer);
     });
+
+    if (!result || !result.secure_url) {
+      return NextResponse.json({ error: 'Cloudinary upload failed' }, { status: 500 });
+    }
+
+    return NextResponse.json({ qrUrl: result.secure_url });
   } catch (e) {
+    console.error('Cloudinary upload error:', e);
     return NextResponse.json({ error: 'Cloudinary upload failed' }, { status: 500 });
   }
 }
-
-
-import cloudinary from 'cloudinary';
-
-// Configure Cloudinary
-cloudinary.v2.config({
-  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-  api_key: process.env.CLOUDINARY_API_KEY,
-  api_secret: process.env.CLOUDINARY_API_SECRET,
-});
 
