@@ -20,6 +20,8 @@ const nextConfig = {
       },
     ],
   },
+  // Enable standalone output for Docker
+  output: 'standalone',
   // แนะนำใช้ package เช่น next-alias แทน webpack override
 };
 

@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { AlertTriangle, CheckCircle, Clock, XCircle, FileText, Store } from 'lucide-react';
 import NotificationBell from '@/components/NotificationBell';
 import CartIcon from '@/components/CartIcon';
+import TopBar from '@/components/TopBar';
 
 interface UserData {
   id: string;
@@ -100,31 +101,7 @@ export default function MyReportsPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <div className="bg-[#0B44A3] shadow-sm border-b border-[#093782]">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-          <a href="/" className="text-2xl font-bold text-white">Walk4You</a>
-          <div className="flex items-center gap-4">
-            <NotificationBell />
-            <CartIcon />
-            <button className="flex items-center gap-2 p-2 hover:bg-[#093782] rounded-lg">
-              {userData?.avatar?.url ? (
-                <img
-                  src={userData.avatar.url}
-                  alt="Profile"
-                  width={24}
-                  height={24}
-                  className="rounded-full w-6 h-6 object-cover"
-                />
-              ) : (
-                <div className="w-6 h-6 bg-white rounded-full text-[#0B44A3] text-xs flex items-center justify-center font-semibold">
-                  {userData?.username?.charAt(0).toUpperCase() || 'U'}
-                </div>
-              )}
-              <span className="text-sm font-medium text-white">{userData?.username || 'ผู้ใช้'}</span>
-            </button>
-          </div>
-        </div>
-      </div>
+      <TopBar />
 
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="mb-6">

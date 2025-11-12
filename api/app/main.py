@@ -12,10 +12,35 @@ import base64
 import json
 from bson import ObjectId
 import logging
+import httpx
+from ultralytics import YOLO
+from PIL import Image
+import io
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
+load_dotenv()
+
+app = FastAPI(title="Walk4You API", version="0.1.0")
+
+# ===== YOLOv8 Configuration =====
+YOLO_MODEL_PATH = os.getenv("YOLO_MODEL_PATH", "models/best.pt")
+YOLO_CONFIDENCE_THRESHOLD = float(os.getenv("YOLO_CONFIDENCE_THRESHOLD", "0.6"))
+YOLO_ENABLED = os.getenv("YOLO_ENABLED", "true").lower() == "true"
+
+# Load YOLOv8 model
+yolo_model = None
+if YOLO_ENABLED and os.path.exists(YOLO_MODEL_PATH):
+    try:
+        yolo_model = YOLO(YOLO_MODEL_PATH)
+        logger.info(f"YOLOv8 model loaded successfully from {YOLO_MODEL_PATH}")
+    except Exception as e:
+        logger.error(f"Failed to load YOLOv8 model: {e}")
+        yolo_model = None
+else:
+    logger.warning(f"YOLOv8 model not found at {YOLO_MODEL_PATH} or YOLO detection is disabled")
 
 load_dotenv()
 
@@ -1291,6 +1316,101 @@ async def get_store_dashboard(
         raise HTTPException(status_code=500, detail="Internal server error")
 
 
+# ===== Illegal Product Detection with YOLOv8 =====
+async def check_illegal_product_yolo(image_url: str) -> dict:
+    """
+    Check if product image contains illegal items using YOLOv8 model
+    Returns: {
+        "is_illegal": bool,
+        "detected_items": list,
+        "confidence": float
+    }
+    """
+    try:
+        if not image_url:
+            return {"is_illegal": False, "detected_items": [], "confidence": 0.0}
+        
+        # Check if YOLO is enabled
+        if not YOLO_ENABLED:
+            logger.info("YOLO detection is disabled. Skipping check.")
+            return {"is_illegal": False, "detected_items": [], "confidence": 0.0}
+        
+        if yolo_model is None:
+            logger.warning("YOLO model not loaded, skipping illegal product check")
+            return {"is_illegal": False, "detected_items": [], "confidence": 0.0}
+        
+        # Download image from URL
+        try:
+            async with httpx.AsyncClient(timeout=30.0) as client:
+                image_response = await client.get(image_url)
+                if image_response.status_code != 200:
+                    logger.error(f"Failed to download image: {image_response.status_code}")
+                    return {"is_illegal": False, "detected_items": [], "confidence": 0.0}
+                
+                # Open image with PIL
+                image = Image.open(io.BytesIO(image_response.content))
+        except Exception as e:
+            logger.error(f"Error downloading/opening image: {e}")
+            return {"is_illegal": False, "detected_items": [], "confidence": 0.0}
+        
+        # Run YOLO inference
+        results = yolo_model(image, conf=YOLO_CONFIDENCE_THRESHOLD)
+        
+        # Parse results
+        detected_items = []
+        max_confidence = 0.0
+        
+        for result in results:
+            boxes = result.boxes
+            for box in boxes:
+                # Get class name and confidence
+                class_id = int(box.cls[0])
+                confidence = float(box.conf[0])
+                class_name = result.names[class_id]
+                
+                detected_items.append({
+                    "class": class_name,
+                    "confidence": confidence
+                })
+                
+                if confidence > max_confidence:
+                    max_confidence = confidence
+        
+        # Product is illegal if any item is detected above threshold
+        is_illegal = len(detected_items) > 0
+        
+        logger.info(f"YOLO detection - Detected: {len(detected_items)} items, Max confidence: {max_confidence}, Is illegal: {is_illegal}")
+        
+        return {
+            "is_illegal": is_illegal,
+            "detected_items": detected_items,
+            "confidence": max_confidence
+        }
+        
+    except Exception as e:
+        logger.warning(f"Error checking illegal product with YOLO: {e}. Allowing product to be listed.")
+        return {"is_illegal": False, "detected_items": [], "confidence": 0.0}
+
+
+# ===== Test Endpoint for Illegal Product Detection =====
+class ImageCheckRequest(BaseModel):
+    image_url: str
+
+@app.post("/products/check-illegal")
+async def check_illegal_product_endpoint(
+    request: ImageCheckRequest,
+    current_user: dict = Depends(get_current_user)
+):
+    """Test endpoint to check if an image contains illegal products"""
+    result = await check_illegal_product_yolo(request.image_url)
+    return {
+        "is_illegal": result["is_illegal"],
+        "detected_items": result["detected_items"],
+        "max_confidence": result["confidence"],
+        "message": "สินค้าผิดกฎหมาย ไม่สามารถวางขายได้" if result["is_illegal"] else "สินค้าปกติ สามารถวางขายได้"
+    }
+
+
 # ===== Product Endpoints =====
 @app.get("/products/my-products", response_model=list[ProductResponse])
 async def get_my_products(
@@ -1329,6 +1449,7 @@ async def get_my_products(
     ]
 
 
+# ===== PRODUCTS =====
 @app.post("/products", response_model=ProductResponse)
 async def create_product(
     product_data: ProductCreate,
@@ -1345,6 +1466,23 @@ async def create_product(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Store not found"
         )
+    
+    # Check for illegal products if image is provided
+    if product_data.image_url:
+        illegal_check = await check_illegal_product_yolo(product_data.image_url)
+        
+        if illegal_check["is_illegal"]:
+            detected_items_str = ", ".join([
+                f"{item['class']} ({item['confidence']:.2%})" 
+                for item in illegal_check["detected_items"]
+            ])
+            
+            logger.warning(f"Illegal product detected for user {user_id}: {detected_items_str}")
+            
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"ไม่สามารถวางขายสินค้านี้ได้ เนื่องจากระบบตรวจพบสินค้าที่ผิดกฎหมาย: {detected_items_str}"
+            )
     
     # Create new product
     product_doc = {
@@ -1490,6 +1628,23 @@ async def update_product(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Product not found"
         )
+    
+    # Check for illegal products if image is being updated
+    if product_data.image_url is not None and product_data.image_url != product.get("image_url"):
+        illegal_check = await check_illegal_product_yolo(product_data.image_url)
+        
+        if illegal_check["is_illegal"]:
+            detected_items_str = ", ".join([
+                f"{item['class']} ({item['confidence']:.2%})" 
+                for item in illegal_check["detected_items"]
+            ])
+            
+            logger.warning(f"Illegal product detected in update for user {user_id}: {detected_items_str}")
+            
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"ไม่สามารถอัปเดตสินค้านี้ได้ เนื่องจากระบบตรวจพบสินค้าที่ผิดกฎหมาย: {detected_items_str}"
+            )
     
     # Update product
     update_data = {

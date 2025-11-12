@@ -218,6 +218,17 @@ export default function MyProductsPage() {
         
         setShowProductModal(false);
         alert('เพิ่มสินค้าใหม่สำเร็จ!');
+      } else if (response.status === 400) {
+        // Handle illegal product detection
+        const errorData = await response.json();
+        const errorMessage = errorData.detail || 'ไม่สามารถเพิ่มสินค้านี้ได้';
+        
+        // Show popup for illegal product
+        if (errorMessage.includes('ตรวจพบสินค้าที่ผิดกฎหมาย')) {
+          alert(`🚫 ${errorMessage}\n\nระบบได้ตรวจจับและป้องกันการขายสินค้าผิดกฎหมายอัตโนมัติ`);
+        } else {
+          alert(errorMessage);
+        }
       } else {
         const errorData = await response.json();
         throw new Error(errorData.detail || 'Failed to create product');
@@ -273,6 +284,17 @@ export default function MyProductsPage() {
         ));
         
         alert('อัปเดตสินค้าสำเร็จ!');
+      } else if (response.status === 400) {
+        // Handle illegal product detection
+        const errorData = await response.json();
+        const errorMessage = errorData.detail || 'ไม่สามารถอัปเดตสินค้านี้ได้';
+        
+        // Show popup for illegal product
+        if (errorMessage.includes('ตรวจพบสินค้าที่ผิดกฎหมาย')) {
+          alert(`🚫 ${errorMessage}\n\nระบบได้ตรวจจับและป้องกันการขายสินค้าผิดกฎหมายอัตโนมัติ`);
+        } else {
+          alert(errorMessage);
+        }
       } else {
         const errorData = await response.json();
         throw new Error(errorData.detail || 'Failed to update product');

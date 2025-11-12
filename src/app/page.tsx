@@ -24,12 +24,31 @@ interface Banner {
   title: string;
   subtitle: string;
   image: string;
+  isAdvertisement?: boolean;
 }
 
 const banners: Banner[] = [
-  { id: 1, title: "สินค้าอิเล็กทรอนิกส์", subtitle: "อัปเดตล่าสุด", image: "https://images.unsplash.com/photo-1607082348824-0a96f2a4b9da?w=800" },
-  { id: 2, title: "สินค้าแฟชั่น", subtitle: "สไตล์ที่เป็นคุณ", image: "https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=800" },
-  { id: 3, title: "ส่งฟรีทุกออเดอร์", subtitle: "ด่วน ภายใน 24 ชั่วโมง", image: "https://images.unsplash.com/photo-1578916171728-46686eac8d58?w=800" }
+  { 
+    id: 1, 
+    title: "พื้นที่โฆษณา", 
+    subtitle: "ติดต่อแอดมินเพื่อลงโฆษณา", 
+    image: "https://images.unsplash.com/photo-1557804506-669a67965ba0?w=1200",
+    isAdvertisement: true
+  },
+  { 
+    id: 2, 
+    title: "พื้นที่โฆษณา", 
+    subtitle: "ติดต่อแอดมินเพื่อลงโฆษณา", 
+    image: "https://images.unsplash.com/photo-1552664730-d307ca884978?w=1200",
+    isAdvertisement: true
+  },
+  { 
+    id: 3, 
+    title: "พื้นที่โฆษณา", 
+    subtitle: "ติดต่อแอดมินเพื่อลงโฆษณา", 
+    image: "https://images.unsplash.com/photo-1600880292203-757bb62b4baf?w=1200",
+    isAdvertisement: true
+  }
 ];
 
 export default function Home() {
@@ -92,34 +111,64 @@ export default function Home() {
         </div>
       </div>
 
-      {/* Banner */}
+      {/* Banner - Advertisement Space */}
       <div className="mx-auto max-w-[1200px] px-4 pt-6">
-        <div className="relative rounded-xl overflow-hidden shadow-lg h-[160px] md:h-[200px]">
+        <div className="relative rounded-xl overflow-hidden shadow-lg h-[200px] md:h-[280px]">
           {banners.map((banner, idx) => (
             <div key={banner.id} className={`absolute inset-0 transition-opacity duration-500 ${idx === currentBanner ? "opacity-100" : "opacity-0"}`}>
-              <img src={banner.image} alt={banner.title} className="w-full h-full object-cover opacity-60" />
-              <div className="absolute inset-0" style={{ background: "linear-gradient(90deg, rgba(27,42,71,0.5), rgba(49,78,114,0.5))" }} />
-              <div className="absolute inset-0 flex flex-col justify-center items-center text-white text-center px-4">
-                <h2 className="text-2xl font-bold">{banner.title}</h2>
-                <p className="mt-1 text-sm opacity-90">{banner.subtitle}</p>
-                <button className="mt-2 px-4 py-1.5 bg-white text-[#1B2A47] font-medium rounded-lg hover:bg-[#E2E8F0] transition text-sm shadow">
-                  ช้อปเลย
-                </button>
+              <img src={banner.image} alt={banner.title} className="w-full h-full object-cover opacity-30" />
+              <div className="absolute inset-0" style={{ background: "linear-gradient(135deg, rgba(27,42,71,0.85), rgba(49,78,114,0.85))" }} />
+              
+              <div className="absolute inset-0 flex flex-col justify-center items-center text-white text-center px-6 z-30 pointer-events-none">
+                {/* Advertisement Badge */}
+                <div className="mb-3 px-4 py-1.5 bg-white/20 backdrop-blur-sm rounded-full text-xs font-medium border border-white/30">
+                  พื้นที่โฆษณา
+                </div>
+                
+                <h2 className="text-3xl md:text-4xl font-bold mb-2">สนใจลงโฆษณา?</h2>
+                <p className="text-base md:text-lg opacity-90 mb-4">
+                  พื้นที่โฆษณาขนาดพิเศษ 1200x280px
+                </p>
+                
+                <div className="flex flex-col gap-2 items-center pointer-events-auto">
+                  <button 
+                    onClick={() => window.location.href = "mailto:patjiranuwat@gmail.com?subject=สอบถามเกี่ยวกับพื้นที่โฆษณา&body=สวัสดีครับ/ค่ะ%0A%0Aผม/ดิฉันสนใจสอบถามเกี่ยวกับพื้นที่โฆษณาบนเว็บไซต์ Walk4You%0A%0Aขนาดโฆษณา: 1200 x 280 px%0A%0Aโปรดติดต่อกลับที่:%0A%0Aขอบคุณครับ/ค่ะ"}
+                    className="px-6 py-2.5 bg-white text-[#1B2A47] font-semibold rounded-lg hover:bg-[#E2E8F0] transition shadow-lg flex items-center gap-2 cursor-pointer"
+                  >
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                    </svg>
+                    ติดต่อแอดมิน
+                  </button>
+                  
+                  <div className="text-xs opacity-75 flex items-center gap-1">
+                    <span>📧</span>
+                    <span>admin@walk4you.com</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Specs Corner Badge */}
+              <div className="absolute top-4 right-4 bg-white/10 backdrop-blur-md rounded-lg px-3 py-2 text-white text-xs border border-white/20 z-30">
+                <div className="font-semibold mb-1">ขนาดแนะนำ</div>
+                <div className="opacity-90">1200 x 280 px</div>
+                <div className="opacity-75 mt-1">Ratio 4.3:1</div>
               </div>
             </div>
           ))}
 
-          <div className="absolute inset-0 flex items-center justify-between px-4 z-20">
-            <button onClick={prevBanner} className="bg-white/90 backdrop-blur-md shadow-lg rounded-full w-9 h-9 flex items-center justify-center hover:bg-white text-[#1B2A47] font-bold">‹</button>
-            <button onClick={nextBanner} className="bg-white/90 backdrop-blur-md shadow-lg rounded-full w-9 h-9 flex items-center justify-center hover:bg-white text-[#1B2A47] font-bold">›</button>
+          <div className="absolute inset-0 flex items-center justify-between px-4 z-20 pointer-events-none">
+            <button onClick={prevBanner} className="bg-white/90 backdrop-blur-md shadow-lg rounded-full w-9 h-9 flex items-center justify-center hover:bg-white text-[#1B2A47] font-bold pointer-events-auto">‹</button>
+            <button onClick={nextBanner} className="bg-white/90 backdrop-blur-md shadow-lg rounded-full w-9 h-9 flex items-center justify-center hover:bg-white text-[#1B2A47] font-bold pointer-events-auto">›</button>
           </div>
 
-          <div className="absolute bottom-3 left-0 right-0 flex justify-center gap-2 z-20">
+          <div className="absolute bottom-3 left-0 right-0 flex justify-center gap-2 z-20 pointer-events-none">
             {banners.map((_, idx) => (
-              <button key={idx} onClick={() => goToBanner(idx)} className={`w-3 h-3 rounded-full transition-all ${idx === currentBanner ? "bg-white scale-110" : "bg-white/50"}`}></button>
+              <button key={idx} onClick={() => goToBanner(idx)} className={`w-3 h-3 rounded-full transition-all ${idx === currentBanner ? "bg-white scale-110" : "bg-white/50"} pointer-events-auto`}></button>
             ))}
           </div>
         </div>
+
       </div>
 
       {/* Categories */}
