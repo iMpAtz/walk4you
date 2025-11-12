@@ -22,7 +22,21 @@ const TOKEN_EXPIRY_KEY = 'token_expiry';
  */
 export function decodeToken(token: string): DecodedToken | null {
   try {
-    const base64Url = token.split('.')[1];
+    // Validate token format
+    if (!token || typeof token !== 'string') {
+      return null;
+    }
+
+    const parts = token.split('.');
+    if (parts.length !== 3) {
+      return null;
+    }
+
+    const base64Url = parts[1];
+    if (!base64Url) {
+      return null;
+    }
+
     const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
     const jsonPayload = decodeURIComponent(
       atob(base64)
@@ -41,6 +55,10 @@ export function decodeToken(token: string): DecodedToken | null {
  * Check if token is expired
  */
 export function isTokenExpired(token: string): boolean {
+  if (!token || typeof token !== 'string') {
+    return true;
+  }
+
   const decoded = decodeToken(token);
   if (!decoded || !decoded.exp) return true;
   
