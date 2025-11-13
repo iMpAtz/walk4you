@@ -1214,7 +1214,7 @@ async def update_my_store(
     db: AsyncIOMotorDatabase = Depends(get_db)
 ):
     """Update current user's store"""
-    user_id = current_user["id"]
+    user_id = current_user["_id"]
     
     # Check if store exists
     existing_store = await db.stores.find_one({"ownerId": ObjectId(user_id)})
@@ -3362,6 +3362,7 @@ class StoreListResponse(BaseModel):
     ownerUsername: str
     storeName: str
     storeDescription: Optional[str] = None
+    buMail: Optional[str] = None
     registerDate: datetime
     status: str
 
@@ -3461,6 +3462,7 @@ async def get_all_stores(
                     "ownerUsername": "$owner.username",
                     "storeName": 1,
                     "storeDescription": 1,
+                    "buMail": 1,
                     "registerDate": 1,
                     "status": 1
                 }
@@ -3477,6 +3479,7 @@ async def get_all_stores(
                 ownerUsername=store["ownerUsername"],
                 storeName=store["storeName"],
                 storeDescription=store.get("storeDescription"),
+                buMail=store.get("buMail"),
                 registerDate=store["registerDate"],
                 status=store["status"]
             )

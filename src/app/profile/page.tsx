@@ -342,6 +342,23 @@ export default function ProfilePage() {
               username={userProfile?.username}
             />
             <p className="text-sm text-gray-500 mt-2">{userProfile?.email || 'user@example.com'}</p>
+            
+            {/* Edit Profile Button */}
+            <button 
+              onClick={() => setIsEditing(true)}
+              className={`mt-3 px-4 py-2 rounded-lg transition-colors font-medium shadow-sm touch-manipulation ${
+                isEditing
+                  ? 'bg-gradient-to-r from-[#0B44A3] to-[#1a5fd4] text-white'
+                  : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
+              }`}
+            >
+              <div className="flex items-center justify-center gap-2">
+                <svg className={`w-4 h-4 ${isEditing ? 'text-white' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                </svg>
+                <span className={isEditing ? 'text-white' : ''}>Edit Profile</span>
+              </div>
+            </button>
           </div>
         </div>
 
@@ -597,7 +614,7 @@ export default function ProfilePage() {
                   <div className="flex justify-center pt-4 sm:pt-6">
                     <button
                       onClick={handleSave}
-                      className="px-6 sm:px-8 py-3 bg-gray-800 text-white rounded-lg hover:bg-gray-900 transition-colors font-medium min-h-[48px] touch-manipulation active:scale-95 text-base"
+                      className="px-6 sm:px-8 py-3 bg-[#0B44A3] text-white rounded-lg hover:bg-[#093782] transition-colors font-medium min-h-[48px] touch-manipulation active:scale-95 text-base"
                     >
                       Save
                     </button>
@@ -667,7 +684,7 @@ export default function ProfilePage() {
                       onClick={handlePasswordChange}
                       className="w-full px-4 py-3 bg-[#0B44A3] text-white rounded-lg hover:bg-[#093782] transition-colors font-medium min-h-[48px] touch-manipulation active:scale-95 text-base"
                     >
-                      <span className="text-white">เปลี่ยนรหัสผ่าน</span>
+                      เปลี่ยนรหัสผ่าน
                     </button>
                   </div>
                 </div>
@@ -703,7 +720,7 @@ export default function ProfilePage() {
                       onClick={handleAddressSave}
                       className="w-full px-4 py-3 bg-[#0B44A3] text-white rounded-lg hover:bg-[#093782] transition-colors font-medium min-h-[48px] touch-manipulation active:scale-95 text-base"
                     >
-                      <span className="text-white">บันทึกที่อยู่</span>
+                      บันทึกที่อยู่
                     </button>
                   </div>
                 </div>
@@ -1355,7 +1372,7 @@ export default function ProfilePage() {
                       <p className="text-gray-600 mb-4">You don't have a store yet. Register your store to start selling.</p>
                       <button
                         onClick={() => setShowStoreModal(true)}
-                        className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                        className="px-4 py-2 bg-gradient-to-r from-[#0B44A3] to-[#1a5fd4] text-white rounded-lg hover:from-[#093782] hover:to-[#1557c0] transition-colors"
                       >
                         Register Store
                       </button>

@@ -39,6 +39,7 @@ interface StoreData {
   ownerUsername: string;
   storeName: string;
   storeDescription?: string;
+  buMail?: string;
   registerDate: string;
   status: string;
 }
@@ -661,6 +662,11 @@ export default function AdminPage() {
                             <div className="text-sm text-gray-700">
                               <span className="font-medium">เจ้าของ:</span> {store.ownerUsername}
                             </div>
+                            {store.buMail && (
+                              <div className="text-sm text-gray-700 mt-1">
+                                <span className="font-medium">อีเมล:</span> {store.buMail}
+                              </div>
+                            )}
                             <div className="text-xs text-gray-500 mt-2">
                               เปิดร้าน: {new Date(store.registerDate.endsWith('Z') ? store.registerDate : store.registerDate + 'Z').toLocaleDateString('th-TH', { timeZone: 'Asia/Bangkok' })}
                             </div>

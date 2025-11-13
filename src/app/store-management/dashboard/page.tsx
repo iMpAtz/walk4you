@@ -288,22 +288,20 @@ export default function StoreDashboardPage() {
               </div>
             ) : (
               data.topProducts.map((product, index) => (
-                <div key={product.productId} className="flex items-center justify-between p-3 hover:bg-gray-50 rounded-lg transition-colors">
-                  <div className="flex items-center gap-3">
-                    <div className={`w-9 h-9 flex items-center justify-center ${
-                      index === 0 ? 'bg-gradient-to-br from-yellow-400 to-yellow-600' :
-                      index === 1 ? 'bg-gradient-to-br from-gray-300 to-gray-500' :
-                      index === 2 ? 'bg-gradient-to-br from-orange-400 to-orange-600' :
-                      'bg-gradient-to-br from-[#0B44A3] to-[#1a5fd4]'
-                    } text-white rounded-full font-bold text-sm shadow-sm`}>
-                      {index + 1}
-                    </div>
-                    <div>
-                      <p className="font-semibold text-gray-900">{product.name}</p>
-                      <p className="text-xs text-gray-600">ขาย {product.quantity} ชิ้น</p>
-                    </div>
+                <div key={product.productId} className="flex items-center gap-3 p-3 hover:bg-gray-50 rounded-lg transition-colors">
+                  <div className={`w-9 h-9 flex items-center justify-center flex-shrink-0 ${
+                    index === 0 ? 'bg-gradient-to-br from-yellow-400 to-yellow-600' :
+                    index === 1 ? 'bg-gradient-to-br from-gray-300 to-gray-500' :
+                    index === 2 ? 'bg-gradient-to-br from-orange-400 to-orange-600' :
+                    'bg-gradient-to-br from-[#0B44A3] to-[#1a5fd4]'
+                  } text-white rounded-full font-bold text-sm shadow-sm`}>
+                    {index + 1}
                   </div>
-                  <p className="font-bold text-[#0B44A3]">{formatCurrency(product.revenue)}</p>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-semibold text-gray-900 break-words line-clamp-2 leading-tight">{product.name}</p>
+                    <p className="text-xs text-gray-600 mt-0.5">ขาย {product.quantity} ชิ้น</p>
+                  </div>
+                  <p className="font-bold text-[#0B44A3] flex-shrink-0 ml-2">{formatCurrency(product.revenue)}</p>
                 </div>
               ))
             )}
@@ -326,15 +324,17 @@ export default function StoreDashboardPage() {
               </div>
             ) : (
               data.recentOrders.map((order) => (
-                <div key={order.orderId} className="flex items-center justify-between p-3 hover:bg-gray-50 rounded-lg transition-colors border border-gray-100">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-1">
-                      <p className="text-sm font-semibold text-gray-900">{order.productNames}</p>
-                      {getStatusBadge(order.status)}
+                <div key={order.orderId} className="flex items-start gap-3 p-3 hover:bg-gray-50 rounded-lg transition-colors border border-gray-100">
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-start flex-wrap gap-2 mb-1">
+                      <p className="text-sm font-semibold text-gray-900 break-words line-clamp-2 leading-tight flex-1 min-w-0">{order.productNames}</p>
+                      <div className="flex-shrink-0">
+                        {getStatusBadge(order.status)}
+                      </div>
                     </div>
                     <p className="text-xs text-gray-500">{formatDate(order.orderDate)}</p>
                   </div>
-                  <p className="font-bold text-[#0B44A3]">{formatCurrency(order.total)}</p>
+                  <p className="font-bold text-[#0B44A3] flex-shrink-0 ml-2">{formatCurrency(order.total)}</p>
                 </div>
               ))
             )}

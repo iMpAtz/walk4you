@@ -3,7 +3,7 @@
 import useSWR from "swr";
 import { useParams, useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
-import { ShoppingCart, Heart, Share2, Star, Package, Shield, Truck, MessageCircle, AlertTriangle, User } from "lucide-react";
+import { ShoppingCart, Share2, Star, Package, Shield, Truck, MessageCircle, AlertTriangle, User, Maximize2, X } from "lucide-react";
 import { useCart } from "@/contexts/CartContext";
 import TopBar from "@/components/TopBar";
 import { config } from '@/lib/config';
@@ -117,6 +117,7 @@ export default function ProductPage() {
   const [reviewsLoading, setReviewsLoading] = useState(false);
   const [isAddingToCart, setIsAddingToCart] = useState(false);
   const [isBuyingNow, setIsBuyingNow] = useState(false);
+  const [showImageModal, setShowImageModal] = useState(false);
   
   const { addToCart } = useCart();
 
@@ -197,6 +198,12 @@ export default function ProductPage() {
   const inStock = (product.quantity ?? 0) > 0;
 
   const handleAddToCart = async () => {
+    if (!currentUser) {
+      alert('กรุณาเข้าสู่ระบบก่อนเพิ่มสินค้าลงตะกร้า');
+      router.push('/login');
+      return;
+    }
+    
     if (!inStock || !product || !id) return;
     
     try {
@@ -213,6 +220,12 @@ export default function ProductPage() {
   };
 
   const handleBuyNow = async () => {
+    if (!currentUser) {
+      alert('กรุณาเข้าสู่ระบบก่อนซื้อสินค้า');
+      router.push('/login');
+      return;
+    }
+    
     if (!inStock || !product || !id) return;
     
     try {
@@ -305,57 +318,55 @@ export default function ProductPage() {
       <TopBar />
 
       {/* Product Detail */}
-      <div className="max-w-7xl mx-auto p-4 lg:p-8">
-        <div className="bg-white rounded-2xl shadow-xl overflow-hidden mb-8">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="max-w-7xl mx-auto p-3 sm:p-4 lg:p-8">
+        <div className="bg-white rounded-2xl shadow-xl overflow-hidden mb-6 sm:mb-8">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-0 lg:gap-6">
             {/* Left: Image */}
-            <div className="relative bg-gray-50 p-6 lg:p-8">
+            <div className="relative bg-gray-50 p-0 sm:p-4 lg:p-8">
               {product.image_url ? (
                 <img
                   src={product.image_url}
                   alt={product.name}
-                  className="w-full h-[400px] lg:h-[500px] object-cover rounded-xl"
+                  className="w-full h-[300px] sm:h-[400px] lg:h-[500px] object-cover rounded-none sm:rounded-xl"
                 />
               ) : (
-                <div className="w-full h-[400px] lg:h-[500px] flex flex-col items-center justify-center bg-gradient-to-br from-gray-100 to-gray-200 text-gray-400 rounded-xl">
-                  <Package className="w-20 lg:w-24 h-20 lg:h-24 mb-4" />
-                  <p className="text-base lg:text-lg">ไม่มีรูปภาพ</p>
+                <div className="w-full h-[300px] sm:h-[400px] lg:h-[500px] flex flex-col items-center justify-center bg-gradient-to-br from-gray-100 to-gray-200 text-gray-400 rounded-none sm:rounded-xl">
+                  <Package className="w-16 sm:w-20 lg:w-24 h-16 sm:h-20 lg:h-24 mb-4" />
+                  <p className="text-sm sm:text-base lg:text-lg">ไม่มีรูปภาพ</p>
                 </div>
               )}
-              <div className="absolute top-4 right-4 flex gap-2">
+              <div className="absolute top-3 sm:top-4 right-3 sm:right-4 flex gap-2">
                 <button
-                  onClick={() => setIsFavorite(!isFavorite)}
-                  className={`p-2.5 lg:p-3 rounded-full shadow-lg transition ${
-                    isFavorite ? 'bg-red-500 text-white' : 'bg-white text-gray-700 hover:bg-gray-100'
-                  }`}
-                  aria-label="Add to favorites"
+                  onClick={() => setShowImageModal(true)}
+                  className="p-2 sm:p-2.5 lg:p-3 bg-white rounded-full shadow-lg hover:bg-gray-100 transition"
+                  aria-label="View full image"
                 >
-                  <Heart className={`w-4 h-4 lg:w-5 lg:h-5 ${isFavorite ? 'fill-current' : ''}`} />
+                  <Maximize2 className="w-4 sm:w-5 lg:w-6 h-4 sm:h-5 lg:h-6 text-gray-700" />
                 </button>
-                <button 
+                <button
                   onClick={handleShare}
-                  className="p-2.5 lg:p-3 bg-white rounded-full shadow-lg hover:bg-gray-100 transition"
+                  className="p-2 sm:p-2.5 lg:p-3 bg-white rounded-full shadow-lg hover:bg-gray-100 transition"
                   aria-label="Share product"
                 >
-                  <Share2 className="w-4 h-4 lg:w-5 lg:h-5 text-gray-700" />
+                  <Share2 className="w-4 sm:w-5 lg:w-6 h-4 sm:h-5 lg:h-6 text-gray-700" />
                 </button>
               </div>
             </div>
 
             {/* Right: Info */}
-            <div className="p-6 lg:p-10 flex flex-col">
+            <div className="p-4 sm:p-6 lg:p-10 flex flex-col">
               <div className="flex-1">
                 {product.category && (
-                  <span className="inline-block px-3 py-1 bg-blue-50 text-[#0B44A3] rounded-full text-sm font-medium mb-4">
+                  <span className="inline-block px-3 py-1 bg-blue-50 text-[#0B44A3] rounded-full text-xs sm:text-sm font-medium mb-3 sm:mb-4">
                     {product.category}
                   </span>
                 )}
 
-                <h1 className="text-2xl lg:text-4xl font-bold text-gray-900 mb-4">
+                <h1 className="text-xl sm:text-2xl lg:text-4xl font-bold text-gray-900 mb-3 sm:mb-4">
                   {product.name}
                 </h1>
 
-                <div className="flex items-center gap-2 mb-4">
+                <div className="flex items-center gap-2 mb-3 sm:mb-4">
                   {reviews.length > 0 ? (
                     <>
                       <div className="flex">
@@ -364,7 +375,7 @@ export default function ProductPage() {
                           return (
                             <Star 
                               key={i} 
-                              className={`w-4 h-4 lg:w-5 lg:h-5 ${
+                              className={`w-3.5 sm:w-4 lg:w-5 h-3.5 sm:h-4 lg:h-5 ${
                                 i < Math.round(averageRating)
                                   ? 'fill-yellow-400 text-yellow-400'
                                   : 'text-gray-300'
@@ -373,39 +384,39 @@ export default function ProductPage() {
                           );
                         })}
                       </div>
-                      <span className="text-sm lg:text-base text-gray-600">
+                      <span className="text-xs sm:text-sm lg:text-base text-gray-600">
                         ({(reviews.reduce((sum, review) => sum + review.rating, 0) / reviews.length).toFixed(1)} จาก {reviews.length} รีวิว)
                       </span>
                     </>
                   ) : (
-                    <span className="text-sm lg:text-base text-gray-500">ยังไม่ได้รับการรีวิว</span>
+                    <span className="text-xs sm:text-sm lg:text-base text-gray-500">ยังไม่ได้รับการรีวิว</span>
                   )}
                 </div>
 
-                <p className="text-sm lg:text-base text-gray-600 leading-relaxed mb-6">
+                <p className="text-xs sm:text-sm lg:text-base text-gray-600 leading-relaxed mb-4 sm:mb-6">
                   {product.description || "ไม่มีคำอธิบายสินค้า"}
                 </p>
 
-                <div className="bg-gradient-to-r from-green-50 to-emerald-50 p-5 lg:p-6 rounded-xl mb-6">
-                  <p className="text-xs lg:text-sm text-gray-600 mb-1">ราคา</p>
-                  <p className="text-3xl lg:text-4xl font-bold text-green-700">
+                <div className="bg-gradient-to-r from-green-50 to-emerald-50 p-4 sm:p-5 lg:p-6 rounded-xl mb-4 sm:mb-6">
+                  <p className="text-xs sm:text-sm lg:text-sm text-gray-600 mb-1">ราคา</p>
+                  <p className="text-2xl sm:text-3xl lg:text-4xl font-bold text-green-700">
                     {(product.price ?? 0).toLocaleString("th-TH", { style: "currency", currency: "THB" })}
                   </p>
-                  <p className={`mt-2 text-sm font-medium ${inStock ? 'text-green-600' : 'text-red-600'}`}>
+                  <p className={`mt-2 text-xs sm:text-sm font-medium ${inStock ? 'text-green-600' : 'text-red-600'}`}>
                     {inStock ? `คงเหลือ ${product.quantity} ชิ้น` : 'สินค้าหมด'}
                   </p>
                 </div>
 
 
                 {inStock && (
-                  <div className="mb-6">
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <div className="mb-4 sm:mb-6">
+                    <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-2">
                       จำนวน
                     </label>
-                    <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-2 sm:gap-3">
                       <button
                         onClick={() => setQuantity(Math.max(1, quantity - 1))}
-                        className="w-10 h-10 flex items-center justify-center border-2 border-gray-300 rounded-lg hover:bg-gray-100 transition font-semibold text-lg"
+                        className="w-9 h-9 sm:w-10 sm:h-10 flex items-center justify-center border-2 border-gray-300 rounded-lg hover:bg-gray-100 transition font-semibold text-base sm:text-lg"
                       >
                         -
                       </button>
@@ -415,11 +426,11 @@ export default function ProductPage() {
                         max={product.quantity}
                         value={quantity}
                         onChange={(e) => setQuantity(Math.max(1, Math.min(product.quantity ?? 1, parseInt(e.target.value) || 1)))}
-                        className="w-20 h-10 text-center border-2 border-gray-300 rounded-lg font-semibold focus:outline-none focus:border-[#0B44A3]"
+                        className="w-16 sm:w-20 h-9 sm:h-10 text-center border-2 border-gray-300 rounded-lg font-semibold text-sm sm:text-base focus:outline-none focus:border-[#0B44A3]"
                       />
                       <button
                         onClick={() => setQuantity(Math.min(product.quantity ?? 1, quantity + 1))}
-                        className="w-10 h-10 flex items-center justify-center border-2 border-gray-300 rounded-lg hover:bg-gray-100 transition font-semibold text-lg"
+                        className="w-9 h-9 sm:w-10 sm:h-10 flex items-center justify-center border-2 border-gray-300 rounded-lg hover:bg-gray-100 transition font-semibold text-base sm:text-lg"
                       >
                         +
                       </button>
@@ -427,34 +438,43 @@ export default function ProductPage() {
                   </div>
                 )}
 
-                <div className="flex flex-col sm:flex-row gap-3 lg:gap-4 mb-6">
+                <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 lg:gap-4 mb-4 sm:mb-6">
                   <button
                     onClick={handleAddToCart}
-                    disabled={!inStock || isAddingToCart}
-                    className="flex-1 bg-gradient-to-r from-yellow-400 to-orange-400 hover:from-yellow-500 hover:to-orange-500 text-white font-semibold px-4 lg:px-6 py-3 lg:py-4 rounded-xl transition transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none flex items-center justify-center gap-2 text-sm lg:text-base"
+                    disabled={!inStock || isAddingToCart || !currentUser}
+                    className="flex-1 bg-gradient-to-r from-yellow-400 to-orange-400 hover:from-yellow-500 hover:to-orange-500 text-white font-semibold px-3 sm:px-4 lg:px-6 py-2.5 sm:py-3 lg:py-4 rounded-xl transition transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none flex items-center justify-center gap-2 text-xs sm:text-sm lg:text-base"
                   >
                     {isAddingToCart ? (
                       <>
-                        <div className="w-4 h-4 lg:w-5 lg:h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                        กำลังเพิ่ม...
+                        <div className="w-3.5 h-3.5 sm:w-4 sm:h-4 lg:w-5 lg:h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                        <span className="hidden sm:inline">กำลังเพิ่ม...</span>
+                        <span className="sm:hidden">กำลังเพิ่ม</span>
+                      </>
+                    ) : !currentUser ? (
+                      <>
+                        <ShoppingCart className="w-3.5 h-3.5 sm:w-4 sm:h-4 lg:w-5 lg:h-5" />
+                        กรุณาเข้าสู่ระบบ
                       </>
                     ) : (
                       <>
-                        <ShoppingCart className="w-4 h-4 lg:w-5 lg:h-5" />
+                        <ShoppingCart className="w-3.5 h-3.5 sm:w-4 sm:h-4 lg:w-5 lg:h-5" />
                         เพิ่มลงตะกร้า
                       </>
                     )}
                   </button>
                   <button
                     onClick={handleBuyNow}
-                    disabled={!inStock || isBuyingNow}
-                    className="flex-1 bg-[#0B44A3] hover:bg-[#093782] text-white font-semibold px-4 lg:px-6 py-3 lg:py-4 rounded-xl transition transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none text-sm lg:text-base flex items-center justify-center gap-2"
+                    disabled={!inStock || isBuyingNow || !currentUser}
+                    className="flex-1 bg-[#0B44A3] hover:bg-[#093782] text-white font-semibold px-3 sm:px-4 lg:px-6 py-2.5 sm:py-3 lg:py-4 rounded-xl transition transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none text-xs sm:text-sm lg:text-base flex items-center justify-center gap-2"
                   >
                     {isBuyingNow ? (
                       <>
-                        <div className="w-4 h-4 lg:w-5 lg:h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                        กำลังดำเนินการ...
+                        <div className="w-3.5 h-3.5 sm:w-4 sm:h-4 lg:w-5 lg:h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                        <span className="hidden sm:inline">กำลังดำเนินการ...</span>
+                        <span className="sm:hidden">กำลังซื้อ</span>
                       </>
+                    ) : !currentUser ? (
+                      'กรุณาเข้าสู่ระบบ'
                     ) : (
                       'ซื้อเลย'
                     )}
@@ -550,15 +570,15 @@ export default function ProductPage() {
                   <h3 className="text-lg font-semibold text-gray-900 mb-4">เขียนรีวิวของคุณ</h3>
                   <div className="mb-4">
                     <label className="block text-sm font-medium text-gray-700 mb-2">คะแนน</label>
-                    <div className="flex gap-2">
+                    <div className="flex gap-1 sm:gap-2">
                       {[1, 2, 3, 4, 5].map((rating) => (
                         <button
                           key={rating}
                           onClick={() => setNewRating(rating)}
-                          className="p-1 hover:scale-110 transition"
+                          className="p-0.5 sm:p-1 hover:scale-110 transition touch-manipulation"
                         >
                           <Star
-                            className={`w-8 h-8 ${
+                            className={`w-6 h-6 sm:w-8 sm:h-8 ${
                               rating <= newRating
                                 ? 'fill-yellow-400 text-yellow-400'
                                 : 'text-gray-300'
@@ -607,24 +627,24 @@ export default function ProductPage() {
                     </div>
                   ) : (
                     reviews.map((review) => (
-                      <div key={review.id} className="p-6 border border-gray-200 rounded-xl hover:shadow-md transition">
-                        <div className="flex items-start justify-between mb-3">
-                          <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 bg-[#0B44A3] rounded-full flex items-center justify-center">
-                              <User className="w-6 h-6 text-white" />
+                      <div key={review.id} className="p-4 sm:p-6 border border-gray-200 rounded-xl hover:shadow-md transition">
+                        <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2 sm:gap-0 mb-3">
+                          <div className="flex items-center gap-2 sm:gap-3">
+                            <div className="w-8 h-8 sm:w-10 sm:h-10 bg-[#0B44A3] rounded-full flex items-center justify-center flex-shrink-0">
+                              <User className="w-4 h-4 sm:w-6 sm:h-6 text-white" />
                             </div>
-                            <div>
-                              <p className="font-semibold text-gray-900">{review.username}</p>
-                              <p className="text-sm text-gray-500">
+                            <div className="min-w-0 flex-1">
+                              <p className="font-semibold text-gray-900 text-sm sm:text-base">{review.username}</p>
+                              <p className="text-xs sm:text-sm text-gray-500">
                                 {new Date(review.createdAt.endsWith('Z') ? review.createdAt : review.createdAt + 'Z').toLocaleDateString('th-TH', { timeZone: 'Asia/Bangkok' })}
                               </p>
                             </div>
                           </div>
-                          <div className="flex">
+                          <div className="flex gap-0.5 sm:gap-1 flex-shrink-0">
                             {[...Array(5)].map((_, i) => (
                               <Star
                                 key={i}
-                                className={`w-4 h-4 ${
+                                className={`w-3.5 h-3.5 sm:w-4 sm:h-4 ${
                                   i < review.rating
                                     ? 'fill-yellow-400 text-yellow-400'
                                     : 'text-gray-300'
@@ -633,7 +653,7 @@ export default function ProductPage() {
                             ))}
                           </div>
                         </div>
-                        <p className="text-gray-700 mb-3">{review.comment}</p>
+                        <p className="text-gray-700 text-sm sm:text-base mb-3">{review.comment}</p>
                       </div>
                     ))
                   )}
@@ -680,15 +700,6 @@ export default function ProductPage() {
                         <p className="text-sm">ไม่มีรูปภาพ</p>
                       </div>
                     )}
-                    <button 
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setIsFavorite(!isFavorite);
-                      }}
-                      className="absolute top-2 right-2 p-2 bg-white rounded-full shadow-md opacity-0 group-hover:opacity-100 transition"
-                    >
-                      <Heart className="w-4 h-4 text-gray-700" />
-                    </button>
                   </div>
                   <div className="p-4">
                     <h3 className="font-semibold text-gray-900 mb-2 line-clamp-2">{item.name}</h3>
@@ -705,6 +716,39 @@ export default function ProductPage() {
           )}
         </div>
       </div>
+
+      {/* Image Modal Popup */}
+      {showImageModal && (
+        <div 
+          className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4"
+          onClick={() => setShowImageModal(false)}
+        >
+          <div 
+            className="relative max-w-6xl max-h-[90vh] w-full flex flex-col items-center gap-4"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {product?.image_url ? (
+              <img 
+                src={product.image_url} 
+                alt={product.name} 
+                className="w-full h-full object-contain rounded-lg"
+              />
+            ) : (
+              <div className="flex items-center justify-center bg-gray-200 rounded-lg h-96">
+                <Package className="w-24 h-24 text-gray-400" />
+              </div>
+            )}
+            <button
+              onClick={() => setShowImageModal(false)}
+              className="px-6 py-3 bg-white rounded-full hover:bg-gray-100 transition flex items-center gap-2 shadow-lg"
+              aria-label="Close"
+            >
+              <X className="w-5 h-5 text-gray-700" />
+              <span className="font-medium text-gray-700">ปิด</span>
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -6,6 +6,7 @@ import { AlertTriangle, FileText, Store } from 'lucide-react';
 import NotificationBell from '@/components/NotificationBell';
 import CartIcon from '@/components/CartIcon';
 import { config } from '@/lib/config';
+import TopBar from '@/components/TopBar';
 
 interface UserData {
   id: string;
@@ -211,96 +212,35 @@ function ReportStoreContent() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <div className="bg-[#0B44A3] shadow-sm border-b border-[#093782]">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-          <a href="/" className="text-2xl font-bold text-white">Walk4You</a>
-          <div className="flex items-center gap-4">
-            <NotificationBell />
-            <CartIcon />
-            <button className="flex items-center gap-2 p-2 hover:bg-[#093782] rounded-lg">
-              {userData?.avatar?.url ? (
-                <img
-                  src={userData.avatar.url}
-                  alt="Profile"
-                  width={24}
-                  height={24}
-                  className="rounded-full w-6 h-6 object-cover"
-                />
-              ) : (
-                <div className="w-6 h-6 bg-white rounded-full text-[#0B44A3] text-xs flex items-center justify-center font-semibold">
-                  {userData?.username?.charAt(0).toUpperCase() || 'U'}
-                </div>
-              )}
-              <span className="text-sm font-medium text-white">{userData?.username || 'ผู้ใช้'}</span>
-            </button>
-          </div>
-        </div>
-      </div>
-
+      <TopBar></TopBar>
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="mb-6">
           <h1 className="text-2xl font-bold text-gray-900 mb-2">รายงานร้านค้า</h1>
           <p className="text-gray-600">ส่งรายงานร้านค้าที่มีพฤติกรรมไม่เหมาะสม</p>
         </div>
 
-        <div className="bg-white rounded-lg shadow-sm border">
-          <div className="p-6">
-            <form onSubmit={handleSubmitReport} className="space-y-6">
+        <div className="bg-white shadow rounded-lg p-6">
+          <form onSubmit={handleSubmitReport} className="space-y-6">
+            <div>
               <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    ร้านค้าที่ต้องการรายงาน <span className="text-red-500">*</span>
-                  </label>
-                  <div className="relative">
-                    <input
-                      type="text"
-                      value={searchStoreQuery}
-                      onChange={(e) => handleStoreSearch(e.target.value)}
-                      placeholder="ค้นหาร้านค้า..."
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0B44A3]"
-                    />
-                    {searchingStores && (
-                      <div className="absolute right-3 top-2.5">
-                        <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-gray-600"></div>
-                      </div>
-                    )}
-                    {storeSearchResults.length > 0 && (
-                      <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-y-auto">
-                        {storeSearchResults.map((store) => (
-                          <button
-                            key={store.id}
-                            type="button"
-                            onClick={() => handleSelectStore(store)}
-                            className="w-full text-left px-4 py-2 hover:bg-gray-100 border-b border-gray-200 last:border-b-0"
-                          >
-                            <div className="font-medium text-gray-900">{store.storeName}</div>
-                            {store.storeDescription && (
-                              <div className="text-sm text-gray-500 truncate">{store.storeDescription}</div>
-                            )}
-                          </button>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                  {storeData && (
-                    <div className="mt-2 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-                      <div className="flex items-center gap-2">
-                        <Store className="w-5 h-5 text-[#0B44A3]" />
-                        <div>
-                          <div className="font-medium text-[#0B44A3]">{storeData.storeName}</div>
-                          {storeData.storeDescription && (
-                            <div className="text-sm text-[#0B44A3]">{storeData.storeDescription}</div>
-                          )}
-                        </div>
-                      </div>
+              {storeData && (
+                <div className="mt-2 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                  <div className="flex items-center gap-2">
+                    <Store className="w-5 h-5 text-[#0B44A3]" />
+                    <div>
+                      <div className="font-medium text-[#0B44A3]">{storeData.storeName}</div>
+                      {storeData.storeDescription && (
+                        <div className="text-sm text-[#0B44A3]">{storeData.storeDescription}</div>
+                      )}
                     </div>
-                  )}
+                  </div>
                 </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    ประเภทการรายงาน <span className="text-red-500">*</span>
-                  </label>
-                  <select
+              )}
+              </div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                ประเภทการรายงาน <span className="text-red-500">*</span>
+              </label>
+              <select
                     value={reportType}
                     onChange={(e) => setReportType(e.target.value)}
                     required
@@ -345,8 +285,7 @@ function ReportStoreContent() {
                     </>
                   )}
                 </button>
-            </form>
-          </div>
+          </form>
         </div>
       </div>
     </div>

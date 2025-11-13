@@ -127,7 +127,7 @@ export default function StoreManagementPage() {
       const token = localStorage.getItem('access_token');
       if (!token) return;
 
-      const response = await fetch(`${config.apiBaseUrl}/users/me/store`, {
+      const response = await fetch(`${config.apiBaseUrl}/stores/my-store`, {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${token}`,
