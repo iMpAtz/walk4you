@@ -9,6 +9,8 @@ import type { UserProfile } from '@/types';
 import MobileSidebar from './MobileSidebar';
 import NotificationBell from './NotificationBell';
 import CartIcon from './CartIcon';
+import LoginModal from './LoginModal';
+import RegisterModal from './RegisterModal';
 import { config } from '@/lib/config';
 
 export default function TopBar() {
@@ -19,6 +21,8 @@ export default function TopBar() {
   const [isSidebarOpen, setIsSidebarOpen] = useState<boolean>(false);
   const [isDesktop, setIsDesktop] = useState<boolean>(false);
   const [showBannedModal, setShowBannedModal] = useState<boolean>(false);
+  const [showLoginModal, setShowLoginModal] = useState<boolean>(false);
+  const [showRegisterModal, setShowRegisterModal] = useState<boolean>(false);
 
   useEffect(() => {
     try {
@@ -124,12 +128,15 @@ export default function TopBar() {
       {/* Navbar */}
       <nav className="bg-[#0B44A3] border-b border-[#093782] px-6 lg:px-8 py-4 shadow-sm sticky top-0 z-50 backdrop-blur-lg bg-opacity-95">
         <div className="max-w-7xl mx-auto flex justify-between items-center">
-          <Link 
-            href="/" 
-            className="text-2xl lg:text-3xl font-bold text-white hover:opacity-80 transition cursor-pointer"
-          >
-            Walk4You
-          </Link>
+          <div className="flex flex-col">
+            <Link 
+              href="/" 
+              className="text-2xl lg:text-3xl font-bold text-white hover:opacity-80 transition cursor-pointer"
+            >
+              Walk4You
+            </Link>
+            <p className="text-white text-xs lg:text-sm">เว็บไชต์ซื้อขายสำหรับนักศึกษามหาวิทยาลัยกรุงเทพ</p>
+          </div>
           <div className="flex items-center gap-3 lg:gap-6">
             {hasToken && (
               <>
@@ -158,12 +165,18 @@ export default function TopBar() {
             )}
             {!hasToken && (
               <div className="flex items-center gap-4">
-                <Link href="/login" className="rounded bg-white px-4 py-2 text-[#0B44A3] font-semibold hover:bg-gray-100 transition-colors">
+                <button 
+                  onClick={() => setShowLoginModal(true)}
+                  className="rounded bg-white px-4 py-2 text-[#0B44A3] font-semibold hover:bg-gray-100 transition-colors"
+                >
                   Login
-                </Link>
-                <Link href="/register" className="text-white underline hover:no-underline transition-all">
+                </button>
+                <button 
+                  onClick={() => setShowRegisterModal(true)}
+                  className="text-white underline hover:no-underline transition-all"
+                >
                   Register
-                </Link>
+                </button>
               </div>
             )}
           </div>
@@ -204,6 +217,26 @@ export default function TopBar() {
           </div>
         </div>
       )}
+      
+      {/* Login Modal */}
+      <LoginModal 
+        isOpen={showLoginModal} 
+        onClose={() => setShowLoginModal(false)}
+        onSwitchToRegister={() => {
+          setShowLoginModal(false);
+          setShowRegisterModal(true);
+        }}
+      />
+      
+      {/* Register Modal */}
+      <RegisterModal 
+        isOpen={showRegisterModal} 
+        onClose={() => setShowRegisterModal(false)}
+        onSwitchToLogin={() => {
+          setShowRegisterModal(false);
+          setShowLoginModal(true);
+        }}
+      />
     </>
   );
 }

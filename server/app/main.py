@@ -511,7 +511,8 @@ class UserRegister(BaseModel):
 
 
 class UserLogin(BaseModel):
-    username: str
+    username: Optional[str] = None
+    email: Optional[str] = None
     password: str
 
 
@@ -600,13 +601,24 @@ async def register(user_data: UserRegister, db: AsyncIOMotorDatabase = Depends(g
 @app.post("/auth/login", response_model=AuthResponse)
 async def login(login_data: UserLogin, db: AsyncIOMotorDatabase = Depends(get_db)):
     try:
-        # Query using indexed field
-        user = await db.User.find_one({"username": login_data.username})
+        # Query using email or username
+        query = {}
+        if login_data.email:
+            query = {"email": login_data.email}
+        elif login_data.username:
+            query = {"username": login_data.username}
+        else:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Email or username is required"
+            )
+        
+        user = await db.User.find_one(query)
         
         if not user or not verify_password(login_data.password, user["password"]):
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Invalid username or password"
+                detail="Invalid credentials"
             )
         
         token_data = {

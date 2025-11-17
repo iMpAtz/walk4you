@@ -26,7 +26,7 @@ interface AuthContextType {
   user: User | null;
   isLoading: boolean;
   isAuthenticated: boolean;
-  login: (username: string, password: string) => Promise<boolean>;
+  login: (emailOrUsername: string, password: string) => Promise<boolean>;
   logout: () => void;
   refreshUser: () => Promise<void>;
   authenticatedFetch: typeof authenticatedFetch;
@@ -111,8 +111,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [authenticated, router, isMounted]);
 
   // Login function
-  const login = async (username: string, password: string): Promise<boolean> => {
+  const login = async (emailOrUsername: string, password: string): Promise<boolean> => {
     try {
+      // Check if input is email (contains @) or username
+      const isEmail = emailOrUsername.includes('@');
+      const loginData = isEmail 
+        ? { email: emailOrUsername, password }
+        : { username: emailOrUsername, password };
+      
       const response = await fetch(
         `${config.apiBaseUrl}/auth/login`,
         {
@@ -120,7 +126,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           headers: {
             'Content-Type': 'application/json',
           },
-          body: JSON.stringify({ username, password }),
+          body: JSON.stringify(loginData),
         }
       );
 
