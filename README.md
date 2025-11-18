@@ -64,7 +64,7 @@ npx prisma studio
 
 ### รัน Backend (FastAPI)
 ```
-cd api
+cd server
 
 # 1) สร้าง venv (ใช้ Python ที่มีอยู่บนเครื่อง)
 python -m venv .venv
