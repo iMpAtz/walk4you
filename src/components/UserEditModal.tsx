@@ -45,7 +45,11 @@ export default function UserEditModal({ isOpen, onClose, onUpdate, user }: UserE
     setError('');
 
     try {
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem('access_token');
+      if (!token) {
+        throw new Error('กรุณาเข้าสู่ระบบก่อน');
+      }
+      
       const response = await fetch(`${config.apiBaseUrl}/admin/users/${user.id}`, {
         method: 'PUT',
         headers: {

@@ -90,50 +90,6 @@ export default function StoreManagementLayout({ storeData, userData, onSave }: S
     setUploading(true);
     
     try {
-      console.log('Starting QR upload...', { fileName: qrFile.name, size: qrFile.size });
-      
-      // 1. Get Cloudinary signature
-      const signUrl = `/api/uploads/cloudinary-sign?folder=walk4you/qrcodes`;
-      console.log('Fetching signature from:', signUrl);
-      
-      const signRes = await fetch(signUrl, { method: 'GET' });
-      
-      if (!signRes.ok) {
-        const error = await signRes.text();
-        console.error('Failed to get signature:', error);
-        alert('ไม่สามารถได้รับลายเซ็นจาก Cloudinary');
-        setUploading(false);
-        return;
-      }
-      
-      const sig = await signRes.json();
-      console.log('Got signature, uploading to Cloudinary...');
-      
-      // 2. Upload to Cloudinary
-      const form = new FormData();
-      form.append('file', qrFile);
-      form.append('api_key', sig.apiKey);
-      form.append('timestamp', String(sig.timestamp));
-      form.append('signature', sig.signature);
-      form.append('folder', sig.folder || 'walk4you/qrcodes');
-      if (sig.uploadPreset) form.append('upload_preset', sig.uploadPreset);
-      
-      const uploadUrl = `https://api.cloudinary.com/v1_1/${sig.cloudName}/image/upload`;
-      const uploadRes = await fetch(uploadUrl, { method: 'POST', body: form });
-      
-      if (!uploadRes.ok) {
-        const error = await uploadRes.json();
-        console.error('Cloudinary upload failed:', error);
-        alert(`อัปโหลด QR ไม่สำเร็จ: ${error.error?.message || 'Unknown error'}`);
-        setUploading(false);
-        return;
-      }
-      
-      const data = await uploadRes.json();
-      const qrUrl = data.secure_url;
-      console.log('Cloudinary upload successful:', qrUrl);
-      
-      // 3. Save QR URL to backend
       const token = localStorage.getItem('access_token');
       if (!token) {
         alert('กรุณาเข้าสู่ระบบก่อน');
@@ -141,7 +97,45 @@ export default function StoreManagementLayout({ storeData, userData, onSave }: S
         return;
       }
       
-      console.log('Saving QR URL to backend...', { storeId: storeData.id });
+      // Get Cloudinary signature using GET with folder parameter
+      const signUrl = `/api/uploads/cloudinary-sign?folder=walk4you/qrcodes`;
+      const signRes = await fetch(signUrl, { method: 'GET' });
+      
+      if (!signRes.ok) {
+        const error = await signRes.text();
+        alert('ไม่สามารถได้รับลายเซ็นจาก Cloudinary');
+        setUploading(false);
+        return;
+      }
+      
+      const sig = await signRes.json();
+      
+      // Upload to Cloudinary
+      const formData = new FormData();
+      formData.append('file', qrFile);
+      formData.append('api_key', sig.apiKey);
+      formData.append('timestamp', String(sig.timestamp));
+      formData.append('signature', sig.signature);
+      formData.append('folder', sig.folder || 'walk4you/qrcodes');
+      if (sig.uploadPreset) formData.append('upload_preset', sig.uploadPreset);
+      
+      const uploadUrl = `https://api.cloudinary.com/v1_1/${sig.cloudName}/image/upload`;
+      const uploadRes = await fetch(uploadUrl, {
+        method: 'POST',
+        body: formData,
+      });
+      
+      if (!uploadRes.ok) {
+        const error = await uploadRes.json();
+        alert(`อัปโหลด QR ไม่สำเร็จ: ${error.error?.message || 'Unknown error'}`);
+        setUploading(false);
+        return;
+      }
+      
+      const uploadData = await uploadRes.json();
+      const qrUrl = uploadData.secure_url;
+      
+      // Save QR URL to backend
       const saveRes = await fetch(`${config.apiBaseUrl}/stores/${storeData.id}/qr`, {
         method: 'PUT',
         headers: {
@@ -152,17 +146,14 @@ export default function StoreManagementLayout({ storeData, userData, onSave }: S
       });
       
       if (saveRes.ok) {
-        console.log('QR URL saved successfully');
         setQrPreview(qrUrl);
         setQrFile(null);
-        alert('บันทึก QR URL สำเร็จ!');
+        alert('อัปโหลด QR สำเร็จ!');
       } else {
         const error = await saveRes.json();
-        console.error('Failed to save QR URL:', error);
         alert(`บันทึก QR URL ไม่สำเร็จ: ${error.detail || 'Unknown error'}`);
       }
     } catch (error) {
-      console.error('Error uploading QR:', error);
       alert(`เกิดข้อผิดพลาด: ${error instanceof Error ? error.message : 'Unknown error'}`);
     } finally {
       setUploading(false);
@@ -184,38 +175,53 @@ export default function StoreManagementLayout({ storeData, userData, onSave }: S
   };
 
   const handleUploadLogo = async () => {
-    if (!logoFile || !storeData?.id) return;
+    if (!logoFile || !storeData?.id) {
+      alert('กรุณาเลือกไฟล์โลโก้ก่อน');
+      return;
+    }
     setUploadingLogo(true);
     
     try {
       const token = localStorage.getItem('access_token');
+      if (!token) {
+        alert('กรุณาเข้าสู่ระบบก่อน');
+        setUploadingLogo(false);
+        return;
+      }
       
-      // Get Cloudinary signature using GET
-      const signRes = await fetch('/api/uploads/cloudinary-sign?username=store&type=logo', {
-        method: 'GET',
-      });
+      // Get Cloudinary signature using GET with folder parameter
+      const signUrl = `/api/uploads/cloudinary-sign?folder=walk4you/logos`;
+      const signRes = await fetch(signUrl, { method: 'GET' });
 
       if (!signRes.ok) {
-        throw new Error('Failed to get signature');
+        const error = await signRes.text();
+        alert('ไม่สามารถได้รับลายเซ็นจาก Cloudinary');
+        setUploadingLogo(false);
+        return;
       }
 
-      const { timestamp, signature, apiKey, cloudName, folder } = await signRes.json();
+      const sig = await signRes.json();
 
       // Upload to Cloudinary
       const formData = new FormData();
       formData.append('file', logoFile);
-      formData.append('timestamp', timestamp.toString());
-      formData.append('signature', signature);
-      formData.append('api_key', apiKey);
-      formData.append('folder', folder);
+      formData.append('api_key', sig.apiKey);
+      formData.append('timestamp', String(sig.timestamp));
+      formData.append('signature', sig.signature);
+      formData.append('folder', sig.folder || 'walk4you/logos');
+      if (sig.uploadPreset) formData.append('upload_preset', sig.uploadPreset);
 
-      const uploadRes = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/image/upload`, {
+      const uploadUrl = `https://api.cloudinary.com/v1_1/${sig.cloudName}/image/upload`;
+      const uploadRes = await fetch(uploadUrl, {
         method: 'POST',
         body: formData,
       });
 
       if (!uploadRes.ok) {
-        throw new Error('Failed to upload to Cloudinary');
+        const error = await uploadRes.json();
+        alert(`อัปโหลดโลโก้ไม่สำเร็จ: ${error.error?.message || 'Unknown error'}`);
+        setUploadingLogo(false);
+        return;
       }
 
       const uploadData = await uploadRes.json();
@@ -234,13 +240,13 @@ export default function StoreManagementLayout({ storeData, userData, onSave }: S
       if (saveRes.ok) {
         setLogoPreview(logoUrl);
         setLogoFile(null);
-        alert('อัปโหลดโลโก้สำเร็จ');
+        alert('อัปโหลดโลโก้สำเร็จ!');
       } else {
-        throw new Error('Failed to save logo URL');
+        const error = await saveRes.json();
+        alert(`บันทึกโลโก้ไม่สำเร็จ: ${error.detail || 'Unknown error'}`);
       }
     } catch (error) {
-      console.error('Error uploading logo:', error);
-      alert('เกิดข้อผิดพลาดในการอัปโหลดโลโก้');
+      alert(`เกิดข้อผิดพลาด: ${error instanceof Error ? error.message : 'Unknown error'}`);
     } finally {
       setUploadingLogo(false);
     }
@@ -377,32 +383,36 @@ export default function StoreManagementLayout({ storeData, userData, onSave }: S
                         </div>
                       )}
                       <div className="flex-1 w-full">
-                        <input 
-                          type="file" 
-                          accept="image/*" 
-                          onChange={handleLogoChange}
-                          id="logo-upload"
-                          className="hidden"
-                        />
-                        <label 
-                          htmlFor="logo-upload"
-                          className="inline-block px-3 sm:px-4 py-2 sm:py-2.5 bg-gray-100 border-2 border-gray-300 text-gray-700 rounded-lg hover:bg-gray-200 transition cursor-pointer text-sm sm:text-base min-h-[44px] flex items-center justify-center touch-manipulation"
-                        >
-                          เลือกรูปภาพ
-                        </label>
-                        {logoFile && (
-                          <button
-                            type="button"
-                            onClick={handleUploadLogo}
-                            disabled={uploadingLogo}
-                            className="mt-2 sm:mt-0 sm:ml-2 w-full sm:w-auto px-3 sm:px-4 py-2 sm:py-2.5 bg-gradient-to-r from-[#0B44A3] to-[#1a5fd4] text-white rounded-lg hover:opacity-90 transition shadow-md disabled:opacity-50 text-sm sm:text-base min-h-[44px] touch-manipulation"
-                          >
-                            {uploadingLogo ? 'กำลังอัปโหลด...' : 'อัปโหลดโลโก้'}
-                          </button>
+                        {isEditing && (
+                          <>
+                            <input 
+                              type="file" 
+                              accept="image/*" 
+                              onChange={handleLogoChange}
+                              id="logo-upload"
+                              className="hidden"
+                            />
+                            <label 
+                              htmlFor="logo-upload"
+                              className="inline-block px-3 sm:px-4 py-2 sm:py-2.5 bg-gray-100 border-2 border-gray-300 text-gray-700 rounded-lg hover:bg-gray-200 transition cursor-pointer text-sm sm:text-base min-h-[44px] flex items-center justify-center touch-manipulation"
+                            >
+                              เลือกรูปภาพ
+                            </label>
+                            {logoFile && (
+                              <button
+                                type="button"
+                                onClick={handleUploadLogo}
+                                disabled={uploadingLogo}
+                                className="mt-2 sm:mt-0 sm:ml-2 w-full sm:w-auto px-3 sm:px-4 py-2 sm:py-2.5 bg-gradient-to-r from-[#0B44A3] to-[#1a5fd4] !text-white rounded-lg hover:opacity-90 transition shadow-md disabled:opacity-50 text-sm sm:text-base min-h-[44px] touch-manipulation"
+                              >
+                                {uploadingLogo ? 'กำลังอัปโหลด...' : 'อัปโหลดโลโก้'}
+                              </button>
+                            )}
+                            <div className="text-xs sm:text-sm text-gray-500 mt-2">
+                              แนะนำขนาด 500x500px, ไฟล์ JPG, PNG (สูงสุด 5MB)
+                            </div>
+                          </>
                         )}
-                        <div className="text-xs sm:text-sm text-gray-500 mt-2">
-                          แนะนำขนาด 500x500px, ไฟล์ JPG, PNG (สูงสุด 5MB)
-                        </div>
                       </div>
                     </div>
                   </div>
@@ -465,36 +475,64 @@ export default function StoreManagementLayout({ storeData, userData, onSave }: S
 
                   {/* QR PromptPay Upload */}
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-2">
                       ช่องทางชำระเงิน QR PromptPay
                     </label>
-                    <div className="flex items-center gap-4">
+                    <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4">
                       {qrPreview ? (
-                        <div className="relative">
-                          <Image src={qrPreview} alt="QR PromptPay" width={96} height={96} className="rounded border" />
+                        <div className="relative group">
+                          <Image 
+                            src={qrPreview} 
+                            alt="QR PromptPay" 
+                            width={120} 
+                            height={120} 
+                            className="rounded-xl border-2 border-gray-200 object-cover shadow-md w-20 h-20 sm:w-[120px] sm:h-[120px]"
+                          />
+                          <button
+                            onClick={handleRemoveQr}
+                            className="absolute top-1 right-1 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity touch-manipulation"
+                          >
+                            ×
+                          </button>
                         </div>
                       ) : (
-                        <>
-                          <div className="w-24 h-24 bg-gray-100 rounded flex items-center justify-center text-gray-400 border">
-                            ไม่มี QR
-                          </div>
-                          <div>
-                            <input type="file" accept="image/*" onChange={handleQrChange} className="mb-2" />
+                        <div className="w-20 h-20 sm:w-[120px] sm:h-[120px] bg-gradient-to-br from-gray-100 to-gray-200 rounded-xl flex items-center justify-center text-gray-400 border-2 border-dashed border-gray-300">
+                          <span className="text-xs sm:text-sm text-center px-2">ไม่มี QR</span>
+                        </div>
+                      )}
+                      <div className="flex-1 w-full">
+                        {isEditing && (
+                          <>
+                            <input 
+                              type="file" 
+                              accept="image/*" 
+                              onChange={handleQrChange}
+                              id="qr-upload"
+                              className="hidden"
+                            />
+                            <label 
+                              htmlFor="qr-upload"
+                              className="inline-block px-3 sm:px-4 py-2 sm:py-2.5 bg-gray-100 border-2 border-gray-300 text-gray-700 rounded-lg hover:bg-gray-200 transition cursor-pointer text-sm sm:text-base min-h-[44px] flex items-center justify-center touch-manipulation"
+                            >
+                              เลือกรูปภาพ
+                            </label>
                             {qrFile && (
                               <button
                                 type="button"
                                 onClick={handleUploadQr}
                                 disabled={uploading}
-                                className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700"
+                                className="mt-2 sm:mt-0 sm:ml-2 w-full sm:w-auto px-3 sm:px-4 py-2 sm:py-2.5 bg-gradient-to-r from-[#0B44A3] to-[#1a5fd4] !text-white rounded-lg hover:opacity-90 transition shadow-md disabled:opacity-50 text-sm sm:text-base min-h-[44px] touch-manipulation"
                               >
                                 {uploading ? 'กำลังอัปโหลด...' : 'อัปโหลด QR'}
                               </button>
                             )}
-                          </div>
-                        </>
-                      )}
+                            <div className="text-xs sm:text-sm text-gray-500 mt-2">
+                               ไฟล์ JPG, PNG (สูงสุด 25MB)
+                            </div>
+                          </>
+                        )}
+                      </div>
                     </div>
-                    <div className="text-sm text-gray-500 mt-1">อัปโหลด QR PromptPay เพื่อให้ลูกค้าชำระเงินผ่านแอปธนาคาร</div>
                   </div>
                 </div>
 
