@@ -19,6 +19,7 @@ interface CheckoutItem {
   totalPrice: number;
   storeId: string;
   storeName: string;
+  shippingCost?: number;
 }
 
 interface CheckoutStore {
@@ -87,8 +88,24 @@ export default function CheckoutConfirmPage() {
   }, [router]);
 
   const [showUpload, setShowUpload] = useState(false);
-  const [proofFile, setProofFile] = useState<File | null>(null);
+  const [currentStoreIndex, setCurrentStoreIndex] = useState(0);
+  const [storeProofs, setStoreProofs] = useState<Record<string, File | null>>({});
+  const [storeProofPreviews, setStoreProofPreviews] = useState<Record<string, string>>({});
   const [uploading, setUploading] = useState(false);
+
+  // Calculate shipping cost for a store
+  const calculateStoreShipping = (store: CheckoutStore) => {
+    if (selection?.selectedShipping?.[store.storeId] === 'post') {
+      // Sum up shipping costs of items in this store
+      return store.items.reduce((total, item) => total + (item.shippingCost || 0), 0);
+    }
+    return 0; // No shipping cost for meetup
+  };
+
+  // Calculate store total with shipping
+  const getStoreTotal = (store: CheckoutStore) => {
+    return store.totalAmount + calculateStoreShipping(store);
+  };
 
   const handleConfirm = async () => {
     if (!checkoutData) return;
@@ -108,27 +125,71 @@ export default function CheckoutConfirmPage() {
     setProofFile(f);
   };
 
-  const handleUploadAndSubmit = async () => {
-    if (!proofFile) {
-      alert('กรุณาเลือกรูปหลักฐานการชำระเงิน');
-      return;
+  const handleStoreProofChange = (storeId: string, e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0] || null;
+    if (file) {
+      setStoreProofs(prev => ({ ...prev, [storeId]: file }));
+      // Create preview
+      const preview = URL.createObjectURL(file);
+      setStoreProofPreviews(prev => ({ ...prev, [storeId]: preview }));
     }
+  };
+
+  const handleUploadAndSubmit = async () => {
+    const anyQr = checkoutData!.stores.some(s => selection?.selectedPayment?.[s.storeId] === 'qr');
+    
+    if (anyQr) {
+      // Check if all QR stores have proofs
+      const missingProofs = checkoutData!.stores.filter(
+        s => selection?.selectedPayment?.[s.storeId] === 'qr' && !storeProofs[s.storeId]
+      );
+      
+      if (missingProofs.length > 0) {
+        alert(`กรุณาอัปโหลดหลักฐานการชำระเงินสำหรับ: ${missingProofs.map(s => s.storeName).join(', ')}`);
+        return;
+      }
+    }
+
     setUploading(true);
     try {
-      const fd = new FormData();
-      fd.append('qr', proofFile);
-      const res = await fetch('/api/uploads/cloudinary-sign', { method: 'POST', body: fd });
-      if (!res.ok) throw new Error('upload failed');
-      const data = await res.json();
-      const proofUrl = data.qrUrl;
-      await submitOrder(proofUrl);
-    } catch (e) {
-      alert('อัปโหลดหลักฐานไม่สำเร็จ');
+      const token = localStorage.getItem('access_token');
+      
+      // Upload proofs for each store and collect URLs
+      const storeProofUrls: Record<string, string> = {};
+      
+      for (const store of checkoutData!.stores) {
+        if (selection?.selectedPayment?.[store.storeId] === 'qr' && storeProofs[store.storeId]) {
+          const file = storeProofs[store.storeId];
+          const fd = new FormData();
+          fd.append('file', file!);
+          
+          const uploadRes = await fetch(`${config.apiBaseUrl}/orders/upload-slip`, {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${token}`,
+            },
+            body: fd
+          });
+          
+          if (!uploadRes.ok) {
+            const errorText = await uploadRes.text();
+            throw new Error(`Failed to upload for ${store.storeName}: ${errorText}`);
+          }
+          
+          const uploadData = await uploadRes.json();
+          storeProofUrls[store.storeId] = uploadData.url;
+        }
+      }
+      
+      await submitOrder(storeProofUrls);
+    } catch (error) {
+      console.error('Error uploading payment slip:', error);
+      alert(`อัปโหลดหลักฐานไม่สำเร็จ: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
     setUploading(false);
   };
 
-  const submitOrder = async (paymentProofUrl: string | null) => {
+  const submitOrder = async (storeProofUrls: Record<string, string> | null = null) => {
     try {
       const token = localStorage.getItem('access_token');
       if (!token) {
@@ -137,33 +198,49 @@ export default function CheckoutConfirmPage() {
         return;
       }
 
-      const items: any[] = [];
-      checkoutData!.stores.forEach(store => {
-        store.items.forEach(item => {
-          items.push({ productId: item.productId, quantity: item.quantity, price: item.productPrice });
-        });
-      });
+      // Send orders per store separately
+      const failedStores: string[] = [];
+      
+      for (const store of checkoutData!.stores) {
+        try {
+          // Prepare items for this specific store
+          const storeItems = store.items.map(item => ({
+            productId: item.productId,
+            quantity: item.quantity,
+            price: item.productPrice,
+          }));
 
-      const body = {
-        items,
-        shippingAddress: address,
-        phoneNumber,
-        notes: JSON.stringify({ selection }),
-        paymentProofUrl
-      };
+          const body = {
+            items: storeItems,
+            storeId: store.storeId,
+            shippingAddress: address,
+            phoneNumber,
+            paymentProofUrl: storeProofUrls?.[store.storeId] || null,
+            paymentMethod: selection?.selectedPayment?.[store.storeId] || 'cod',
+            selection: selection,
+            notes: ''
+          };
 
-      const res = await fetch(`${config.apiBaseUrl}/orders`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(body)
-      });
+          const res = await fetch(`${config.apiBaseUrl}/orders`, {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${token}`,
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(body)
+          });
 
-      if (!res.ok) {
-        const err = await res.text();
-        alert('การสั่งซื้อล้มเหลว: ' + err);
+          if (!res.ok) {
+            const err = await res.text();
+            failedStores.push(`${store.storeName}: ${err}`);
+          }
+        } catch (error) {
+          failedStores.push(`${store.storeName}: ${error instanceof Error ? error.message : 'Unknown error'}`);
+        }
+      }
+
+      if (failedStores.length > 0) {
+        alert('การสั่งซื้อล้มเหลว:\n' + failedStores.join('\n'));
         return;
       }
 
@@ -180,8 +257,8 @@ export default function CheckoutConfirmPage() {
       sessionStorage.removeItem('checkoutSelection');
       setShowUpload(false);
       router.push('/');
-    } catch (e) {
-      console.error(e);
+    } catch {
+      console.error('Error submitting order');
       alert('เกิดข้อผิดพลาดในการสั่งซื้อ');
     }
   };
@@ -195,22 +272,72 @@ export default function CheckoutConfirmPage() {
 
         <div className="space-y-6">
           {checkoutData.stores.map((store) => (
-            <div key={store.storeId} className="bg-white p-4 rounded shadow">
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="font-semibold">{store.storeName}</h2>
-                <span className="text-sm text-gray-600">ราคาทั้งหมด ฿{store.totalAmount.toLocaleString()}</span>
+            <div key={store.storeId} className="bg-white rounded shadow overflow-hidden">
+              {/* Store Header */}
+              <div className="p-4 border-b">
+                <div className="flex items-center justify-between">
+                  <h2 className="font-semibold text-lg">{store.storeName}</h2>
+                  <div className="text-right">
+                    <div className="text-sm text-gray-600">สินค้า: ฿{store.totalAmount.toLocaleString()}</div>
+                    {(() => {
+                      const shipping = calculateStoreShipping(store);
+                      return shipping > 0 ? (
+                        <>
+                          <div className="text-sm text-gray-600">จัดส่ง: ฿{shipping.toLocaleString()}</div>
+                          <div className="text-sm font-semibold text-blue-600">รวม: ฿{getStoreTotal(store).toLocaleString()}</div>
+                        </>
+                      ) : (
+                        <div className="text-sm font-semibold">฿{store.totalAmount.toLocaleString()}</div>
+                      );
+                    })()}
+                  </div>
+                </div>
               </div>
 
-              {/* If this store chose QR payment, show large QR */}
-              {selection?.selectedPayment?.[store.storeId] === 'qr' ? (
-                <div className="flex flex-col items-center gap-4">
-                  <div className="text-sm text-gray-600">Scan to pay (QR PromptPay)</div>
-                  {/* fetch QR from /stores/{id}/qr to ensure we have latest */}
-                  <StoreQrImage storeId={store.storeId} />
+              {/* Store Items */}
+              <div className="p-4 border-b">
+                <div className="space-y-2">
+                  {store.items.map((item) => (
+                    <div key={item.id} className="flex justify-between text-sm py-1">
+                      <span className="text-gray-700">
+                        {item.productName} × {item.quantity}
+                      </span>
+                      <span className="font-medium">฿{item.totalPrice.toLocaleString()}</span>
+                    </div>
+                  ))}
                 </div>
-              ) : (
-                <div className="text-sm text-gray-600">วิธีชำระเงิน: เก็บเงินปลายทาง</div>
-              )}
+              </div>
+
+              {/* Shipping & Payment Info */}
+              <div className="p-4 bg-gray-50 space-y-2 border-b">
+                {(() => {
+                  const shipping = calculateStoreShipping(store);
+                  return shipping > 0 ? (
+                    <div className="flex justify-between text-sm">
+                      <span className="text-gray-600">ค่าจัดส่ง ({selection?.selectedShipping?.[store.storeId] === 'post' ? 'ไปรษณีย์' : 'นัดรับ'})</span>
+                      <span className="font-semibold">฿{shipping.toLocaleString()}</span>
+                    </div>
+                  ) : null;
+                })()}
+                <div className="flex justify-between font-semibold text-base pt-2 border-t">
+                  <span>ยอดรวมร้านนี้</span>
+                  <span className="text-blue-600">฿{getStoreTotal(store).toLocaleString()}</span>
+                </div>
+              </div>
+
+              {/* Payment Method & QR */}
+              <div className="p-4">
+                {selection?.selectedPayment?.[store.storeId] === 'qr' ? (
+                  <div className="flex flex-col items-center gap-3">
+                    <div className="text-sm font-medium text-gray-600">วิธีชำระเงิน: QR PromptPay</div>
+                    <StoreQrImage storeId={store.storeId} />
+                  </div>
+                ) : (
+                  <div className="bg-blue-50 border border-blue-200 rounded p-3">
+                    <p className="text-sm text-blue-900 font-medium">✓ วิธีชำระเงิน: เก็บเงินปลายทาง</p>
+                  </div>
+                )}
+              </div>
             </div>
           ))}
 
@@ -279,24 +406,257 @@ export default function CheckoutConfirmPage() {
             />
           </div>
           </div>
+
+          {/* Order Summary with Shipping */}
+          <div className="bg-white p-6 rounded shadow">
+            <h3 className="text-xl font-bold mb-4">สรุปการสั่งซื้อ</h3>
+            
+            <div className="space-y-3 mb-4">
+              {checkoutData.stores.map((store) => {
+                const shipping = calculateStoreShipping(store);
+                const total = getStoreTotal(store);
+                return (
+                  <div key={store.storeId} className="border-b pb-3 last:border-b-0">
+                    <div className="flex justify-between text-sm mb-1">
+                      <span className="text-gray-700 font-medium">{store.storeName}</span>
+                      <span className="text-gray-900">฿{total.toLocaleString()}</span>
+                    </div>
+                    {shipping > 0 && (
+                      <div className="flex justify-between text-sm ml-4 text-gray-600">
+                        <span>ค่าจัดส่ง</span>
+                        <span>฿{shipping.toLocaleString()}</span>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Totals */}
+            <div className="border-t pt-3 space-y-2">
+              <div className="flex justify-between text-sm">
+                <span className="text-gray-700">ราคารวมสินค้า</span>
+                <span className="font-semibold">฿{checkoutData.totalAmount.toLocaleString()}</span>
+              </div>
+              {(() => {
+                const totalShipping = checkoutData.stores.reduce((sum, store) => sum + calculateStoreShipping(store), 0);
+                return totalShipping > 0 ? (
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-700">ค่าจัดส่งรวม</span>
+                    <span className="font-semibold">฿{totalShipping.toLocaleString()}</span>
+                  </div>
+                ) : null;
+              })()}
+              <div className="flex justify-between text-lg font-bold bg-blue-50 p-3 rounded mt-3">
+                <span>ยอดรวมทั้งหมด</span>
+                <span className="text-blue-600">
+                  ฿{(() => {
+                    const total = checkoutData.totalAmount + checkoutData.stores.reduce((sum, store) => sum + calculateStoreShipping(store), 0);
+                    return total.toLocaleString();
+                  })()}
+                </span>
+              </div>
+            </div>
+          </div>
         
           <div className="flex gap-3 justify-end">
             <button onClick={() => router.back()} className="px-4 py-2 border rounded">ย้อนกลับ</button>
             <button onClick={handleConfirm} className="px-4 py-2 bg-[#0B44A3] text-white rounded hover:bg-[#093782]">ยืนยันและชำระเงิน</button>
           </div>
 
-          {/* Upload modal */}
-          {showUpload && (
-            <div className="fixed inset-0 bg-black/40 flex items-center justify-center">
-              <div className="bg-white p-6 rounded shadow max-w-lg w-full">
-                <h3 className="text-lg font-semibold mb-2">แนบหลักฐานการชำระเงิน</h3>
-                <p className="text-sm text-gray-600 mb-3">อัปโหลดรูปสลิปหรือหลักฐานการโอน</p>
-                <input type="file" accept="image/*" onChange={handleProofChange} />
-                <div className="mt-4 flex justify-end gap-2">
-                  <button onClick={() => setShowUpload(false)} className="px-3 py-1 border rounded">ยกเลิก</button>
-                  <button onClick={handleUploadAndSubmit} disabled={uploading} className="px-3 py-1 bg-green-600 text-white rounded">
-                    {uploading ? 'กำลังอัปโหลด...' : 'อัปโหลดและยืนยัน'}
+          {/* Upload modal - Step by Step */}
+          {showUpload && checkoutData && (
+            <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
+              <div className="bg-white p-6 rounded shadow max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+                {/* Header with Stepper */}
+                <div className="mb-6">
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-xl font-semibold">ชำระเงินและอัปโหลดหลักฐาน</h3>
+                    <button
+                      onClick={() => {
+                        setShowUpload(false);
+                        setCurrentStoreIndex(0);
+                        setStoreProofs({});
+                        setStoreProofPreviews({});
+                      }}
+                      className="text-gray-500 hover:text-gray-700"
+                    >
+                      ✕
+                    </button>
+                  </div>
+                  
+                  {/* Stepper */}
+                  <div className="flex items-center justify-between">
+                    {checkoutData.stores.map((store, idx) => (
+                      (selection?.selectedPayment?.[store.storeId] === 'qr' || selection?.selectedPayment?.[store.storeId] === 'cod') && (
+                        <div key={store.storeId} className="flex flex-col items-center flex-1">
+                          <div className={`w-8 h-8 rounded-full flex items-center justify-center font-semibold text-sm mb-1 ${
+                            idx < currentStoreIndex 
+                              ? 'bg-green-500 text-white' 
+                              : idx === currentStoreIndex 
+                              ? 'bg-blue-500 text-white' 
+                              : 'bg-gray-300 text-gray-600'
+                          }`}>
+                            {idx < currentStoreIndex ? '✓' : idx + 1}
+                          </div>
+                          <span className="text-xs text-center line-clamp-2">{store.storeName}</span>
+                        </div>
+                      )
+                    ))}
+                  </div>
+                </div>
+
+                {/* Current Store Content */}
+                {(() => {
+                  const storesWithPayment = checkoutData.stores.filter(
+                    s => selection?.selectedPayment?.[s.storeId] === 'qr' || selection?.selectedPayment?.[s.storeId] === 'cod'
+                  );
+                  const currentStore = storesWithPayment[currentStoreIndex];
+                  
+                  if (!currentStore) return null;
+
+                  const isQR = selection?.selectedPayment?.[currentStore.storeId] === 'qr';
+
+                  return (
+                    <div className="py-6 border-t border-b">
+                      <div className="mb-6">
+                        <h4 className="text-lg font-semibold mb-2">{currentStore.storeName}</h4>
+                        <div className="space-y-1">
+                          <p className="text-sm text-gray-600">ราคาสินค้า: <span className="font-semibold">฿{currentStore.totalAmount.toLocaleString()}</span></p>
+                          {(() => {
+                            const shipping = calculateStoreShipping(currentStore);
+                            return shipping > 0 ? (
+                              <>
+                                <p className="text-sm text-gray-600">ค่าจัดส่ง: <span className="font-semibold">฿{shipping.toLocaleString()}</span></p>
+                                <p className="text-sm font-semibold text-blue-600 border-t pt-1 mt-1">รวมทั้งหมด: ฿{getStoreTotal(currentStore).toLocaleString()}</p>
+                              </>
+                            ) : null;
+                          })()}
+                        </div>
+                        <p className="text-sm text-gray-500 mt-2">วิธีชำระเงิน: {isQR ? 'QR PromptPay' : 'เก็บเงินปลายทาง'}</p>
+                      </div>
+
+                      {isQR ? (
+                        <>
+                          {/* QR Code Section */}
+                          <div className="mb-6">
+                            <label className="block text-sm font-medium mb-3">1. สแกน QR เพื่อชำระเงิน</label>
+                            <div className="flex justify-center bg-white p-4 rounded border border-gray-200">
+                              <StoreQrImage storeId={currentStore.storeId} />
+                            </div>
+                          </div>
+
+                          {/* Upload Proof Section */}
+                          <div>
+                            <label className="block text-sm font-medium mb-3">2. อัปโหลดรูปสลิป</label>
+                            
+                            {/* Preview */}
+                            {storeProofPreviews[currentStore.storeId] && (
+                              <div className="mb-4 bg-white p-3 rounded border">
+                                <Image 
+                                  src={storeProofPreviews[currentStore.storeId]} 
+                                  alt="Preview" 
+                                  width={300}
+                                  height={200}
+                                  className="w-full h-40 object-cover rounded"
+                                />
+                                <p className="text-xs text-green-600 mt-2 font-medium">✓ {storeProofs[currentStore.storeId]?.name}</p>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setStoreProofs(prev => ({ ...prev, [currentStore.storeId]: null }));
+                                    setStoreProofPreviews(prev => ({ ...prev, [currentStore.storeId]: '' }));
+                                  }}
+                                  className="text-xs text-red-500 hover:text-red-700 mt-2"
+                                >
+                                  เปลี่ยนรูป
+                                </button>
+                              </div>
+                            )}
+
+                            {/* File Input */}
+                            {!storeProofPreviews[currentStore.storeId] && (
+                              <div className="border-2 border-dashed border-gray-300 rounded p-4 text-center">
+                                <input 
+                                  type="file" 
+                                  accept="image/*" 
+                                  onChange={(e) => handleStoreProofChange(currentStore.storeId, e)}
+                                  title={`เลือกหลักฐานชำระเงินสำหรับ ${currentStore.storeName}`}
+                                  className="w-full"
+                                />
+                                <p className="text-xs text-gray-500 mt-2">เลือกรูปสลิปหรือหลักฐานการโอนเงิน</p>
+                              </div>
+                            )}
+                          </div>
+                        </>
+                      ) : (
+                        <div className="bg-blue-50 border border-blue-200 rounded p-4">
+                          <p className="text-sm text-blue-800">
+                            ✓ ร้านนี้เป็น <strong>เก็บเงินปลายทาง</strong> ไม่ต้องอัปโหลดหลักฐาน
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })()}
+
+                {/* Navigation Buttons */}
+                <div className="mt-6 flex justify-between items-center">
+                  <button
+                    onClick={() => setCurrentStoreIndex(prev => Math.max(0, prev - 1))}
+                    disabled={currentStoreIndex === 0}
+                    className="px-4 py-2 border border-gray-300 rounded hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    ← ย้อนกลับ
                   </button>
+
+                  <div className="text-sm text-gray-600">
+                    {(() => {
+                      const storesWithPayment = checkoutData.stores.filter(
+                        s => selection?.selectedPayment?.[s.storeId] === 'qr' || selection?.selectedPayment?.[s.storeId] === 'cod'
+                      );
+                      return `${currentStoreIndex + 1} / ${storesWithPayment.length}`;
+                    })()}
+                  </div>
+
+                  <div className="flex gap-2">
+                    {(() => {
+                      const storesWithPayment = checkoutData.stores.filter(
+                        s => selection?.selectedPayment?.[s.storeId] === 'qr' || selection?.selectedPayment?.[s.storeId] === 'cod'
+                      );
+                      const isLastStore = currentStoreIndex === storesWithPayment.length - 1;
+                      const currentStore = storesWithPayment[currentStoreIndex];
+                      const isQR = selection?.selectedPayment?.[currentStore.storeId] === 'qr';
+                      const hasProof = storeProofs[currentStore.storeId];
+
+                      if (isLastStore) {
+                        return (
+                          <button
+                            onClick={handleUploadAndSubmit}
+                            disabled={uploading || (isQR && !hasProof)}
+                            className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 disabled:bg-gray-400 font-medium"
+                          >
+                            {uploading ? 'กำลังส่ง...' : 'ยืนยันและสั่งซื้อ'}
+                          </button>
+                        );
+                      }
+
+                      return (
+                        <button
+                          onClick={() => {
+                            if (!isQR || hasProof) {
+                              setCurrentStoreIndex(prev => prev + 1);
+                            } else {
+                              alert('กรุณาอัปโหลดหลักฐานการชำระเงินก่อน');
+                            }
+                          }}
+                          className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 font-medium"
+                        >
+                          ถัดไป →
+                        </button>
+                      );
+                    })()}
+                  </div>
                 </div>
               </div>
             </div>
@@ -319,7 +679,7 @@ function StoreQrImage({ storeId }: { storeId: string }) {
           const data = await res.json();
           if (mounted) setQrUrl(data.qrUrl || null);
         }
-      } catch (e) {
+      } catch {
         // ignore
       }
     };

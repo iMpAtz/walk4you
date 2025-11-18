@@ -72,7 +72,7 @@ python -m venv .venv
 
 # 2) ติดตั้ง dependencies หลัก
 python -m pip install --upgrade pip
-python -m pip install fastapi "uvicorn[standard]" motor python-dotenv pydantic email-validator
+python -m pip install fastapi "uvicorn[standard]" motor python-dotenv pydantic email-validator cloudinary python-multipart
 
 # 3) ตั้งค่า .env (เช่นเชื่อม MongoDB Atlas)
 #   สร้างไฟล์ api/.env แล้วใส่:
@@ -80,9 +80,11 @@ python -m pip install fastapi "uvicorn[standard]" motor python-dotenv pydantic e
 #   MONGODB_DB=walk4you
 
 # 4) รันเซิร์ฟเวอร์ด้วย interpreter ของ venv โดยตรง (แนะนำ)
-python -m uvicorn app.main:app --reload --port 8000
+.\.venv\Scripts\python.exe -m uvicorn app.main:app --reload --port 8000
 ```
 ทดสอบ: http://localhost:8000/health และ http://localhost:8000/docs
+
+**หมายเหตุสำคัญ:** ต้องใช้ `.\.venv\Scripts\python.exe` แทน `python` เพื่อให้ใช้ interpreter จาก venv ที่มี cloudinary และ dependencies อื่นๆ
 
 คำสั่งตรวจสอบ/ดีบัก
 ```
@@ -97,12 +99,54 @@ curl http://localhost:8000/db/status
 ```
 
 ### รัน Frontend (Next.js)
+python -m uvicorn app.main:app --reload --port 8000
 ```
 npm run dev
 # ถ้าเจอปัญหา Turbopack
 npm run dev:no-turbo
 ```
 เปิด http://localhost:3000 แล้วดู Console จะเห็น log จาก `ApiProbe` ที่เรียก `/health` ของ FastAPI
+
+### ฟีเจอร์ Payment Slip Upload
+ระบบการชำระเงินแบบหลายร้านค้า โดยลูกค้าต้องอัปโหลดหลักฐานการทำรายการสำหรับแต่ละร้าน
+
+#### Frontend Flow (src/app/checkout/confirm/page.tsx)
+1. ลูกค้าเลือกการชำระเงินแบบ QR Code ต่อร้านค้า
+2. เข้าสู่หน้า Checkout Confirmation
+3. ระบบแสดง Step-by-step Modal:
+   - Stepper: "Store 1 of 3" (แสดงความคืบหน้า)
+   - QR Code: แสดง QR ของร้านปัจจุบัน
+   - Upload: อัปโหลดหลักฐานการโอนเงิน (ชำระแบบ COD ข้ามขั้นนี้ไป)
+   - Navigation: ปุ่ม Previous/Next เพื่อนำทาง เก็บไฟล์ต่างแต่ละร้าน
+
+#### Backend Endpoint
+```
+POST /orders/upload-slip
+
+Request:
+  - file: UploadFile (jpg, png, gif, webp, เป็นต้น)
+  - Authorization: Bearer <token>
+
+Response:
+  { "url": "https://res.cloudinary.com/...", "message": "Upload successful" }
+
+Validation:
+  - ไฟล์ต้องเป็น image type
+  - ขนาดสูงสุด: 5MB
+  - Cloudinary Path: walk4you/payment-slips/
+```
+
+#### การใช้งาน
+1. ลูกค้าเลือก QR Payment และอัปโหลด file ต่อ `/orders/upload-slip`
+2. Backend เก็บ URL ใน Cloudinary แล้วส่ง url กลับ
+3. Frontend เก็บ URL ไว้ใน `storeProofUrls` Record
+4. เมื่อส่งคำสั่ง submit บัญชี จะรวม URL ทั้งหมด
+
+#### State Management (Frontend)
+- `currentStoreIndex`: ร้านปัจจุบันในขั้นตอน
+- `storeProofs`: Map ของ storeId → File object
+- `storeProofPreviews`: Map ของ storeId → blob URL preview
+- `uploading`: Global loading state
 
 ### ปัญหาที่พบบ่อย
 - 404 หน้า Home: อย่าให้มีโฟลเดอร์ Python ชื่อ `app` ในรูท Next ให้ย้ายไป `api/`
@@ -111,6 +155,10 @@ npm run dev:no-turbo
 - หาก `npx prisma generate` error: ติดตั้ง `prisma` และ `@prisma/client` แล้วลองใหม่
 - FastAPI แจ้ง email-validator ไม่พบ: ติดตั้งเพิ่มด้วย `python -m pip install email-validator` ใน venv
 - ถ้ารัน `uvicorn` แล้วดึง Python global: รันแบบ `python -m uvicorn ...` แทน เพื่อบังคับใช้ venv
+- **Payment Slip Upload ไม่สำเร็จ**: ต้องติดตั้ง `cloudinary` ด้วย `python -m pip install cloudinary` ใน venv
+- **Form data requires "python-multipart"**: ติดตั้ง `python-multipart` ด้วย `python -m pip install python-multipart` ใน venv
+- **Venv Activation Failed**: ใช้ full path: `.\.venv\Scripts\Activate.ps1` หรือลองสร้าง venv ใหม่ด้วย `python -m venv .venv`
+- **ModuleNotFoundError: cloudinary**: ต้องเปิดใช้ venv ก่อนรัน Python (ดู prompt ควรมี `(.venv)` นำหน้า)
 
 ### สคริปต์ใน package.json
 ```

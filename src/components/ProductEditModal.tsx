@@ -12,6 +12,7 @@ interface Product {
   image?: string;
   description?: string;
   category?: string;
+  shippingCost?: number;
 }
 
 interface ProductEditModalProps {
@@ -27,7 +28,8 @@ export default function ProductEditModal({ isOpen, onClose, product, onUpdate }:
     description: '',
     price: '',
     quantity: '',
-    category: ''
+    category: '',
+    shippingCost: ''
   });
   const [isLoading, setIsLoading] = useState(false);
   const categoryOptions = getCategoryOptions();
@@ -39,7 +41,8 @@ export default function ProductEditModal({ isOpen, onClose, product, onUpdate }:
         description: product.description || '',
         price: product.price?.toString() || '',
         quantity: product.quantity?.toString() || '',
-        category: product.category || ''
+        category: product.category || '',
+        shippingCost: product.shippingCost?.toString() || ''
       });
     }
   }, [product, isOpen]);
@@ -55,7 +58,8 @@ export default function ProductEditModal({ isOpen, onClose, product, onUpdate }:
         description: formData.description,
         price: Number(formData.price),
         quantity: Number(formData.quantity),
-        category: formData.category
+        category: formData.category,
+        shippingCost: formData.shippingCost ? Number(formData.shippingCost) : undefined
       };
 
       await onUpdate(product.id, updatedData);
@@ -208,6 +212,25 @@ export default function ProductEditModal({ isOpen, onClose, product, onUpdate }:
                   </option>
                 ))}
               </select>
+            </div>
+
+            {/* Shipping Cost */}
+            <div>
+              <label htmlFor="shippingCost" className="block text-sm font-medium text-gray-700 mb-1">
+                ค่าจัดส่ง (บาท) - ไปรศนีย์
+              </label>
+              <input
+                type="number"
+                id="shippingCost"
+                name="shippingCost"
+                value={formData.shippingCost}
+                onChange={handleInputChange}
+                min="0"
+                step="0.01"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                placeholder="0.00"
+              />
+              <p className="text-xs text-gray-500 mt-1">ตัวเลือก: ใส่ 0 หรือว่างไว้หากไม่มีค่าจัดส่ง</p>
             </div>
 
 

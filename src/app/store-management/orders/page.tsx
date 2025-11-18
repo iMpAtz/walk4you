@@ -52,8 +52,10 @@ const getCustomerDeliveryMethod = (order: Order): string => {
     
     if (selectedShipping === 'post') return 'ส่งไปรษณีย์';
     if (selectedShipping === 'meet') return 'นัดรับ';
+    if (selectedShipping) return selectedShipping; // Return custom method if exists
     return '—';
   } catch {
+    // If notes is not JSON, try to get from order.notes directly
     return '—';
   }
 };
@@ -82,7 +84,8 @@ export default function StoreOrdersPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [hasToken, setHasToken] = useState(false);
   const [showStatusError, setShowStatusError] = useState<string | null>(null);
-  const [shippingDrafts, setShippingDrafts] = useState<Record<string, { shippingMethod: string; shippingCarrier: string; shippingId: string }>>({});
+  const [shippingDrafts, setShippingDrafts] = useState<Record<string, { shippingMethod: string; shippingCarrier: string; shippingId: string; shippingMethodCustom?: string; shippingCarrierCustom?: string }>>({});
+  const [confirmDialog, setConfirmDialog] = useState<{ orderId: string; order: Order } | null>(null);
 
   useEffect(() => {
     const init = async () => {
@@ -167,11 +170,11 @@ export default function StoreOrdersPage() {
       if (!token) return;
       setShowStatusError(null);
 
+      const order = orders.find(o => o.id === orderId);
+      const draft = shippingDrafts[orderId];
+
       // If approving order, check that shipping info is complete
       if (newStatus === 'APPROVED') {
-        const order = orders.find(o => o.id === orderId);
-        const draft = shippingDrafts[orderId];
-        
         const shippingMethod = draft?.shippingMethod || order?.shippingMethod || '';
         const shippingCarrier = draft?.shippingCarrier || order?.shippingCarrier || '';
         const shippingId = draft?.shippingId || order?.shippingId || '';
@@ -182,6 +185,13 @@ export default function StoreOrdersPage() {
         }
 
         // Save shipping info first if there are unsaved changes
+        if (draft) {
+          await updateOrderShipping(orderId, draft);
+        }
+      }
+
+      // If rejecting order, also save shipping info if available
+      if (newStatus === 'REJECTED') {
         if (draft) {
           await updateOrderShipping(orderId, draft);
         }
@@ -200,9 +210,17 @@ export default function StoreOrdersPage() {
         throw new Error(txt || 'Failed');
       }
       await fetchOrders(token);
-    } catch (e: any) {
+
+      // Show alert based on action
+      if (newStatus === 'APPROVED') {
+        alert('ยืนยันคำสั่งซื้อเรียบร้อยแล้ว');
+      } else if (newStatus === 'REJECTED') {
+        alert('ปฏิเสธคำสั่งซื้อเรียบร้อยแล้ว');
+      }
+    } catch (e: unknown) {
+      const error = e as { message?: string };
       console.error(e);
-      setShowStatusError(e?.message || 'อัปเดตสถานะล้มเหลว');
+      setShowStatusError(error?.message || 'อัปเดตสถานะล้มเหลว');
     }
   };
 
@@ -418,66 +436,125 @@ export default function StoreOrdersPage() {
                             <div className="text-xs sm:text-sm text-purple-700 font-medium">{getCustomerDeliveryMethod(order)}</div>
                           </div>
 
-                          {/* Shipping details entry for seller */}
-                          <div className="mt-3 sm:mt-4 bg-gray-50 rounded-lg p-3 sm:p-4">
-                            <div className="text-xs sm:text-sm font-semibold text-gray-700 mb-2 sm:mb-3">ข้อมูลการจัดส่ง</div>
-                            <div className="space-y-2 sm:space-y-3">
-                              <div className="grid grid-cols-1 gap-2 sm:gap-3">
-                                <input
-                                  className="border-2 border-gray-200 rounded-lg px-3 sm:px-4 py-2 sm:py-2.5 text-xs sm:text-sm focus:border-[#0B44A3] focus:ring-2 focus:ring-[#0B44A3] focus:ring-opacity-20 transition-all touch-manipulation"
-                                  placeholder="รูปแบบการจัดส่ง เช่น ปกติ/ด่วน"
-                                  value={shippingDrafts[order.id]?.shippingMethod ?? order.shippingMethod ?? ''}
-                                  onChange={(e) => setShippingDrafts((prev) => ({
-                                    ...prev,
-                                    [order.id]: {
-                                      shippingMethod: e.target.value,
-                                      shippingCarrier: prev[order.id]?.shippingCarrier ?? order.shippingCarrier ?? '',
-                                      shippingId: prev[order.id]?.shippingId ?? order.shippingId ?? ''
-                                    }
-                                  }))}
-                                />
-                                <input
-                                  className="border-2 border-gray-200 rounded-lg px-3 sm:px-4 py-2 sm:py-2.5 text-xs sm:text-sm focus:border-[#0B44A3] focus:ring-2 focus:ring-[#0B44A3] focus:ring-opacity-20 transition-all touch-manipulation"
-                                  placeholder="ชื่อขนส่ง เช่น Kerry, J&T, Flash"
-                                  value={shippingDrafts[order.id]?.shippingCarrier ?? order.shippingCarrier ?? ''}
-                                  onChange={(e) => setShippingDrafts((prev) => ({
-                                    ...prev,
-                                    [order.id]: {
-                                      shippingMethod: prev[order.id]?.shippingMethod ?? order.shippingMethod ?? '',
-                                      shippingCarrier: e.target.value,
-                                      shippingId: prev[order.id]?.shippingId ?? order.shippingId ?? ''
-                                    }
-                                  }))}
-                                />
-                                <input
-                                  className="border-2 border-gray-200 rounded-lg px-3 sm:px-4 py-2 sm:py-2.5 text-xs sm:text-sm focus:border-[#0B44A3] focus:ring-2 focus:ring-[#0B44A3] focus:ring-opacity-20 transition-all touch-manipulation"
-                                  placeholder="Shipping ID / Tracking No."
-                                  value={shippingDrafts[order.id]?.shippingId ?? order.shippingId ?? ''}
-                                  onChange={(e) => setShippingDrafts((prev) => ({
-                                    ...prev,
-                                    [order.id]: {
-                                      shippingMethod: prev[order.id]?.shippingMethod ?? order.shippingMethod ?? '',
-                                      shippingCarrier: prev[order.id]?.shippingCarrier ?? order.shippingCarrier ?? '',
-                                      shippingId: e.target.value
-                                    }
-                                  }))}
-                                />
-                              </div>
-                              <button
-                                onClick={() => updateOrderShipping(order.id, {
-                                  shippingMethod: shippingDrafts[order.id]?.shippingMethod ?? order.shippingMethod,
-                                  shippingCarrier: shippingDrafts[order.id]?.shippingCarrier ?? order.shippingCarrier,
-                                  shippingId: shippingDrafts[order.id]?.shippingId ?? order.shippingId
-                                })}
-                                className="w-full px-3 sm:px-4 py-2 sm:py-2.5 bg-gradient-to-r from-[#0B44A3] to-[#1a5fd4] text-white rounded-lg text-xs sm:text-sm font-semibold hover:opacity-90 transition-all shadow-md touch-manipulation min-h-[44px]"
-                              >
-                                <span className="text-white ">บันทึก</span>
-                              </button>
-                            </div>
-                          </div>
+                          {/* Shipping details entry for seller - Only show if PENDING */}
+                          {order.status === 'PENDING' && (
+                            <div className="mt-3 sm:mt-4 bg-gray-50 rounded-lg p-3 sm:p-4">
+                              <div className="text-xs sm:text-sm font-semibold text-gray-700 mb-2 sm:mb-3">ข้อมูลการจัดส่ง</div>
+                              <div className="space-y-2 sm:space-y-3">
+                                {/* Shipping Method Dropdown */}
+                                <div>
+                                  <label className="text-xs sm:text-sm font-medium text-gray-700 mb-1 block">รูปแบบการจัดส่ง</label>
+                                  <select
+                                    aria-label="เลือกรูปแบบการจัดส่ง"
+                                    value={shippingDrafts[order.id]?.shippingMethod ?? order.shippingMethod ?? ''}
+                                    onChange={(e) => setShippingDrafts((prev) => ({
+                                      ...prev,
+                                      [order.id]: {
+                                        shippingMethod: e.target.value,
+                                        shippingCarrier: prev[order.id]?.shippingCarrier ?? order.shippingCarrier ?? '',
+                                        shippingId: prev[order.id]?.shippingId ?? order.shippingId ?? ''
+                                      }
+                                    }))}
+                                    className="w-full border-2 border-gray-200 rounded-lg px-3 sm:px-4 py-2 sm:py-2.5 text-xs sm:text-sm focus:border-[#0B44A3] focus:ring-2 focus:ring-[#0B44A3] focus:ring-opacity-20 transition-all touch-manipulation bg-white"
+                                  >
+                                    <option value="">-- เลือกรูปแบบการจัดส่ง --</option>
+                                    <option value="ปกติ">ปกติ</option>
+                                    <option value="ด่วน">ด่วน</option>
+                                    <option value="ด่วนพิเศษ">ด่วนพิเศษ</option>
+                                    <option value="อื่น ๆ">อื่น ๆ</option>
+                                  </select>
+                                  {(shippingDrafts[order.id]?.shippingMethod ?? order.shippingMethod ?? '') === 'อื่น ๆ' && (
+                                    <input
+                                      type="text"
+                                      placeholder="กรอกรูปแบบการจัดส่ง"
+                                      value={shippingDrafts[order.id]?.shippingMethodCustom ?? ''}
+                                      onChange={(e) => setShippingDrafts((prev) => ({
+                                        ...prev,
+                                        [order.id]: {
+                                          ...prev[order.id],
+                                          shippingMethodCustom: e.target.value,
+                                          shippingMethod: e.target.value || 'อื่น ๆ'
+                                        }
+                                      }))}
+                                      className="w-full mt-2 border-2 border-gray-200 rounded-lg px-3 sm:px-4 py-2 sm:py-2.5 text-xs sm:text-sm focus:border-[#0B44A3] focus:ring-2 focus:ring-[#0B44A3] focus:ring-opacity-20 transition-all touch-manipulation"
+                                    />
+                                  )}
+                                </div>
 
-                          {/* Read-only shipping summary */}
-                          <div className="mt-2 sm:mt-3 text-xs sm:text-sm text-gray-600 bg-white rounded-lg p-3 border border-gray-200 space-y-1">
+                                {/* Shipping Carrier Dropdown */}
+                                <div>
+                                  <label className="text-xs sm:text-sm font-medium text-gray-700 mb-1 block">ชื่อขนส่ง</label>
+                                  <select
+                                    aria-label="เลือกชื่อขนส่ง"
+                                    value={shippingDrafts[order.id]?.shippingCarrier ?? order.shippingCarrier ?? ''}
+                                    onChange={(e) => setShippingDrafts((prev) => ({
+                                      ...prev,
+                                      [order.id]: {
+                                        shippingMethod: prev[order.id]?.shippingMethod ?? order.shippingMethod ?? '',
+                                        shippingCarrier: e.target.value,
+                                        shippingId: prev[order.id]?.shippingId ?? order.shippingId ?? ''
+                                      }
+                                    }))}
+                                    className="w-full border-2 border-gray-200 rounded-lg px-3 sm:px-4 py-2 sm:py-2.5 text-xs sm:text-sm focus:border-[#0B44A3] focus:ring-2 focus:ring-[#0B44A3] focus:ring-opacity-20 transition-all touch-manipulation bg-white"
+                                  >
+                                    <option value="">-- เลือกชื่อขนส่ง --</option>
+                                    <option value="Kerry">Kerry</option>
+                                    <option value="J&T">J&T</option>
+                                    <option value="Flash">Flash</option>
+                                    <option value="DHL">DHL</option>
+                                    <option value="Shopee Express">Shopee Express</option>
+                                    <option value="Lazada Logistics">Lazada Logistics</option>
+                                    <option value="อื่น ๆ">อื่น ๆ</option>
+                                  </select>
+                                  {(shippingDrafts[order.id]?.shippingCarrier ?? order.shippingCarrier ?? '') === 'อื่น ๆ' && (
+                                    <input
+                                      type="text"
+                                      placeholder="กรอกชื่อขนส่ง"
+                                      value={shippingDrafts[order.id]?.shippingCarrierCustom ?? ''}
+                                      onChange={(e) => setShippingDrafts((prev) => ({
+                                        ...prev,
+                                        [order.id]: {
+                                          ...prev[order.id],
+                                          shippingCarrierCustom: e.target.value,
+                                          shippingCarrier: e.target.value || 'อื่น ๆ'
+                                        }
+                                      }))}
+                                      className="w-full mt-2 border-2 border-gray-200 rounded-lg px-3 sm:px-4 py-2 sm:py-2.5 text-xs sm:text-sm focus:border-[#0B44A3] focus:ring-2 focus:ring-[#0B44A3] focus:ring-opacity-20 transition-all touch-manipulation"
+                                    />
+                                  )}
+                                </div>
+
+                                {/* Tracking Number */}
+                                <div>
+                                  <label className="text-xs sm:text-sm font-medium text-gray-700 mb-1 block">Shipping ID / Tracking No.</label>
+                                  <input
+                                    type="text"
+                                    className="w-full border-2 border-gray-200 rounded-lg px-3 sm:px-4 py-2 sm:py-2.5 text-xs sm:text-sm focus:border-[#0B44A3] focus:ring-2 focus:ring-[#0B44A3] focus:ring-opacity-20 transition-all touch-manipulation"
+                                    placeholder="Shipping ID / Tracking No."
+                                    value={shippingDrafts[order.id]?.shippingId ?? order.shippingId ?? ''}
+                                    onChange={(e) => setShippingDrafts((prev) => ({
+                                      ...prev,
+                                      [order.id]: {
+                                        shippingMethod: prev[order.id]?.shippingMethod ?? order.shippingMethod ?? '',
+                                        shippingCarrier: prev[order.id]?.shippingCarrier ?? order.shippingCarrier ?? '',
+                                        shippingId: e.target.value
+                                      }
+                                    }))}
+                                  />
+                                </div>
+
+                                <p className="text-xs sm:text-sm text-gray-500 italic mt-2">ข้อมูลการจัดส่งจะถูกบันทึกอัตโนมัติเมื่อยืนยันหรือปฏิเสธคำสั่งซื้อ</p>
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Read-only shipping summary - Show for all statuses */}
+                          <div className={`mt-2 sm:mt-3 text-xs sm:text-sm rounded-lg p-3 border space-y-1 ${
+                            order.status === 'PENDING' 
+                              ? 'text-gray-600 bg-white border-gray-200' 
+                              : 'text-gray-700 bg-blue-50 border-blue-200'
+                          }`}>
+                            <div className="font-semibold text-gray-700 mb-2">ข้อมูลการจัดส่ง</div>
                             <div className="break-words">รูปแบบการจัดส่ง: {order.shippingMethod || shippingDrafts[order.id]?.shippingMethod || '—'}</div>
                             <div className="break-words">ชื่อขนส่ง: {order.shippingCarrier || shippingDrafts[order.id]?.shippingCarrier || '—'}</div>
                             <div className="break-words">Shipping ID: {order.shippingId || shippingDrafts[order.id]?.shippingId || '—'}</div>
@@ -486,7 +563,7 @@ export default function StoreOrdersPage() {
                           {order.status === 'PENDING' && (
                             <div className="mt-4 sm:mt-5 flex flex-col sm:flex-row gap-2 sm:gap-3">
                               <button 
-                                onClick={() => updateOrderStatus(order.id, 'APPROVED')}
+                                onClick={() => setConfirmDialog({ orderId: order.id, order })}
                                 className="flex-1 px-3 sm:px-4 py-2.5 sm:py-3 bg-gradient-to-r from-green-500 to-green-600 text-white rounded-xl hover:opacity-90 transition-all flex items-center justify-center gap-2 font-semibold shadow-md text-sm sm:text-base min-h-[44px] touch-manipulation"
                               >
                                 <Check className="w-4 h-4 sm:w-5 sm:h-5 text-white" /> <span className='text-white'>ยืนยันคำสั่งซื้อ</span>
@@ -515,6 +592,86 @@ export default function StoreOrdersPage() {
           </div>
         </div>
       </div>
+
+      {/* Confirmation Dialog */}
+      {confirmDialog && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="sticky top-0 bg-gradient-to-r from-[#0B44A3] to-[#1a5fd4] px-4 sm:px-6 py-4 sm:py-5 border-b">
+              <h2 className="text-lg sm:text-xl font-bold text-white">ยืนยันข้อมูลการจัดส่ง</h2>
+              <p className="text-sm text-blue-100 mt-1">กรุณาตรวจสอบข้อมูลก่อนยืนยัน</p>
+            </div>
+
+            <div className="p-4 sm:p-6 space-y-4">
+              {/* Order Info */}
+              <div className="bg-gray-50 rounded-lg p-3 sm:p-4">
+                <h3 className="font-semibold text-gray-900 mb-2">รายละเอียดคำสั่งซื้อ</h3>
+                <div className="text-xs sm:text-sm space-y-1 text-gray-700">
+                  <div>Order ID: <span className="font-mono font-semibold">#{confirmDialog.order.id.slice(-8)}</span></div>
+                  <div>ผู้สั่งซื้อ: <span className="font-semibold">{confirmDialog.order.username || confirmDialog.order.userId}</span></div>
+                  <div>ยอดรวม: <span className="font-semibold text-[#0B44A3]">฿{confirmDialog.order.totalAmount?.toLocaleString()}</span></div>
+                </div>
+              </div>
+
+              {/* Shipping Info */}
+              <div className="bg-blue-50 rounded-lg p-3 sm:p-4 border border-blue-200">
+                <h3 className="font-semibold text-gray-900 mb-3">ข้อมูลการจัดส่ง</h3>
+                <div className="space-y-2">
+                  <div className="grid grid-cols-3 gap-2 text-xs sm:text-sm">
+                    <div className="text-gray-600">รูปแบบการจัดส่ง</div>
+                    <div className="col-span-2 font-semibold text-gray-900">
+                      {shippingDrafts[confirmDialog.orderId]?.shippingMethod ?? confirmDialog.order.shippingMethod ?? '—'}
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-3 gap-2 text-xs sm:text-sm">
+                    <div className="text-gray-600">ชื่อขนส่ง</div>
+                    <div className="col-span-2 font-semibold text-gray-900">
+                      {shippingDrafts[confirmDialog.orderId]?.shippingCarrier ?? confirmDialog.order.shippingCarrier ?? '—'}
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-3 gap-2 text-xs sm:text-sm">
+                    <div className="text-gray-600">Tracking No.</div>
+                    <div className="col-span-2 font-semibold text-gray-900 break-all">
+                      {shippingDrafts[confirmDialog.orderId]?.shippingId ?? confirmDialog.order.shippingId ?? '—'}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Items */}
+              <div className="bg-gray-50 rounded-lg p-3 sm:p-4">
+                <h3 className="font-semibold text-gray-900 mb-2">รายการสินค้า</h3>
+                <div className="space-y-1">
+                  {confirmDialog.order.items.map((item, idx) => (
+                    <div key={idx} className="flex justify-between text-xs sm:text-sm">
+                      <span className="text-gray-700">{item.productName || item.productId} × {item.quantity}</span>
+                      <span className="font-semibold">฿{(item.total ?? item.price * item.quantity).toLocaleString()}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            <div className="sticky bottom-0 bg-gray-50 px-4 sm:px-6 py-4 sm:py-5 border-t flex gap-2 sm:gap-3">
+              <button
+                onClick={() => setConfirmDialog(null)}
+                className="flex-1 px-3 sm:px-4 py-2.5 sm:py-3 border-2 border-gray-300 text-gray-700 rounded-lg font-semibold hover:bg-gray-100 transition-all text-sm sm:text-base min-h-[44px] touch-manipulation"
+              >
+                ยกเลิก
+              </button>
+              <button
+                onClick={async () => {
+                  await updateOrderStatus(confirmDialog.orderId, 'APPROVED');
+                  setConfirmDialog(null);
+                }}
+                className="flex-1 px-3 sm:px-4 py-2.5 sm:py-3 bg-gradient-to-r from-green-500 to-green-600 text-white rounded-lg font-semibold hover:opacity-90 transition-all flex items-center justify-center gap-2 text-sm sm:text-base min-h-[44px] touch-manipulation"
+              >
+                <Check className="w-4 h-4 sm:w-5 sm:h-5" /> ยืนยันคำสั่งซื้อ
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -13,6 +13,7 @@ interface ProductFormData {
   imagePreview?: string;
   image_url?: string;
   category?: string;
+  shippingCost?: string;
 }
 
 interface ProductFormErrors {
@@ -22,6 +23,7 @@ interface ProductFormErrors {
   quantity?: string;
   image?: string;
   category?: string;
+  shippingCost?: string;
 }
 
 interface ProductFormModalProps {
@@ -38,6 +40,7 @@ export default function ProductFormModal({ isOpen, onClose, onSubmit, username }
     price: '',
     quantity: '',
     category: '',
+    shippingCost: '',
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errors, setErrors] = useState<ProductFormErrors>({});
@@ -150,6 +153,10 @@ export default function ProductFormModal({ isOpen, onClose, onSubmit, username }
       newErrors.quantity = 'กรุณากรอกจำนวนที่ถูกต้อง';
     }
 
+    if (formData.shippingCost && (isNaN(Number(formData.shippingCost)) || Number(formData.shippingCost) < 0)) {
+      newErrors.shippingCost = 'กรุณากรอกค่าจัดส่งที่ถูกต้อง';
+    }
+
     if (!formData.image) {
       newErrors.image = 'กรุณาเลือกรูปภาพสินค้า';
     }
@@ -175,6 +182,7 @@ export default function ProductFormModal({ isOpen, onClose, onSubmit, username }
         price: '',
         quantity: '',
         category: '',
+        shippingCost: '',
         image_url: undefined,
       });
       setErrors({});
@@ -192,6 +200,7 @@ export default function ProductFormModal({ isOpen, onClose, onSubmit, username }
       price: '',
       quantity: '',
       category: '',
+      shippingCost: '',
       image_url: undefined,
     });
     setErrors({});
@@ -391,6 +400,28 @@ export default function ProductFormModal({ isOpen, onClose, onSubmit, username }
               </select>
           </div>
 
+          {/* Shipping Cost */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              ค่าจัดส่ง (บาท) 
+            </label>
+            <input
+              type="number"
+              min="0"
+              step="0.01"
+              value={formData.shippingCost}
+              onChange={(e) => handleInputChange('shippingCost', e.target.value)}
+              className={`w-full px-3 py-2.5 text-sm sm:text-base border rounded-lg focus:ring-2 focus:ring-[#0B44A3] focus:border-transparent touch-manipulation ${
+                errors.shippingCost ? 'border-red-500' : 'border-gray-300'
+              }`}
+              placeholder="0.00"
+            />
+            {errors.shippingCost && (
+              <p className="text-red-500 text-xs sm:text-sm mt-1">{errors.shippingCost}</p>
+            )}
+            <p className="text-xs text-gray-500 mt-1">ตัวเลือก: ใส่ 0 หรือว่างไว้หากไม่มีค่าจัดส่ง</p>
+          </div>
+
           {/* Action Buttons */}
           <div className="flex flex-col sm:flex-row justify-end gap-3 pt-4 sm:pt-6 border-t sticky bottom-0 bg-white pb-2 sm:pb-0">
             <button
@@ -412,7 +443,7 @@ export default function ProductFormModal({ isOpen, onClose, onSubmit, username }
                   กำลังบันทึก...
                 </>
               ) : (
-                'บันทึกสินค้า'
+                <div className='text-white'>บันทึกสินค้า</div>
               )}
             </button>
           </div>

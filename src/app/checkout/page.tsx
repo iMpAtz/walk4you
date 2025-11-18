@@ -18,6 +18,7 @@ interface CheckoutItem {
   totalPrice: number;
   storeId: string;
   storeName: string;
+  shippingCost?: number;
 }
 
 interface CheckoutStore {
@@ -75,6 +76,14 @@ export default function CheckoutPage() {
       try {
         const data = JSON.parse(storedData);
         setCheckoutData(data);
+        
+        // Set default shipping method to 'post' for all stores
+        const defaultShipping: Record<string, string> = {};
+        data.stores.forEach((store: CheckoutStore) => {
+          defaultShipping[store.storeId] = 'post';
+        });
+        setSelectedShipping(defaultShipping);
+        
           // Fetch QR PromptPay for each store
           const fetchStorePayments = async () => {
             const payments: Record<string, { qrUrl?: string }> = {};
@@ -120,6 +129,30 @@ export default function CheckoutPage() {
 
     // Keep checkoutData in sessionStorage (already present) and navigate to confirm page
     router.push('/checkout/confirm');
+  };
+
+  // Calculate shipping cost for a store
+  const calculateStoreShipping = (store: CheckoutStore) => {
+    const shippingMethod = selectedShipping[store.storeId];
+    if (shippingMethod === 'post') {
+      // Sum up shipping costs of items in this store (only if postal shipping selected)
+      return store.items.reduce((total, item) => total + (item.shippingCost || 0), 0);
+    }
+    return 0; // No shipping cost for meetup
+  };
+
+  // Calculate store total with shipping
+  const getStoreTotal = (store: CheckoutStore) => {
+    return store.totalAmount + calculateStoreShipping(store);
+  };
+
+  // Calculate overall total with all shipping
+  const getTotalWithShipping = () => {
+    let total = checkoutData.totalAmount;
+    checkoutData.stores.forEach(store => {
+      total += calculateStoreShipping(store);
+    });
+    return total;
   };
 
   if (loading) {
@@ -309,9 +342,21 @@ export default function CheckoutPage() {
                   />
                 </div>
                 <div className="border-t pt-2 sm:pt-3">
+                  {checkoutData.stores.some(s => calculateStoreShipping(s) > 0) && (
+                    <>
+                      <div className="flex justify-between text-sm text-gray-600 mb-2">
+                        <span>ราคารวมสินค้า</span>
+                        <span>฿{checkoutData.totalAmount.toLocaleString()}</span>
+                      </div>
+                      <div className="flex justify-between text-sm text-gray-600 mb-2">
+                        <span>ค่าจัดส่ง</span>
+                        <span>฿{checkoutData.stores.reduce((sum, store) => sum + calculateStoreShipping(store), 0).toLocaleString()}</span>
+                      </div>
+                    </>
+                  )}
                   <div className="flex justify-between text-base sm:text-lg font-bold text-gray-800">
                     <span>ยอดรวมทั้งหมด</span>
-                    <span>฿{checkoutData.totalAmount.toLocaleString()}</span>
+                    <span>฿{getTotalWithShipping().toLocaleString()}</span>
                   </div>
                 </div>
               </div>
@@ -320,12 +365,24 @@ export default function CheckoutPage() {
               <div className="mb-4 sm:mb-6">
                 <h4 className="font-semibold text-gray-700 mb-2 sm:mb-3 text-sm sm:text-base">รายละเอียดตามร้าน</h4>
                 <div className="space-y-2">
-                  {checkoutData.stores.map((store) => (
-                    <div key={store.storeId} className="flex justify-between text-xs sm:text-sm">
-                      <span className="text-gray-600 truncate">{store.storeName}</span>
-                      <span className="font-medium">฿{store.totalAmount.toLocaleString()}</span>
-                    </div>
-                  ))}
+                  {checkoutData.stores.map((store) => {
+                    const storeShipping = calculateStoreShipping(store);
+                    const storeTotal = getStoreTotal(store);
+                    return (
+                      <div key={store.storeId}>
+                        <div className="flex justify-between text-xs sm:text-sm">
+                          <span className="text-gray-600 truncate">{store.storeName}</span>
+                          <span className="font-medium">฿{storeTotal.toLocaleString()}</span>
+                        </div>
+                        {storeShipping > 0 && (
+                          <div className="flex justify-between text-xs text-gray-500 ml-2">
+                            <span>ค่าจัดส่ง</span>
+                            <span>฿{storeShipping.toLocaleString()}</span>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
 

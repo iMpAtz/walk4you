@@ -1,4 +1,4 @@
-from fastapi import FastAPI, Depends, HTTPException, status, Request, Header
+from fastapi import FastAPI, Depends, HTTPException, status, Request, Header, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
 from motor.motor_asyncio import AsyncIOMotorClient, AsyncIOMotorDatabase
 from pydantic import BaseModel, EmailStr
@@ -16,6 +16,8 @@ import httpx
 from ultralytics import YOLO
 from PIL import Image
 import io
+import cloudinary
+import cloudinary.uploader
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -135,6 +137,7 @@ class ProductResponse(BaseModel):
     quantity: int
     image_url: Optional[str] = None
     category: Optional[str] = None
+    shippingCost: Optional[float] = None
     createdAt: datetime
     updatedAt: datetime
     status: str
@@ -209,7 +212,7 @@ async def get_public_product(product_id: str, db: AsyncIOMotorDatabase = Depends
             {"_id": ObjectId(product_id), "status": "ACTIVE"},
             projection={
                 "_id": 1, "storeId": 1, "name": 1, "description": 1,
-                "price": 1, "quantity": 1, "image_url": 1, "category": 1,
+                "price": 1, "quantity": 1, "image_url": 1, "category": 1, "shippingCost": 1,
                 "createdAt": 1, "updatedAt": 1, "status": 1
             }
         )
@@ -226,6 +229,7 @@ async def get_public_product(product_id: str, db: AsyncIOMotorDatabase = Depends
             quantity=product["quantity"],
             image_url=product.get("image_url"),
             category=product.get("category"),
+            shippingCost=product.get("shippingCost"),
             createdAt=product["createdAt"],
             updatedAt=product["updatedAt"],
             status=product["status"]
@@ -1182,6 +1186,7 @@ class ProductCreate(BaseModel):
     quantity: int
     image_url: Optional[str] = None
     category: Optional[str] = None
+    shippingCost: Optional[float] = None
 
 
 class ProductUpdate(BaseModel):
@@ -1191,6 +1196,7 @@ class ProductUpdate(BaseModel):
     quantity: Optional[int] = None
     image_url: Optional[str] = None
     category: Optional[str] = None
+    shippingCost: Optional[float] = None
 
 
 # ===== Store Management Endpoints =====
@@ -1697,6 +1703,7 @@ async def create_product(
         "quantity": product_data.quantity,
         "image_url": product_data.image_url,
         "category": product_data.category,
+        "shippingCost": product_data.shippingCost,
         "createdAt": datetime.utcnow(),
         "updatedAt": datetime.utcnow(),
         "status": "ACTIVE"
@@ -1714,6 +1721,7 @@ async def create_product(
         quantity=product_doc["quantity"],
         image_url=product_doc.get("image_url"),
         category=product_doc.get("category"),
+        shippingCost=product_doc.get("shippingCost"),
         createdAt=product_doc["createdAt"],
         updatedAt=product_doc["updatedAt"],
         status=product_doc["status"]
@@ -1797,6 +1805,7 @@ async def get_my_product(
         quantity=product["quantity"],
         image_url=product.get("image_url"),
         category=product.get("category"),
+        shippingCost=product.get("shippingCost"),
         createdAt=product["createdAt"],
         updatedAt=product["updatedAt"],
         status=product["status"]
@@ -1867,6 +1876,8 @@ async def update_product(
         update_data["image_url"] = product_data.image_url
     if product_data.category is not None:
         update_data["category"] = product_data.category
+    if product_data.shippingCost is not None:
+        update_data["shippingCost"] = product_data.shippingCost
     
     await db.Product.update_one(
         {"_id": ObjectId(product_id)},
@@ -1885,6 +1896,7 @@ async def update_product(
         quantity=updated_product["quantity"],
         image_url=updated_product.get("image_url"),
         category=updated_product.get("category"),
+        shippingCost=updated_product.get("shippingCost"),
         createdAt=updated_product["createdAt"],
         updatedAt=updated_product["updatedAt"],
         status=updated_product["status"]
@@ -2113,6 +2125,7 @@ class OrderCreate(BaseModel):
     phoneNumber: str
     notes: Optional[str] = None
     paymentProofUrl: Optional[str] = None
+    selection: Optional[dict] = None  # Contains selectedShipping, selectedPayment info from checkout
 
 
 class OrderResponse(BaseModel):
@@ -2126,6 +2139,9 @@ class OrderResponse(BaseModel):
     phoneNumber: str
     notes: Optional[str] = None
     paymentProofUrl: Optional[str] = None
+    shippingMethod: Optional[str] = None
+    shippingCarrier: Optional[str] = None
+    shippingId: Optional[str] = None
     createdAt: datetime
     updatedAt: datetime
 
@@ -2223,6 +2239,7 @@ async def create_order(
     try:
         # Validate products and calculate total
         total_amount = 0
+        total_shipping = 0
         validated_items = []
         
         for item in order_data.items:
@@ -2251,25 +2268,47 @@ async def create_order(
                 "productName": product["name"],
                 "quantity": item.quantity,
                 "price": product["price"],
-                "total": item_total
+                "total": item_total,
+                "shippingCost": product.get("shippingCost")
             })
         
         # Get store ID from first product
         first_product = await db.Product.find_one({"_id": ObjectId(order_data.items[0].productId)})
         store_id = first_product["storeId"]
         
+        # Calculate shipping cost if postal shipping selected
+        if order_data.selection and order_data.selection.get("selectedShipping", {}).get(str(store_id)) == "post":
+            for item in validated_items:
+                shipping_cost = item.get("shippingCost", 0) or 0
+                total_shipping += shipping_cost
+        
+        # Add shipping to total
+        total_amount += total_shipping
+        
         # Create order
+        # Store selection data in notes for store owner to see customer's delivery choice
+        notes_data = {
+            "selection": order_data.selection,
+            "notes": order_data.notes
+        }
+        notes_json = json.dumps(notes_data)
+        
         order_doc = {
             "userId": current_user["_id"],
             "username": current_user["username"],
             "storeId": store_id,
             "items": validated_items,
             "totalAmount": total_amount,
+            "totalShipping": total_shipping,
             "status": "PENDING",
             "shippingAddress": order_data.shippingAddress,
             "phoneNumber": order_data.phoneNumber,
-            "notes": order_data.notes,
+            "notes": notes_json,
             "paymentProofUrl": getattr(order_data, 'paymentProofUrl', None),
+            "selection": order_data.selection,
+            "shippingMethod": None,
+            "shippingCarrier": None,
+            "shippingId": None,
             "createdAt": datetime.utcnow(),
             "updatedAt": datetime.utcnow()
         }
@@ -2300,6 +2339,9 @@ async def create_order(
             phoneNumber=order_doc["phoneNumber"],
             notes=order_doc["notes"],
             paymentProofUrl=order_doc.get("paymentProofUrl"),
+            shippingMethod=order_doc.get("shippingMethod"),
+            shippingCarrier=order_doc.get("shippingCarrier"),
+            shippingId=order_doc.get("shippingId"),
             createdAt=order_doc["createdAt"],
             updatedAt=order_doc["updatedAt"]
         )
@@ -2336,6 +2378,9 @@ async def get_orders_for_store(current_user: dict = Depends(get_current_user), d
                 "phoneNumber": o.get("phoneNumber"),
                 "notes": o.get("notes"),
                 "paymentProofUrl": o.get("paymentProofUrl"),
+                "shippingMethod": o.get("shippingMethod"),
+                "shippingCarrier": o.get("shippingCarrier"),
+                "shippingId": o.get("shippingId"),
                 "createdAt": o.get("createdAt"),
                 "updatedAt": o.get("updatedAt")
             }
@@ -2597,6 +2642,7 @@ class CartItemResponse(BaseModel):
     totalPrice: float
     storeId: str
     storeName: str
+    shippingCost: Optional[float] = None
     createdAt: datetime
     updatedAt: datetime
 
@@ -2655,6 +2701,7 @@ async def get_cart(
                     totalPrice=product["price"] * item["quantity"],
                     storeId=str(product["storeId"]),
                     storeName=store_name,
+                    shippingCost=product.get("shippingCost"),
                     createdAt=item["createdAt"],
                     updatedAt=item["updatedAt"]
                 ))
@@ -3921,3 +3968,64 @@ async def delete_banner(
     except Exception as e:
         logger.error(f"Error deleting banner: {e}")
         raise HTTPException(status_code=500, detail="Internal server error")
+
+
+# ===== Order Payment Slip Upload =====
+@app.post("/orders/upload-slip")
+async def upload_payment_slip(
+    file: UploadFile = File(...),
+    current_user: dict = Depends(get_current_user),
+    db: AsyncIOMotorDatabase = Depends(get_db)
+):
+    """
+    Upload payment slip to Cloudinary and return URL
+    Frontend will then save this URL to the order/order item
+    """
+    try:
+        # Validate file
+        if not file.content_type.startswith('image/'):
+            raise HTTPException(status_code=400, detail="File must be an image")
+        
+        # Read file
+        file_content = await file.read()
+        if len(file_content) > 5 * 1024 * 1024:  # 5MB limit
+            raise HTTPException(status_code=400, detail="File too large (max 5MB)")
+        
+        # Upload to Cloudinary
+        cloudinary_config = {
+            'cloud_name': os.getenv('CLOUDINARY_CLOUD_NAME'),
+            'api_key': os.getenv('CLOUDINARY_API_KEY'),
+            'api_secret': os.getenv('CLOUDINARY_API_SECRET'),
+        }
+        
+        if not all(cloudinary_config.values()):
+            logger.error("Cloudinary credentials not configured")
+            raise HTTPException(status_code=500, detail="Upload service not configured")
+        
+        cloudinary.config(**cloudinary_config)
+        
+        # Upload with folder structure
+        upload_result = cloudinary.uploader.upload(
+            file_content,
+            folder="walk4you/payment-slips",
+            resource_type="auto",
+            public_id=f"slip_{current_user['_id']}_{int(datetime.utcnow().timestamp())}",
+            overwrite=True
+        )
+        
+        slip_url = upload_result.get('secure_url')
+        if not slip_url:
+            raise HTTPException(status_code=500, detail="Upload to Cloudinary failed")
+        
+        logger.info(f"Payment slip uploaded for user {current_user['_id']}: {slip_url}")
+        
+        return {
+            "url": slip_url,
+            "message": "Payment slip uploaded successfully"
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error uploading payment slip: {e}")
+        raise HTTPException(status_code=500, detail=f"Upload failed: {str(e)}")

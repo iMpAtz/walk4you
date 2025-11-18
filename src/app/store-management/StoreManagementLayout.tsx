@@ -498,30 +498,44 @@ export default function StoreManagementLayout({ storeData, userData, onSave }: S
                     </label>
                     <div className="flex items-center gap-4">
                       {qrPreview ? (
-                        <div className="relative">
-                          <Image src={qrPreview} alt="QR PromptPay" width={96} height={96} className="rounded border" />
+                        <div className="flex flex-col items-start gap-3">
+                          <div className="relative">
+                            <Image src={qrPreview} alt="QR PromptPay" width={96} height={96} className="rounded border" />
+                          </div>
+                          {isEditing && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setQrPreview(null);
+                                setQrFile(null);
+                              }}
+                              className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 text-sm"
+                            >
+                              เปลี่ยน QR Code
+                            </button>
+                          )}
                         </div>
                       ) : (
-                        <>
-                          <div className="w-24 h-24 bg-gray-100 rounded flex items-center justify-center text-gray-400 border">
-                            ไม่มี QR
-                          </div>
-                          <div>
-                            <input type="file" accept="image/*" onChange={handleQrChange} className="mb-2" />
-                            {qrFile && (
-                              <button
-                                type="button"
-                                onClick={handleUploadQr}
-                                disabled={uploading}
-                                className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700"
-                              >
-                                {uploading ? 'กำลังอัปโหลด...' : 'อัปโหลด QR Code'}
-                              </button>
-                            )}
-                          </div>
-                        </>
+                        <div className="w-24 h-24 bg-gray-100 rounded flex items-center justify-center text-gray-400 border">
+                          ไม่มี QR
+                        </div>
                       )}
                     </div>
+                    {isEditing && !qrPreview && (
+                      <div className="mt-3">
+                        <input type="file" accept="image/*" onChange={handleQrChange} className="mb-2" title="เลือกไฟล์ QR Code" />
+                        {qrFile && (
+                          <button
+                            type="button"
+                            onClick={handleUploadQr}
+                            disabled={uploading}
+                            className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700"
+                          >
+                            {uploading ? 'กำลังอัปโหลด...' : 'อัปโหลด QR Code'}
+                          </button>
+                        )}
+                      </div>
+                    )}
                   </div>
                 </div>
 

@@ -13,6 +13,7 @@ export interface CartItem {
   totalPrice: number;
   storeId: string;
   storeName: string;
+  shippingCost?: number;
   createdAt: string;
   updatedAt: string;
 }

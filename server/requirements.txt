@@ -10,8 +10,15 @@ pymongo
 pydantic
 email-validator
 
+# Cloudinary
+cloudinary
+email-validator
+
 # Environment Variables
 python-dotenv
+
+# File Upload Support
+python-multipart
 
 # YOLOv8 for Object Detection
 ultralytics
