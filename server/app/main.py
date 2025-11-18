@@ -2969,13 +2969,26 @@ async def get_public_store(
 ):
     """Get public store information by ID"""
     try:
+        # Try to convert store_id to ObjectId
+        try:
+            store_obj_id = ObjectId(store_id)
+        except Exception:
+            raise HTTPException(status_code=404, detail="Invalid store ID format")
+        
+        # First try to find active store
         store = await db.Store.find_one({
-            "_id": ObjectId(store_id),
+            "_id": store_obj_id,
             "status": "ACTIVE"
         })
         
+        # If not active, check if store exists but is inactive
         if not store:
-            raise HTTPException(status_code=404, detail="Store not found")
+            store = await db.Store.find_one({"_id": store_obj_id})
+            if store:
+                logger.warning(f"Store {store_id} exists but status is {store.get('status')}, not ACTIVE")
+                raise HTTPException(status_code=404, detail="Store not found or inactive")
+            else:
+                raise HTTPException(status_code=404, detail="Store not found")
         
         return {
             "id": str(store["_id"]),

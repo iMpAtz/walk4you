@@ -397,12 +397,12 @@ export default function ProductPage() {
                   {product.description || "ไม่มีคำอธิบายสินค้า"}
                 </p>
 
-                <div className="bg-gradient-to-r from-green-50 to-emerald-50 p-4 sm:p-5 lg:p-6 rounded-xl mb-4 sm:mb-6">
+                <div className="bg-gradient-to-r from-blue-50 to-cyan-50 p-4 sm:p-5 lg:p-6 rounded-xl mb-4 sm:mb-6">
                   <p className="text-xs sm:text-sm lg:text-sm text-gray-600 mb-1">ราคา</p>
-                  <p className="text-2xl sm:text-3xl lg:text-4xl font-bold text-green-700">
+                  <p className="text-2xl sm:text-3xl lg:text-4xl font-bold text-blue-700">
                     {(product.price ?? 0).toLocaleString("th-TH", { style: "currency", currency: "THB" })}
                   </p>
-                  <p className={`mt-2 text-xs sm:text-sm font-medium ${inStock ? 'text-green-600' : 'text-red-600'}`}>
+                  <p className={`mt-2 text-xs sm:text-sm font-medium ${inStock ? 'text-blue-600' : 'text-red-600'}`}>
                     {inStock ? `คงเหลือ ${product.quantity} ชิ้น` : 'สินค้าหมด'}
                   </p>
                 </div>

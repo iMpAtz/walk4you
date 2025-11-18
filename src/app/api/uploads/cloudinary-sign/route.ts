@@ -22,13 +22,16 @@ export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
   const username = searchParams.get('username');
   const type = searchParams.get('type'); // 'avatar' or 'product'
+  const customFolder = searchParams.get('folder'); // Allow custom folder parameter
   
-  // Create folder structure: user/username/type
-  let folder = 'uploads'; // default fallback
-  if (username && type) {
-    folder = `user/${username}/${type}`;
-  } else if (username) {
-    folder = `user/${username}`;
+  // Create folder structure: prioritize custom folder, then user/username/type
+  let folder = customFolder || 'uploads'; // default fallback
+  if (!customFolder) {
+    if (username && type) {
+      folder = `user/${username}/${type}`;
+    } else if (username) {
+      folder = `user/${username}`;
+    }
   }
 
   const timestamp = Math.floor(Date.now() / 1000);

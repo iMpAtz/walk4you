@@ -47,28 +47,11 @@ interface StoreManagementLayoutProps {
 }
 
 export default function StoreManagementLayout({ storeData, userData, onSave }: StoreManagementLayoutProps) {
-  // ดึง QR และ Logo จาก backend เมื่อโหลดหน้า
+  // ดึง QR และ Logo จาก storeData props เมื่อโหลดหน้า
   useEffect(() => {
-    const fetchStoreAssets = async () => {
-      if (!storeData?.id) return;
-      try {
-        const token = localStorage.getItem('access_token');
-        const res = await fetch(`${config.apiBaseUrl}/stores/${storeData.id}`, {
-          method: 'GET',
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json',
-          },
-        });
-        if (res.ok) {
-          const data = await res.json();
-          if (data.qrUrl) setQrPreview(data.qrUrl);
-          if (data.logoUrl) setLogoPreview(data.logoUrl);
-        }
-      } catch {}
-    };
-    fetchStoreAssets();
-  }, [storeData?.id]);
+    if (storeData?.qrUrl) setQrPreview(storeData.qrUrl);
+    if (storeData?.logoUrl) setLogoPreview(storeData.logoUrl);
+  }, [storeData?.qrUrl, storeData?.logoUrl]);
   // ...existing code...
   const handleSave = async () => {
     await onSave(formData);
@@ -100,42 +83,90 @@ export default function StoreManagementLayout({ storeData, userData, onSave }: S
   };
 
   const handleUploadQr = async () => {
-    if (!qrFile || !storeData?.id) return;
-    setUploading(true);
-    const formData = new FormData();
-    formData.append('qr', qrFile);
-    try {
-      // 1. Upload QR to Cloudinary
-      const res = await fetch('/api/uploads/cloudinary-sign', {
-        method: 'POST',
-        body: formData,
-      });
-      if (res.ok) {
-        const data = await res.json();
-        const qrUrl = data.qrUrl;
-        // 2. Save QR URL to backend
-        const token = localStorage.getItem('access_token');
-        const saveRes = await fetch(`${config.apiBaseUrl}/stores/${storeData.id}/qr`, {
-          method: 'PUT',
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ qrUrl }),
-        });
-        if (saveRes.ok) {
-          setQrPreview(qrUrl);
-          setQrFile(null);
-        } else {
-          alert('บันทึก QR URL ไม่สำเร็จ');
-        }
-      } else {
-        alert('อัปโหลด QR ไม่สำเร็จ');
-      }
-    } catch {
-      alert('เกิดข้อผิดพลาดในการอัปโหลด QR');
+    if (!qrFile || !storeData?.id) {
+      alert('กรุณาเลือกไฟล์ QR Code ก่อน');
+      return;
     }
-    setUploading(false);
+    setUploading(true);
+    
+    try {
+      console.log('Starting QR upload...', { fileName: qrFile.name, size: qrFile.size });
+      
+      // 1. Get Cloudinary signature
+      const signUrl = `/api/uploads/cloudinary-sign?folder=walk4you/qrcodes`;
+      console.log('Fetching signature from:', signUrl);
+      
+      const signRes = await fetch(signUrl, { method: 'GET' });
+      
+      if (!signRes.ok) {
+        const error = await signRes.text();
+        console.error('Failed to get signature:', error);
+        alert('ไม่สามารถได้รับลายเซ็นจาก Cloudinary');
+        setUploading(false);
+        return;
+      }
+      
+      const sig = await signRes.json();
+      console.log('Got signature, uploading to Cloudinary...');
+      
+      // 2. Upload to Cloudinary
+      const form = new FormData();
+      form.append('file', qrFile);
+      form.append('api_key', sig.apiKey);
+      form.append('timestamp', String(sig.timestamp));
+      form.append('signature', sig.signature);
+      form.append('folder', sig.folder || 'walk4you/qrcodes');
+      if (sig.uploadPreset) form.append('upload_preset', sig.uploadPreset);
+      
+      const uploadUrl = `https://api.cloudinary.com/v1_1/${sig.cloudName}/image/upload`;
+      const uploadRes = await fetch(uploadUrl, { method: 'POST', body: form });
+      
+      if (!uploadRes.ok) {
+        const error = await uploadRes.json();
+        console.error('Cloudinary upload failed:', error);
+        alert(`อัปโหลด QR ไม่สำเร็จ: ${error.error?.message || 'Unknown error'}`);
+        setUploading(false);
+        return;
+      }
+      
+      const data = await uploadRes.json();
+      const qrUrl = data.secure_url;
+      console.log('Cloudinary upload successful:', qrUrl);
+      
+      // 3. Save QR URL to backend
+      const token = localStorage.getItem('access_token');
+      if (!token) {
+        alert('กรุณาเข้าสู่ระบบก่อน');
+        setUploading(false);
+        return;
+      }
+      
+      console.log('Saving QR URL to backend...', { storeId: storeData.id });
+      const saveRes = await fetch(`${config.apiBaseUrl}/stores/${storeData.id}/qr`, {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ qrUrl }),
+      });
+      
+      if (saveRes.ok) {
+        console.log('QR URL saved successfully');
+        setQrPreview(qrUrl);
+        setQrFile(null);
+        alert('บันทึก QR URL สำเร็จ!');
+      } else {
+        const error = await saveRes.json();
+        console.error('Failed to save QR URL:', error);
+        alert(`บันทึก QR URL ไม่สำเร็จ: ${error.detail || 'Unknown error'}`);
+      }
+    } catch (error) {
+      console.error('Error uploading QR:', error);
+      alert(`เกิดข้อผิดพลาด: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    } finally {
+      setUploading(false);
+    }
   };
 
   const handleRemoveQr = () => {
