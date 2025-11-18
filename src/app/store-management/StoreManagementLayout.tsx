@@ -65,6 +65,7 @@ export default function StoreManagementLayout({ storeData, userData, onSave }: S
   const [isEditing, setIsEditing] = useState(false);
   const [qrFile, setQrFile] = useState<File | null>(null);
   const [qrPreview, setQrPreview] = useState<string | null>(storeData?.qrUrl || null);
+  const [qrTempPreview, setQrTempPreview] = useState<string | null>(null); // Temporary preview for selected file
   const [uploading, setUploading] = useState(false);
   const [logoFile, setLogoFile] = useState<File | null>(null);
   const [logoPreview, setLogoPreview] = useState<string | null>(storeData?.logoUrl || null);
@@ -76,40 +77,48 @@ export default function StoreManagementLayout({ storeData, userData, onSave }: S
 
   const handleQrChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0] || null;
+    console.log('📁 File selected:', { name: file?.name, size: file?.size, type: file?.type });
     setQrFile(file);
     if (file) {
-      setQrPreview(URL.createObjectURL(file));
+      const preview = URL.createObjectURL(file);
+      console.log('👁️ Preview URL created:', preview);
+      setQrTempPreview(preview); // Show temporary preview
     }
   };
 
   const handleUploadQr = async () => {
+    console.log('🔵 handleUploadQr called', { qrFile: !!qrFile, storeId: storeData?.id });
     if (!qrFile || !storeData?.id) {
+      console.log('❌ Upload blocked - missing qrFile or storeId');
       alert('กรุณาเลือกไฟล์ QR Code ก่อน');
       return;
     }
     setUploading(true);
     
     try {
-      console.log('Starting QR upload...', { fileName: qrFile.name, size: qrFile.size });
+      console.log('=== Starting QR upload ===');
+      console.log('File:', { name: qrFile.name, size: qrFile.size, type: qrFile.type });
       
       // 1. Get Cloudinary signature
       const signUrl = `/api/uploads/cloudinary-sign?folder=walk4you/qrcodes`;
-      console.log('Fetching signature from:', signUrl);
+      console.log('1️⃣ Fetching signature from:', signUrl);
       
       const signRes = await fetch(signUrl, { method: 'GET' });
+      console.log('Signature response status:', signRes.status);
       
       if (!signRes.ok) {
         const error = await signRes.text();
-        console.error('Failed to get signature:', error);
-        alert('ไม่สามารถได้รับลายเซ็นจาก Cloudinary');
+        console.error('❌ Failed to get signature:', signRes.status, error);
+        alert(`ไม่สามารถได้รับลายเซ็น: ${signRes.status}`);
         setUploading(false);
         return;
       }
       
       const sig = await signRes.json();
-      console.log('Got signature, uploading to Cloudinary...');
+      console.log('2️⃣ Got signature:', { cloudName: sig.cloudName, folder: sig.folder });
       
       // 2. Upload to Cloudinary
+      console.log('3️⃣ Uploading to Cloudinary...');
       const form = new FormData();
       form.append('file', qrFile);
       form.append('api_key', sig.apiKey);
@@ -118,12 +127,17 @@ export default function StoreManagementLayout({ storeData, userData, onSave }: S
       form.append('folder', sig.folder || 'walk4you/qrcodes');
       if (sig.uploadPreset) form.append('upload_preset', sig.uploadPreset);
       
+      console.log('Form data entries:', Array.from(form.entries()).map(([k]) => k));
+      
       const uploadUrl = `https://api.cloudinary.com/v1_1/${sig.cloudName}/image/upload`;
+      console.log('Upload URL:', uploadUrl);
+      
       const uploadRes = await fetch(uploadUrl, { method: 'POST', body: form });
+      console.log('Upload response status:', uploadRes.status);
       
       if (!uploadRes.ok) {
         const error = await uploadRes.json();
-        console.error('Cloudinary upload failed:', error);
+        console.error('❌ Cloudinary upload failed:', uploadRes.status, error);
         alert(`อัปโหลด QR ไม่สำเร็จ: ${error.error?.message || 'Unknown error'}`);
         setUploading(false);
         return;
@@ -131,7 +145,7 @@ export default function StoreManagementLayout({ storeData, userData, onSave }: S
       
       const data = await uploadRes.json();
       const qrUrl = data.secure_url;
-      console.log('Cloudinary upload successful:', qrUrl);
+      console.log('4️⃣ Cloudinary upload successful:', qrUrl);
       
       // 3. Save QR URL to backend
       const token = localStorage.getItem('access_token');
@@ -141,7 +155,7 @@ export default function StoreManagementLayout({ storeData, userData, onSave }: S
         return;
       }
       
-      console.log('Saving QR URL to backend...', { storeId: storeData.id });
+      console.log('5️⃣ Saving QR URL to backend...', { storeId: storeData.id, url: qrUrl });
       const saveRes = await fetch(`${config.apiBaseUrl}/stores/${storeData.id}/qr`, {
         method: 'PUT',
         headers: {
@@ -151,18 +165,20 @@ export default function StoreManagementLayout({ storeData, userData, onSave }: S
         body: JSON.stringify({ qrUrl }),
       });
       
+      console.log('Save response status:', saveRes.status);
+      
       if (saveRes.ok) {
-        console.log('QR URL saved successfully');
+        console.log('✅ QR URL saved successfully');
         setQrPreview(qrUrl);
         setQrFile(null);
         alert('บันทึก QR URL สำเร็จ!');
       } else {
         const error = await saveRes.json();
-        console.error('Failed to save QR URL:', error);
+        console.error('❌ Failed to save QR URL:', saveRes.status, error);
         alert(`บันทึก QR URL ไม่สำเร็จ: ${error.detail || 'Unknown error'}`);
       }
     } catch (error) {
-      console.error('Error uploading QR:', error);
+      console.error('❌ Error uploading QR:', error);
       alert(`เกิดข้อผิดพลาด: ${error instanceof Error ? error.message : 'Unknown error'}`);
     } finally {
       setUploading(false);
@@ -468,31 +484,62 @@ export default function StoreManagementLayout({ storeData, userData, onSave }: S
                     <label className="block text-sm font-medium text-gray-700 mb-2">
                       ช่องทางชำระเงิน QR PromptPay
                     </label>
-                    <div className="flex items-center gap-4">
-                      {qrPreview ? (
-                        <div className="relative">
-                          <Image src={qrPreview} alt="QR PromptPay" width={96} height={96} className="rounded border" />
-                        </div>
-                      ) : (
-                        <>
-                          <div className="w-24 h-24 bg-gray-100 rounded flex items-center justify-center text-gray-400 border">
-                            ไม่มี QR
+                    <div className="space-y-3">
+                      {qrPreview && !qrTempPreview && (
+                        <div className="flex items-center gap-4">
+                          <div className="relative">
+                            <Image src={qrPreview} alt="QR PromptPay" width={96} height={96} className="rounded border" />
                           </div>
                           <div>
-                            <input type="file" accept="image/*" onChange={handleQrChange} className="mb-2" />
-                            {qrFile && (
+                            <p className="text-sm text-gray-600 mb-2">QR Code ปัจจุบัน</p>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setQrPreview(null);
+                                setQrFile(null);
+                                setQrTempPreview(null);
+                              }}
+                              className="px-3 py-1.5 bg-red-500 text-white text-sm rounded hover:bg-red-600"
+                            >
+                              เปลี่ยน QR Code
+                            </button>
+                          </div>
+                        </div>
+                      )}
+                      
+                      {!qrPreview || qrTempPreview ? (
+                        <div>
+                          <div className="w-full border-2 border-dashed border-gray-300 rounded p-4 space-y-3">
+                            {qrTempPreview && (
+                              <div className="flex flex-col items-center gap-2">
+                                <p className="text-sm font-medium text-gray-700">ตัวอย่างที่เลือก:</p>
+                                <Image src={qrTempPreview} alt="QR preview" width={96} height={96} className="w-24 h-24 rounded border" />
+                              </div>
+                            )}
+                            <label htmlFor="qr-file-input" className="cursor-pointer block text-gray-600 mb-2">
+                              เลือกรูป QR Code
+                            </label>
+                            <input 
+                              type="file" 
+                              accept="image/*" 
+                              onChange={handleQrChange} 
+                              className="mb-2 block w-full"
+                              id="qr-file-input"
+                              title="เลือกรูป QR Code"
+                            />
+                            {qrFile && qrTempPreview && (
                               <button
                                 type="button"
                                 onClick={handleUploadQr}
                                 disabled={uploading}
-                                className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700"
+                                className="mt-2 px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 disabled:bg-gray-400 w-full"
                               >
-                                {uploading ? 'กำลังอัปโหลด...' : 'อัปโหลด QR'}
+                                {uploading ? 'กำลังอัปโหลด...' : 'อัปโหลด QR Code'}
                               </button>
                             )}
                           </div>
-                        </>
-                      )}
+                        </div>
+                      ) : null}
                     </div>
                     <div className="text-sm text-gray-500 mt-1">อัปโหลด QR PromptPay เพื่อให้ลูกค้าชำระเงินผ่านแอปธนาคาร</div>
                   </div>
