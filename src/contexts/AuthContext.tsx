@@ -17,6 +17,8 @@ interface User {
   username: string;
   email: string;
   role: string;
+  status?: string;
+  statusReason?: string;
   avatar?: {
     url: string;
   };
@@ -47,7 +49,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   // Fetch current user data
-  const fetchUser = useCallback(async () => {
+  const fetchUser = useCallback(async (retryCount = 0) => {
     try {
       const token = getAccessToken();
       if (!token) {
@@ -55,7 +57,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setAuthenticated(false);
         return;
       }
-
+      
       const response = await authenticatedFetch(
         `${config.apiBaseUrl}/users/me`
       );
@@ -64,16 +66,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const userData = await response.json();
         setUser(userData);
         setAuthenticated(true);
-      } else {
+      } else if (response.status === 401 || response.status === 403) {
         setUser(null);
         setAuthenticated(false);
         clearTokens();
+      } else {
+        // Retry once for transient errors
+        if (retryCount === 0) {
+          await new Promise(resolve => setTimeout(resolve, 1000));
+          return fetchUser(1);
+        }
       }
     } catch (error) {
-      console.error('Error fetching user:', error);
-      setUser(null);
-      setAuthenticated(false);
-      clearTokens();
+      // Retry once for network errors
+      if (retryCount === 0) {
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        return fetchUser(1);
+      }
     } finally {
       setIsLoading(false);
     }
@@ -84,26 +93,82 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (!isMounted) return;
 
     const initAuth = async () => {
+      const token = getAccessToken();
+      
+      if (!token) {
+        setIsLoading(false);
+        return;
+      }
+
       if (isAuthenticated()) {
         await fetchUser();
       } else {
-        setIsLoading(false);
+        // Try to refresh the token
+        const { getValidAccessToken } = await import('@/lib/auth');
+        const validToken = await getValidAccessToken();
+        
+        if (validToken) {
+          await fetchUser();
+        } else {
+          clearTokens();
+          setUser(null);
+          setAuthenticated(false);
+          setIsLoading(false);
+        }
       }
     };
 
     initAuth();
   }, [fetchUser, isMounted]);
 
+  // Check token validity on window focus/visibility change
+  useEffect(() => {
+    if (!isMounted || typeof window === 'undefined') return;
+
+    const handleVisibilityChange = async () => {
+      if (document.visibilityState === 'visible') {
+        const token = getAccessToken();
+        if (token && isAuthenticated()) {
+          // Token exists and is valid, refresh user data
+          await fetchUser();
+        } else if (token && !isAuthenticated()) {
+          // Token exists but expired, try to refresh
+          const { getValidAccessToken } = await import('@/lib/auth');
+          const validToken = await getValidAccessToken();
+          
+          if (!validToken) {
+            // Can't refresh - force logout
+            clearTokens();
+            setUser(null);
+            setAuthenticated(false);
+            alert('เซสชันของคุณหมดอายุแล้ว กรุณาเข้าสู่ระบบใหม่');
+            router.push('/');
+          }
+        }
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    window.addEventListener('focus', handleVisibilityChange);
+
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('focus', handleVisibilityChange);
+    };
+  }, [isMounted, fetchUser, router]);
+
   // Setup token refresh timer
   useEffect(() => {
     if (!authenticated || !isMounted) return;
 
     const cleanup = setupTokenRefreshTimer(() => {
-      // Token expired and couldn't refresh
+      // Token expired and couldn't refresh - force logout
+      clearTokens();
       setUser(null);
       setAuthenticated(false);
       if (typeof window !== 'undefined') {
-        router.push('/login');
+        alert('เซสชันของคุณหมดอายุแล้ว กรุณาเข้าสู่ระบบใหม่');
+        router.push('/');
       }
     });
 
@@ -150,7 +215,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(null);
     setAuthenticated(false);
     if (typeof window !== 'undefined') {
-      router.push('/login');
+      router.push('/');
     }
   }, [router]);
 
@@ -198,7 +263,7 @@ export function withAuth<P extends object>(
     useEffect(() => {
       if (!isLoading && isMounted && typeof window !== 'undefined') {
         if (!isAuthenticated) {
-          router.push('/login');
+          router.push('/');
         } else if (requiredRole && user?.role !== requiredRole) {
           router.push('/');
         }

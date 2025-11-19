@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { useCart } from '@/contexts/CartContext';
 import { config } from '@/lib/config';
+import TopBar from '@/components/TopBar';
 
 // Force dynamic rendering
 export const dynamic = 'force-dynamic';
@@ -20,6 +21,48 @@ interface CheckoutItem {
   storeId: string;
   storeName: string;
   shippingCost?: number;
+}
+
+function StoreQrImage({ storeId }: { storeId: string }) {
+  const [qrUrl, setQrUrl] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    let mounted = true;
+    const fetchQr = async () => {
+      try {
+        const res = await fetch(`${config.apiBaseUrl}/stores/${storeId}/qr`);
+        if (res.ok) {
+          const data = await res.json();
+          if (mounted) {
+            setQrUrl(data.qrUrl || null);
+          }
+        }
+      } catch (error) {
+        console.error('Failed to fetch QR:', error);
+      } finally {
+        if (mounted) setIsLoading(false);
+      }
+    };
+    fetchQr();
+    return () => {
+      mounted = false;
+    };
+  }, [storeId]);
+
+  if (isLoading) {
+    return <div className="text-sm text-gray-500">กำลังโหลด QR...</div>;
+  }
+
+  if (!qrUrl) {
+    return <div className="text-sm text-red-500 text-center">ไม่มี QR ที่บันทึกไว้สำหรับร้านนี้</div>;
+  }
+
+  return (
+    <div className="flex justify-center">
+      <Image src={qrUrl} alt="QR" width={320} height={320} className="object-contain" />
+    </div>
+  );
 }
 
 interface CheckoutStore {
@@ -216,11 +259,6 @@ export default function CheckoutConfirmPage() {
             notes: ''
           };
 
-          console.log('[submitOrder] Sending order for store:', store.storeId);
-          console.log('[submitOrder] Body:', JSON.stringify(body, null, 2));
-          console.log('[submitOrder] Selection:', selection);
-          console.log('[submitOrder] selectedShipping:', selection?.selectedShipping);
-
           const res = await fetch(`${config.apiBaseUrl}/orders`, {
             method: 'POST',
             headers: {
@@ -267,6 +305,7 @@ export default function CheckoutConfirmPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
+      <TopBar />
       <div className="max-w-4xl mx-auto px-4 py-8">
         <h1 className="text-2xl font-bold mb-4">ยืนยันการสั่งซื้อ</h1>
 
@@ -325,12 +364,15 @@ export default function CheckoutConfirmPage() {
                 </div>
               </div>
 
-              {/* Payment Method & QR */}
+              {/* Payment Method */}
               <div className="p-4">
                 {selection?.selectedPayment?.[store.storeId] === 'qr' ? (
-                  <div className="flex flex-col items-center gap-3">
-                    <div className="text-sm font-medium text-gray-600">วิธีชำระเงิน: QR PromptPay</div>
-                    <StoreQrImage storeId={store.storeId} />
+                  <div className="bg-yellow-50 border border-yellow-200 rounded p-3 text-sm text-yellow-900 space-y-1">
+                    <p className="font-medium">วิธีชำระเงิน: QR PromptPay</p>
+                    <p>QR ของร้านนี้จะแสดงหลังจากกดปุ่ม <strong>“ยืนยันและชำระเงิน”</strong></p>
+                    <p className="text-xs text-yellow-800">
+                      โปรดเตรียมพร้อมชำระเงินและอัปโหลดสลิปในขั้นตอนถัดไป
+                    </p>
                   </div>
                 ) : (
                   <div className="bg-blue-50 border border-blue-200 rounded p-3">
@@ -663,35 +705,6 @@ export default function CheckoutConfirmPage() {
           )}
         </div>
       </div>
-    </div>
-  );
-}
-
-function StoreQrImage({ storeId }: { storeId: string }) {
-  const [qrUrl, setQrUrl] = useState<string | null>(null);
-
-  useEffect(() => {
-    let mounted = true;
-    const fetchQr = async () => {
-      try {
-        const res = await fetch(`${config.apiBaseUrl}/stores/${storeId}/qr`);
-        if (res.ok) {
-          const data = await res.json();
-          if (mounted) setQrUrl(data.qrUrl || null);
-        }
-      } catch {
-        // ignore
-      }
-    };
-    fetchQr();
-    return () => { mounted = false };
-  }, [storeId]);
-
-  if (!qrUrl) return <div className="w-full text-center text-gray-500">ไม่มี QR สำหรับร้านนี้</div>;
-
-  return (
-    <div className="flex justify-center">
-      <Image src={qrUrl} alt="QR" width={320} height={320} className="object-contain" />
     </div>
   );
 }

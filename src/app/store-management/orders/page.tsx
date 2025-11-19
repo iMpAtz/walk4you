@@ -455,18 +455,23 @@ export default function StoreOrdersPage() {
                               <div className="space-y-2 sm:space-y-3">
                                 {/* Shipping Method Dropdown */}
                                 <div>
-                                  <label className="text-xs sm:text-sm font-medium text-gray-700 mb-1 block">รูปแบบการจัดส่ง</label>
+                                  <label className="text-xs sm:text-sm font-medium text-gray-700 mb-1 block">
+                                    รูปแบบการจัดส่ง <span className="text-red-500">*</span>
+                                  </label>
                                   <select
                                     aria-label="เลือกรูปแบบการจัดส่ง"
                                     value={shippingDrafts[order.id]?.shippingMethod ?? order.shippingMethod ?? ''}
-                                    onChange={(e) => setShippingDrafts((prev) => ({
-                                      ...prev,
-                                      [order.id]: {
-                                        shippingMethod: e.target.value,
-                                        shippingCarrier: prev[order.id]?.shippingCarrier ?? order.shippingCarrier ?? '',
-                                        shippingId: prev[order.id]?.shippingId ?? order.shippingId ?? ''
-                                      }
-                                    }))}
+                                    onChange={(e) => {
+                                      setShowStatusError(''); // Clear error when user starts filling
+                                      setShippingDrafts((prev) => ({
+                                        ...prev,
+                                        [order.id]: {
+                                          shippingMethod: e.target.value,
+                                          shippingCarrier: prev[order.id]?.shippingCarrier ?? order.shippingCarrier ?? '',
+                                          shippingId: prev[order.id]?.shippingId ?? order.shippingId ?? ''
+                                        }
+                                      }));
+                                    }}
                                     className="w-full border-2 border-gray-200 rounded-lg px-3 sm:px-4 py-2 sm:py-2.5 text-xs sm:text-sm focus:border-[#0B44A3] focus:ring-2 focus:ring-[#0B44A3] focus:ring-opacity-20 transition-all touch-manipulation bg-white"
                                   >
                                     <option value="">-- เลือกรูปแบบการจัดส่ง --</option>
@@ -495,18 +500,23 @@ export default function StoreOrdersPage() {
 
                                 {/* Shipping Carrier Dropdown */}
                                 <div>
-                                  <label className="text-xs sm:text-sm font-medium text-gray-700 mb-1 block">ชื่อขนส่ง</label>
+                                  <label className="text-xs sm:text-sm font-medium text-gray-700 mb-1 block">
+                                    ชื่อขนส่ง <span className="text-red-500">*</span>
+                                  </label>
                                   <select
                                     aria-label="เลือกชื่อขนส่ง"
                                     value={shippingDrafts[order.id]?.shippingCarrier ?? order.shippingCarrier ?? ''}
-                                    onChange={(e) => setShippingDrafts((prev) => ({
-                                      ...prev,
-                                      [order.id]: {
-                                        shippingMethod: prev[order.id]?.shippingMethod ?? order.shippingMethod ?? '',
-                                        shippingCarrier: e.target.value,
-                                        shippingId: prev[order.id]?.shippingId ?? order.shippingId ?? ''
-                                      }
-                                    }))}
+                                    onChange={(e) => {
+                                      setShowStatusError(''); // Clear error when user starts filling
+                                      setShippingDrafts((prev) => ({
+                                        ...prev,
+                                        [order.id]: {
+                                          shippingMethod: prev[order.id]?.shippingMethod ?? order.shippingMethod ?? '',
+                                          shippingCarrier: e.target.value,
+                                          shippingId: prev[order.id]?.shippingId ?? order.shippingId ?? ''
+                                        }
+                                      }));
+                                    }}
                                     className="w-full border-2 border-gray-200 rounded-lg px-3 sm:px-4 py-2 sm:py-2.5 text-xs sm:text-sm focus:border-[#0B44A3] focus:ring-2 focus:ring-[#0B44A3] focus:ring-opacity-20 transition-all touch-manipulation bg-white"
                                   >
                                     <option value="">-- เลือกชื่อขนส่ง --</option>
@@ -538,20 +548,25 @@ export default function StoreOrdersPage() {
 
                                 {/* Tracking Number */}
                                 <div>
-                                  <label className="text-xs sm:text-sm font-medium text-gray-700 mb-1 block">Shipping ID / Tracking No.</label>
+                                  <label className="text-xs sm:text-sm font-medium text-gray-700 mb-1 block">
+                                    Shipping ID / Tracking No. <span className="text-red-500">*</span>
+                                  </label>
                                   <input
                                     type="text"
                                     className="w-full border-2 border-gray-200 rounded-lg px-3 sm:px-4 py-2 sm:py-2.5 text-xs sm:text-sm focus:border-[#0B44A3] focus:ring-2 focus:ring-[#0B44A3] focus:ring-opacity-20 transition-all touch-manipulation"
-                                    placeholder="Shipping ID / Tracking No."
+                                    placeholder="กรอก Tracking No."
                                     value={shippingDrafts[order.id]?.shippingId ?? order.shippingId ?? ''}
-                                    onChange={(e) => setShippingDrafts((prev) => ({
-                                      ...prev,
-                                      [order.id]: {
-                                        shippingMethod: prev[order.id]?.shippingMethod ?? order.shippingMethod ?? '',
-                                        shippingCarrier: prev[order.id]?.shippingCarrier ?? order.shippingCarrier ?? '',
-                                        shippingId: e.target.value
-                                      }
-                                    }))}
+                                    onChange={(e) => {
+                                      setShowStatusError(''); // Clear error when user starts filling
+                                      setShippingDrafts((prev) => ({
+                                        ...prev,
+                                        [order.id]: {
+                                          shippingMethod: prev[order.id]?.shippingMethod ?? order.shippingMethod ?? '',
+                                          shippingCarrier: prev[order.id]?.shippingCarrier ?? order.shippingCarrier ?? '',
+                                          shippingId: e.target.value
+                                        }
+                                      }));
+                                    }}
                                   />
                                 </div>
 
@@ -575,7 +590,32 @@ export default function StoreOrdersPage() {
                           {order.status === 'PENDING' && (
                             <div className="mt-4 sm:mt-5 flex flex-col sm:flex-row gap-2 sm:gap-3">
                               <button 
-                                onClick={() => setConfirmDialog({ orderId: order.id, order })}
+                                onClick={() => {
+                                  // Validate shipping info before opening confirm dialog
+                                  const draft = shippingDrafts[order.id];
+                                  const shippingMethod = draft?.shippingMethod || order?.shippingMethod || '';
+                                  const shippingCarrier = draft?.shippingCarrier || order?.shippingCarrier || '';
+                                  const shippingId = draft?.shippingId || order?.shippingId || '';
+
+                                  if (!shippingMethod.trim()) {
+                                    setShowStatusError('กรุณาเลือกรูปแบบการจัดส่งก่อนยืนยันคำสั่งซื้อ');
+                                    return;
+                                  }
+                                  
+                                  if (!shippingCarrier.trim()) {
+                                    setShowStatusError('กรุณากรอกชื่อขนส่งก่อนยืนยันคำสั่งซื้อ');
+                                    return;
+                                  }
+                                  
+                                  if (!shippingId.trim()) {
+                                    setShowStatusError('กรุณากรอก Tracking No. ก่อนยืนยันคำสั่งซื้อ');
+                                    return;
+                                  }
+
+                                  // All validations passed, clear error and open modal
+                                  setShowStatusError('');
+                                  setConfirmDialog({ orderId: order.id, order });
+                                }}
                                 className="flex-1 px-3 sm:px-4 py-2.5 sm:py-3 bg-gradient-to-r from-green-500 to-green-600 text-white rounded-xl hover:opacity-90 transition-all flex items-center justify-center gap-2 font-semibold shadow-md text-sm sm:text-base min-h-[44px] touch-manipulation"
                               >
                                 <Check className="w-4 h-4 sm:w-5 sm:h-5 text-white" /> <span className='text-white'>ยืนยันคำสั่งซื้อ</span>

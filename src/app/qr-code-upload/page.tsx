@@ -17,11 +17,10 @@ export default function QRCodeUploadPage() {
 
   const handleUploadSuccess = (payload: any) => {
     setUploadedData(payload);
-    console.log('QR Code uploaded:', payload);
   };
 
   const handleUploadError = (error: string) => {
-    console.error('QR Code upload error:', error);
+    // Handle error silently
   };
 
   return (

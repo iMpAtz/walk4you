@@ -527,6 +527,7 @@ class UserResponse(BaseModel):
     role: str
     registerDate: datetime
     status: Optional[str] = "ACTIVE"
+    statusReason: Optional[str] = None
     avatar: Optional[dict] = None
     address: Optional[str] = None
 
@@ -588,7 +589,9 @@ async def register(user_data: UserRegister, db: AsyncIOMotorDatabase = Depends(g
                 username=user_data.username,
                 email=user_data.email,
                 role="CUSTOMER",
-                registerDate=user_doc["registerDate"]
+                registerDate=user_doc["registerDate"],
+                status="ACTIVE",
+                statusReason=None
             )
         )
         
@@ -643,7 +646,9 @@ async def login(login_data: UserLogin, db: AsyncIOMotorDatabase = Depends(get_db
                 email=user["email"],
                 role=user["role"],
                 registerDate=user["registerDate"],
-                avatar=user.get("avatar")
+                avatar=user.get("avatar"),
+                status=user.get("status", "ACTIVE"),
+                statusReason=user.get("statusReason")
             )
         )
         
@@ -743,6 +748,7 @@ async def get_my_profile(current_user=Depends(get_current_user)):
         role=current_user["role"],
         registerDate=current_user["registerDate"],
         status=current_user.get("status", "ACTIVE"),
+        statusReason=current_user.get("statusReason"),
         avatar=current_user.get("avatar"),
         address=current_user.get("address")
     )
@@ -919,6 +925,7 @@ class StoreResponse(BaseModel):
     logoUrl: Optional[str] = None
     registerDate: datetime
     status: str
+    statusReason: Optional[str] = None
 
 
 @app.get("/users/me/store")
@@ -943,7 +950,8 @@ async def get_my_store(db: AsyncIOMotorDatabase = Depends(get_db), current_user=
         qrUrl=store.get("qrUrl"),
         logoUrl=store.get("logoUrl"),
         registerDate=store["registerDate"],
-        status=store["status"]
+        status=store["status"],
+        statusReason=store.get("statusReason")
     )
 
 
@@ -968,7 +976,8 @@ async def create_my_store(store_data: StoreCreate, db: AsyncIOMotorDatabase = De
         "phoneNumber": store_data.phoneNumber,
         "buMail": store_data.buMail,  # Use buMail from form data
         "registerDate": datetime.utcnow(),
-        "status": "ACTIVE"
+        "status": "ACTIVE",
+        "statusReason": None
     }
     
     result = await db.Store.insert_one(store_doc)
@@ -989,7 +998,8 @@ async def create_my_store(store_data: StoreCreate, db: AsyncIOMotorDatabase = De
         buMail=store_doc["buMail"],
         qrUrl=store_doc.get("qrUrl"),
         registerDate=store_doc["registerDate"],
-        status=store_doc["status"]
+        status=store_doc["status"],
+        statusReason=store_doc.get("statusReason")
     )
 
 
@@ -1176,6 +1186,7 @@ class StoreResponse(BaseModel):
     logoUrl: Optional[str] = None
     registerDate: datetime
     status: str
+    statusReason: Optional[str] = None
 
 
 # ===== Product Models =====
@@ -1221,7 +1232,8 @@ async def get_my_store(current_user: dict = Depends(get_current_user), db: Async
         buMail=store.get("buMail"),
         qrUrl=store.get("qrUrl"),
         registerDate=store["registerDate"],
-        status=store["status"]
+        status=store["status"],
+        statusReason=store.get("statusReason")
     )
 
 
@@ -1245,7 +1257,8 @@ async def update_my_store(
             "storeDescription": store_data.storeDescription,
             "buMail": current_user["email"],  # Use user's email as buMail
             "registerDate": datetime.now(),
-            "status": "ACTIVE"
+            "status": "ACTIVE",
+            "statusReason": None
         }
         result = await db.stores.insert_one(store_doc)
         store_doc["_id"] = result.inserted_id
@@ -1271,7 +1284,8 @@ async def update_my_store(
         buMail=store_doc.get("buMail"),
         qrUrl=store_doc.get("qrUrl"),
         registerDate=store_doc["registerDate"],
-        status=store_doc["status"]
+        status=store_doc["status"],
+        statusReason=store_doc.get("statusReason")
     )
 
 
@@ -1300,7 +1314,8 @@ async def create_my_store(
         "storeDescription": store_data.storeDescription,
         "buMail": current_user["email"],  # Use user's email as buMail
         "registerDate": datetime.now(),
-        "status": "ACTIVE"
+        "status": "ACTIVE",
+        "statusReason": None
     }
     
     result = await db.Store.insert_one(store_doc)
@@ -1313,7 +1328,8 @@ async def create_my_store(
         buMail=store_doc.get("buMail"),
         qrUrl=store_doc.get("qrUrl"),
         registerDate=store_doc["registerDate"],
-        status=store_doc["status"]
+        status=store_doc["status"],
+        statusReason=store_doc.get("statusReason")
     )
 
 
@@ -3427,6 +3443,7 @@ class UserListResponse(BaseModel):
     storeCount: int = 0
     storeStatus: Optional[str] = None
     status: Optional[str] = "ACTIVE"
+    statusReason: Optional[str] = None
 
 
 class StoreListResponse(BaseModel):
@@ -3438,10 +3455,12 @@ class StoreListResponse(BaseModel):
     buMail: Optional[str] = None
     registerDate: datetime
     status: str
+    statusReason: Optional[str] = None
 
 
 class StoreStatusUpdate(BaseModel):
     status: str
+    reason: Optional[str] = None
 
 
 # ===== Admin Endpoints =====
@@ -3475,6 +3494,7 @@ async def get_all_users(
                     "role": 1,
                     "registerDate": 1,
                     "status": 1,
+                    "statusReason": 1,
                     "storeCount": {"$size": "$stores"},
                     "storeStatus": {"$arrayElemAt": ["$stores.status", 0]}
                 }
@@ -3494,7 +3514,8 @@ async def get_all_users(
                 registerDate=user["registerDate"],
                 storeCount=user.get("storeCount", 0),
                 storeStatus=user.get("storeStatus"),
-                status=user.get("status", "ACTIVE")
+                status=user.get("status", "ACTIVE"),
+                statusReason=user.get("statusReason")
             )
             for user in users
         ]
@@ -3537,7 +3558,8 @@ async def get_all_stores(
                     "storeDescription": 1,
                     "buMail": 1,
                     "registerDate": 1,
-                    "status": 1
+                    "status": 1,
+                    "statusReason": 1
                 }
             },
             {"$sort": {"registerDate": -1}}
@@ -3554,7 +3576,8 @@ async def get_all_stores(
                 storeDescription=store.get("storeDescription"),
                 buMail=store.get("buMail"),
                 registerDate=store["registerDate"],
-                status=store["status"]
+                status=store["status"],
+                statusReason=store.get("statusReason")
             )
             for store in stores
         ]
@@ -3588,6 +3611,12 @@ async def update_store_status(
                 detail=f"Invalid status. Allowed: {allowed_statuses}"
             )
         
+        status_reason = status_update.reason.strip() if status_update.reason else None
+        if new_status in ["INACTIVE", "BLOCKED"] and not status_reason:
+            raise HTTPException(status_code=400, detail="Reason is required for this status")
+        if new_status == "ACTIVE":
+            status_reason = None
+        
         # Find store
         store = await db.Store.find_one({"_id": ObjectId(store_id)})
         if not store:
@@ -3596,7 +3625,13 @@ async def update_store_status(
         # Update status
         await db.Store.update_one(
             {"_id": ObjectId(store_id)},
-            {"$set": {"status": new_status}}
+            {
+                "$set": {
+                    "status": new_status,
+                    "statusReason": status_reason,
+                    "statusUpdatedAt": datetime.utcnow()
+                }
+            }
         )
         
         # Create admin action log
@@ -3611,7 +3646,28 @@ async def update_store_status(
         except Exception:
             pass  # Don't fail if logging fails
         
-        return {"message": "Store status updated", "status": new_status}
+        # Notify store owner
+        try:
+            await create_notification(
+                db=db,
+                user_id=store["ownerId"],
+                notification_type="store",
+                title="สถานะร้านค้าถูกเปลี่ยน",
+                message=f"ร้าน {store['storeName']} ถูกตั้งสถานะเป็น {new_status}",
+                data={
+                    "storeId": store_id,
+                    "status": new_status,
+                    "reason": status_reason
+                }
+            )
+        except Exception as notify_err:
+            logger.warning(f"Failed to notify store owner: {notify_err}")
+        
+        return {
+            "message": "Store status updated",
+            "status": new_status,
+            "reason": status_reason
+        }
         
     except HTTPException:
         raise
@@ -3622,6 +3678,7 @@ async def update_store_status(
 
 class UserStatusUpdate(BaseModel):
     status: str
+    reason: Optional[str] = None
 
 
 @app.put("/admin/users/{user_id}/status")
@@ -3646,6 +3703,12 @@ async def update_user_status(
                 detail=f"Invalid status. Allowed: {allowed_statuses}"
             )
         
+        ban_reason = status_update.reason.strip() if status_update.reason else None
+        if new_status == "BANNED" and not ban_reason:
+            raise HTTPException(status_code=400, detail="Ban reason is required")
+        if new_status != "BANNED":
+            ban_reason = None
+        
         # Find user
         user = await db.User.find_one({"_id": ObjectId(user_id)})
         if not user:
@@ -3662,7 +3725,13 @@ async def update_user_status(
         # Update status
         await db.User.update_one(
             {"_id": ObjectId(user_id)},
-            {"$set": {"status": new_status, "updatedAt": datetime.utcnow()}}
+            {
+                "$set": {
+                    "status": new_status,
+                    "statusReason": ban_reason,
+                    "updatedAt": datetime.utcnow()
+                }
+            }
         )
         
         # Create admin action log
@@ -3672,7 +3741,7 @@ async def update_user_status(
                 "actionType": "UPDATE_USER_STATUS",
                 "targetUserId": ObjectId(user_id),
                 "timestamp": datetime.utcnow(),
-                "description": f"Changed user status to {new_status}"
+                "description": f"Changed user status to {new_status}" + (f" (Reason: {ban_reason})" if ban_reason else "")
             })
         except Exception:
             pass

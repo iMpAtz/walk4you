@@ -32,8 +32,6 @@ export default function LoginModal({ isOpen, onClose, onSwitchToRegister }: Logi
       if (!success) {
         throw new Error('อีเมลหรือรหัสผ่านไม่ถูกต้อง');
       }
-
-      console.log('[login] success');
       
       // Get user info to determine redirect
       const token = localStorage.getItem('access_token');

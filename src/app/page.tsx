@@ -59,7 +59,6 @@ export default function Home() {
       const response = await fetch(`${config.apiBaseUrl}/banners`);
       if (response.ok) {
         const data: Banner[] = await response.json();
-        console.log('Fetched banners:', data);
         
         // Create array with maximum 3 slots
         const bannerSlots: Banner[] = [];
@@ -184,21 +183,41 @@ export default function Home() {
       {/* Banner - Advertisement Space */}
       <div className="mx-auto max-w-[1200px] px-3 sm:px-4 pt-4 sm:pt-6">
         {banners.length === 0 ? (
-          <div className="relative rounded-xl overflow-hidden shadow-lg h-[280px] bg-gradient-to-br from-[#0B44A3] to-[#1a5fd4] flex items-center justify-center">
+          <div className="relative rounded-xl overflow-hidden shadow-lg aspect-[5/2] sm:aspect-[21/5] bg-gradient-to-br from-[#0B44A3] to-[#1a5fd4] flex items-center justify-center">
             <div className="text-white text-center">
               <div className="animate-spin rounded-full h-10 w-10 sm:h-12 sm:w-12 border-b-2 border-white mx-auto mb-3 sm:mb-4"></div>
               <p className="text-sm sm:text-base">กำลังโหลดแบนเนอร์...</p>
             </div>
           </div>
         ) : (
-          <div className="relative rounded-xl overflow-hidden shadow-lg h-[280px]">
+          <div 
+            className="relative rounded-xl overflow-hidden shadow-lg aspect-[5/2] sm:aspect-[21/5] touch-pan-x"
+            onClick={(e) => {
+              // Mobile touch navigation - tap left/right half to navigate
+              if (window.innerWidth < 640) {
+                const rect = e.currentTarget.getBoundingClientRect();
+                const x = e.clientX - rect.left;
+                const halfWidth = rect.width / 2;
+                
+                if (x < halfWidth) {
+                  prevBanner();
+                } else {
+                  nextBanner();
+                }
+              }
+            }}
+          >
             {banners.map((banner, idx) => (
             <div key={banner.id} className={`absolute inset-0 transition-opacity duration-500 ${idx === currentBanner ? "opacity-100" : "opacity-0"}`}>
               {/* Background Image (only if image_url exists) */}
               {banner.image_url ? (
                 <>
-                  {/* Banner has image - show image only */}
-                  <img src={banner.image_url} alt={banner.title} className="w-full h-full object-cover" />
+                  {/* Banner has image - show image with proper fit */}
+                  <img 
+                    src={banner.image_url} 
+                    alt={banner.title} 
+                    className="w-full h-full object-contain sm:object-cover bg-gradient-to-br from-gray-100 to-gray-200" 
+                  />
                   
                   {/* Optional: Subtle gradient overlay for better text visibility if needed */}
                   {(banner.title || banner.subtitle) && (
@@ -216,21 +235,21 @@ export default function Home() {
                   {/* No image - show advertisement placeholder with gradient */}
                   <div className="absolute inset-0" style={{ background: "linear-gradient(135deg, rgba(11,68,163,0.9), rgba(26,95,212,0.9))" }} />
                   
-                  <div className="absolute inset-0 flex flex-col justify-center items-center text-white text-center px-4 sm:px-6 z-30 pointer-events-none">
+                  <div className="absolute inset-0 flex flex-col justify-center items-center text-white text-center px-3 sm:px-6 z-30 pointer-events-none py-2">
                     {/* Advertisement Badge */}
-                    <div className="mb-1.5 sm:mb-3 px-2 sm:px-4 py-0.5 sm:py-1.5 bg-white/15 backdrop-blur-sm rounded-full text-[9px] sm:text-xs font-medium border border-white/20">
+                    <div className="mb-1 sm:mb-3 px-2 sm:px-4 py-0.5 sm:py-1.5 bg-white/15 backdrop-blur-sm rounded-full text-[8px] sm:text-xs font-medium border border-white/20">
                       พื้นที่โฆษณา
                     </div>
                     
-                    <h2 className="text-lg sm:text-3xl md:text-4xl font-bold mb-1 sm:mb-2">{banner.title || "สนใจลงโฆษณา?"}</h2>
-                    <p className="text-[10px] sm:text-base md:text-lg opacity-90 mb-2 sm:mb-4 px-2 leading-snug">
-                      {banner.subtitle || "พื้นที่โฆษณาขนาดพิเศษ 1200x280px"}
+                    <h2 className="text-sm sm:text-3xl md:text-4xl font-bold mb-0.5 sm:mb-2 line-clamp-1">{banner.title || "สนใจลงโฆษณา?"}</h2>
+                    <p className="text-[9px] sm:text-base md:text-lg opacity-90 mb-1.5 sm:mb-4 px-2 leading-tight line-clamp-2">
+                      {banner.subtitle || "พื้นที่โฆษณาขนาดพิเศษ Aspect Ratio 21:5"}
                     </p>
                     
-                    <div className="flex flex-col gap-1 sm:gap-2 items-center pointer-events-auto">
+                    <div className="flex flex-col gap-0.5 sm:gap-2 items-center pointer-events-auto">
                       <button 
-                        onClick={() => window.location.href = "mailto:patjiranuwat@gmail.com?subject=สอบถามเกี่ยวกับพื้นที่โฆษณา&body=สวัสดีครับ/ค่ะ%0A%0Aผม/ดิฉันสนใจสอบถามเกี่ยวกับพื้นที่โฆษณาบนเว็บไซต์ Walk4You%0A%0Aขนาดโฆษณา: 1200 x 280 px%0A%0Aโปรดติดต่อกลับที่:%0A%0Aขอบคุญครับ/ค่ะ"}
-                        className="px-2.5 sm:px-6 py-1 sm:py-2.5 bg-white/90 text-[#1B2A47] font-semibold rounded-lg hover:bg-white active:scale-95 transition shadow-md flex items-center gap-1 sm:gap-2 cursor-pointer text-[10px] sm:text-base touch-manipulation backdrop-blur-sm"
+                        onClick={() => window.location.href = "mailto:patjiranuwat@gmail.com?subject=สอบถามเกี่ยวกับพื้นที่โฆษณา&body=สวัสดีครับ/ค่ะ%0A%0Aผม/ดิฉันสนใจสอบถามเกี่ยวกับพื้นที่โฆษณาบนเว็บไซต์ Walk4You%0A%0Aขนาดโฆษณา: Aspect Ratio 21:5%0A%0Aโปรดติดต่อกลับที่:%0A%0Aขอบคุญครับ/ค่ะ"}
+                        className="px-2 sm:px-6 py-1 sm:py-2.5 bg-white/90 text-[#1B2A47] font-semibold rounded-lg hover:bg-white active:scale-95 transition shadow-md flex items-center gap-1 sm:gap-2 cursor-pointer text-[9px] sm:text-base touch-manipulation backdrop-blur-sm"
                       >
                         <svg className="w-3 h-3 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
@@ -238,36 +257,42 @@ export default function Home() {
                         ติดต่อแอดมิน
                       </button>
                       
-                      <div className="text-[8px] sm:text-xs opacity-70 flex items-center gap-0.5 sm:gap-1">
-                        <span className="text-[10px] sm:text-sm">📧</span>
-                        <span>patjiranuwat@gmail.com</span>
+                      <div className="text-[7px] sm:text-xs opacity-70 flex items-center gap-0.5 sm:gap-1 line-clamp-1">
+                        <span className="text-[9px] sm:text-sm">📧</span>
+                        <span className="truncate">patjiranuwat@gmail.com</span>
                       </div>
                     </div>
                   </div>
 
                   {/* Specs Corner Badge - only for advertisement placeholder */}
-                  <div className="absolute top-2 sm:top-4 right-2 sm:right-4 bg-white/10 backdrop-blur-sm rounded-lg px-1.5 sm:px-3 py-1 sm:py-2 text-white text-[8px] sm:text-xs border border-white/15 z-30">
-                    <div className="font-semibold mb-0.5">ขนาดแนะนำ</div>
-                    <div className="opacity-80 text-[7px] sm:text-[11px]">1200 x 280 px</div>
-                    <div className="opacity-70 mt-0.5 text-[7px] sm:text-[10px]">Ratio 4.3:1</div>
+                  <div className="absolute top-1.5 sm:top-4 right-1.5 sm:right-4 bg-white/10 backdrop-blur-sm rounded-lg px-1.5 sm:px-3 py-0.5 sm:py-2 text-white text-[7px] sm:text-xs border border-white/15 z-30">
+                    <div className="font-semibold mb-0.5 leading-tight">ขนาดแนะนำ</div>
+                    <div className="opacity-80 text-[6.5px] sm:text-[11px] leading-tight">Ratio 21:5</div>
+                    <div className="opacity-70 text-[6px] sm:text-[10px] leading-tight hidden sm:block">Desktop</div>
                   </div>
                 </>
               )}
             </div>
           ))}
 
-          <div className="absolute inset-0 flex items-center justify-between px-2 sm:px-4 z-20 pointer-events-none">
-            <button onClick={prevBanner} className="bg-white/50 backdrop-blur-sm shadow-md rounded-full w-6 h-6 sm:w-9 sm:h-9 flex items-center justify-center hover:bg-white/70 active:scale-95 text-[#1B2A47] font-bold pointer-events-auto touch-manipulation">
-              <div className="text-xl sm:text-3xl leading-none -mt-1">‹</div>
+          <div className="absolute inset-0 flex items-center justify-between px-2 sm:px-4 z-20 pointer-events-none group">
+            <button 
+              onClick={prevBanner} 
+              className="hidden sm:flex bg-white/50 backdrop-blur-sm shadow-md rounded-full sm:w-9 sm:h-9 items-center justify-center hover:bg-white/70 active:scale-95 text-[#1B2A47] font-bold pointer-events-auto opacity-0 group-hover:opacity-100 transition-opacity duration-300"
+            >
+              <div className="text-3xl leading-none -mt-1">‹</div>
             </button>
-            <button onClick={nextBanner} className="bg-white/50 backdrop-blur-sm shadow-md rounded-full w-6 h-6 sm:w-9 sm:h-9 flex items-center justify-center hover:bg-white/70 active:scale-95 text-[#1B2A47] font-bold pointer-events-auto touch-manipulation">
-              <div className="text-xl sm:text-3xl leading-none -mt-1">›</div>
+            <button 
+              onClick={nextBanner} 
+              className="hidden sm:flex bg-white/50 backdrop-blur-sm shadow-md rounded-full sm:w-9 sm:h-9 items-center justify-center hover:bg-white/70 active:scale-95 text-[#1B2A47] font-bold pointer-events-auto opacity-0 group-hover:opacity-100 transition-opacity duration-300"
+            >
+              <div className="text-3xl leading-none -mt-1">›</div>
             </button>
           </div>
 
-          <div className="absolute bottom-2 sm:bottom-3 left-0 right-0 flex justify-center gap-1 sm:gap-2 z-20 pointer-events-none">
+          <div className="absolute bottom-2 sm:bottom-3 left-0 right-0 justify-center gap-1 sm:gap-2 z-20 pointer-events-none hidden sm:flex group">
             {banners.map((_, idx) => (
-              <button key={idx} onClick={() => goToBanner(idx)} className={`w-1.5 h-1.5 sm:w-3 sm:h-3 rounded-full transition-all touch-manipulation ${idx === currentBanner ? "bg-white scale-110" : "bg-white/60"} pointer-events-auto`}></button>
+              <button key={idx} onClick={() => goToBanner(idx)} className={`sm:w-3 sm:h-3 rounded-full transition-all ${idx === currentBanner ? "bg-white scale-110" : "bg-white/60"} pointer-events-auto opacity-0 group-hover:opacity-100`}></button>
             ))}
           </div>
           </div>

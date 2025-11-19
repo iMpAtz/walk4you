@@ -12,12 +12,10 @@ export default function ApiProbe() {
     fetch(url)
       .then(async (res) => {
         const data = await res.json().catch(() => ({}));
-        console.log('[API Health]', { url, status: res.status, data });
         setStatusText(`API ${res.ok ? 'OK' : 'DOWN'} (${res.status})`);
       })
       .catch((err) => {
-        console.error('[API Health] fetch error', err);
-        setStatusText('API error (check console)');
+        setStatusText('API Error');
       });
   }, []);
 

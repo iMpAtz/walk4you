@@ -25,6 +25,7 @@ export type UserProfile = {
     role: string;
     registerDate: string;
     status?: string;
+    statusReason?: string;
     address?: string;
     avatar?: {
         url?: string;

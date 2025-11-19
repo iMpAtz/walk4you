@@ -21,7 +21,6 @@ export function useAuthFetch() {
 
         // If still unauthorized after token refresh attempt, logout
         if (response.status === 401) {
-          console.log('Authentication failed, logging out...');
           logout();
           throw new Error('Authentication failed');
         }

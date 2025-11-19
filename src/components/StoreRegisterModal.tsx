@@ -53,11 +53,6 @@ export default function StoreRegisterModal({ isOpen, onClose, onSuccess }: Store
         const data = await response.json();
         setOtpSent(true);
         setError(null);
-        
-        // For development, show OTP in console
-        if (data.otp) {
-          console.log('Development OTP:', data.otp);
-        }
       } else {
         const errorData = await response.json();
         setError(errorData.detail || 'Failed to send OTP');

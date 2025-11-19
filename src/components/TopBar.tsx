@@ -67,9 +67,16 @@ export default function TopBar() {
         
         // Check if user has a store
         await checkStoreStatus(token);
+      } else if (response.status === 401 || response.status === 403) {
+        // Token expired or invalid - logout automatically
+        handleLogout();
+      } else {
+        // Other errors - clear profile but don't logout
+        setUserProfile(null);
       }
     } catch (error) {
-      console.error('Failed to fetch user profile:', error);
+      // Network error - don't logout, just clear profile
+      setUserProfile(null);
     }
   };
 
@@ -158,7 +165,7 @@ export default function TopBar() {
                     </div>
                   )}
                   <span className="hidden sm:block font-medium text-white">
-                    {userProfile?.username || 'Guest'}
+                    {userProfile?.username || '...'}
                   </span>
                 </div>
               </>
@@ -201,10 +208,15 @@ export default function TopBar() {
               <Ban className="w-10 h-10 text-red-600" />
             </div>
             <h2 className="text-2xl font-bold text-gray-900 mb-2">บัญชีถูกระงับ</h2>
-            <p className="text-gray-600 mb-6">
+            <p className="text-gray-600 mb-4">
               คุณถูกแบนไม่สามารถใช้งานเว็บไซต์ได้<br />
               กรุณาติดต่อผู้ดูแลระบบสำหรับข้อมูลเพิ่มเติม
             </p>
+            {userProfile?.statusReason && (
+              <div className="bg-red-50 border border-red-100 text-red-700 text-sm rounded-xl p-4 mb-6 whitespace-pre-line">
+                {userProfile.statusReason}
+              </div>
+            )}
             <button
               onClick={() => {
                 setShowBannedModal(false);

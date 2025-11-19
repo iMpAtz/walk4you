@@ -79,8 +79,6 @@ export default function StoreDashboardPage() {
       }
 
       const dashboardData = await res.json();
-      console.log('Dashboard data:', dashboardData); // Debug log
-      console.log('Recent orders:', dashboardData.recentOrders); // Debug log
       setData(dashboardData);
     } catch (err: any) {
       setError(err.message || 'เกิดข้อผิดพลาด');

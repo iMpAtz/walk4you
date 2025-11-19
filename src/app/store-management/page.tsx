@@ -15,6 +15,7 @@ interface StoreData {
   logoUrl?: string | null;
   registerDate: string;
   status: string;
+  statusReason?: string | null;
 }
 
 interface UserData {
@@ -96,6 +97,7 @@ export default function StoreManagementPage() {
           logoUrl: store.logoUrl || null,
           registerDate: store.registerDate,
           status: store.status,
+          statusReason: store.statusReason ?? null,
         });
       } else if (storeResponse.status === 404) {
         // No store exists, create default data
@@ -109,6 +111,7 @@ export default function StoreManagementPage() {
           logoUrl: null,
           registerDate: new Date().toISOString(),
           status: 'DRAFT',
+          statusReason: null,
         });
       } else {
         throw new Error(`Failed to fetch store data: ${storeResponse.status}`);
@@ -141,7 +144,7 @@ export default function StoreManagementPage() {
 
       if (response.ok) {
         const updatedStore = await response.json();
-        setStoreData(prev => prev ? { ...prev, ...formData, id: updatedStore.id } : null);
+        setStoreData(prev => prev ? { ...prev, ...formData, id: updatedStore.id, status: updatedStore.status, statusReason: updatedStore.statusReason ?? prev.statusReason } : null);
         alert('บันทึกข้อมูลสำเร็จ');
       } else {
         throw new Error('Failed to save store data');

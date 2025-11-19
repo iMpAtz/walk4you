@@ -90,8 +90,6 @@ export default function ProfilePage() {
 
       if (response.ok) {
         const profile = await response.json();
-        console.log('Profile data received:', profile); // Debug log
-        console.log('Avatar data:', profile.avatar); // Debug log
         setUserProfile(profile);
         setFormData({
           name: profile.username || '',
@@ -121,7 +119,6 @@ export default function ProfilePage() {
 
   const handleAvatarUpdate = async (avatarData: any) => {
     // Refresh user profile from backend to get the latest data
-    console.log('Avatar update callback received:', avatarData);
     await fetchUserProfile();
   };
 

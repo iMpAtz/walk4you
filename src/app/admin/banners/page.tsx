@@ -20,7 +20,7 @@ interface Banner {
 
 export default function BannerManagement() {
   const router = useRouter();
-  const { user, isLoading, isAuthenticated, authenticatedFetch } = useAuth();
+  const { authenticatedFetch } = useAuth();
   const [banners, setBanners] = useState<Banner[]>([]);
   const [isFetching, setIsFetching] = useState(true);
   const [showModal, setShowModal] = useState(false);
@@ -34,26 +34,9 @@ export default function BannerManagement() {
   });
   const [isUploading, setIsUploading] = useState(false);
 
-  // Check authentication and authorization
   useEffect(() => {
-    console.log('Banner Management - Auth Check:', { isLoading, isAuthenticated, user });
-    
-    if (!isLoading) {
-      if (!isAuthenticated) {
-        console.log('Not authenticated, redirecting to login');
-        alert('กรุณาเข้าสู่ระบบ');
-        router.push('/login');
-      } else if (user?.role !== 'ADMIN') {
-        console.log('Not admin, redirecting to home. User role:', user?.role);
-        alert('ไม่มีสิทธิ์เข้าถึงหน้านี้');
-        router.push('/');
-      } else {
-        console.log('Auth OK, fetching banners');
-        // User is authenticated and is admin
-        fetchBanners();
-      }
-    }
-  }, [isLoading, isAuthenticated, user, router]);
+    fetchBanners();
+  }, []);
 
   const fetchBanners = async () => {
     try {
@@ -194,23 +177,6 @@ export default function BannerManagement() {
       console.error('Failed to toggle banner:', error);
     }
   };
-
-  // Show loading while checking auth
-  if (isLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">กำลังโหลด...</p>
-        </div>
-      </div>
-    );
-  }
-
-  // Don't render if not authenticated or not admin
-  if (!isAuthenticated || user?.role !== 'ADMIN') {
-    return null;
-  }
 
   return (
     <div className="min-h-screen bg-gray-50">

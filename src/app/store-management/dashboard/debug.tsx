@@ -22,8 +22,6 @@ export default function DebugPage() {
         return;
       }
 
-      console.log('Fetching debug data with token:', token.substring(0, 20) + '...');
-
       const res = await fetch(`${config.apiBaseUrl}/stores/my/debug`, {
         headers: { 
           'Authorization': `Bearer ${token}`,
@@ -31,19 +29,14 @@ export default function DebugPage() {
         }
       });
 
-      console.log('Debug response status:', res.status);
-
       if (!res.ok) {
         const errorData = await res.json().catch(() => ({}));
-        console.error('Error response:', errorData);
         throw new Error(errorData.detail || 'Failed to fetch debug data');
       }
 
       const data = await res.json();
-      console.log('Debug data received:', data);
       setDebugData(data);
     } catch (err: any) {
-      console.error('Error fetching debug data:', err);
       setError(err.message || 'เกิดข้อผิดพลาด');
     } finally {
       setLoading(false);

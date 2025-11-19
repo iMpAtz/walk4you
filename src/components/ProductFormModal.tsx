@@ -92,8 +92,6 @@ export default function ProductFormModal({ isOpen, onClose, onSubmit, username }
         : '/api/uploads/cloudinary-sign?type=product';
       const signatureResponse = await fetch(signatureUrl);
       const { timestamp, signature, apiKey, cloudName, folder } = await signatureResponse.json();
-      
-      console.log('Upload folder:', folder); // Debug log
 
       // Create form data
       const formData = new FormData();

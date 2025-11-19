@@ -136,7 +136,6 @@ export async function refreshAccessToken(): Promise<string | null> {
   const refreshToken = getRefreshToken();
   
   if (!refreshToken) {
-    console.log('No refresh token available');
     return null;
   }
 
@@ -160,7 +159,6 @@ export async function refreshAccessToken(): Promise<string | null> {
     saveTokens(data);
     return data.access_token;
   } catch (error) {
-    console.error('Error refreshing token:', error);
     clearTokens();
     return null;
   }
@@ -182,7 +180,6 @@ export async function getValidAccessToken(): Promise<string | null> {
   }
 
   // Try to refresh token
-  console.log('Token expired, attempting to refresh...');
   return await refreshAccessToken();
 }
 
@@ -196,6 +193,11 @@ export async function authenticatedFetch(
   const token = await getValidAccessToken();
 
   if (!token) {
+    // Token is completely invalid or expired - force logout
+    clearTokens();
+    if (typeof window !== 'undefined') {
+      window.location.href = '/';
+    }
     throw new Error('No valid access token available');
   }
 
@@ -208,12 +210,18 @@ export async function authenticatedFetch(
 
   // If unauthorized, try to refresh token once
   if (response.status === 401) {
-    console.log('Received 401, attempting token refresh...');
     const newToken = await refreshAccessToken();
 
     if (newToken) {
       headers.Authorization = `Bearer ${newToken}`;
       response = await fetch(url, { ...options, headers });
+    } else {
+      // Refresh failed - force logout
+      clearTokens();
+      if (typeof window !== 'undefined') {
+        alert('เซสชันของคุณหมดอายุแล้ว กรุณาเข้าสู่ระบบใหม่');
+        window.location.href = '/';
+      }
     }
   }
 
@@ -241,16 +249,13 @@ export function setupTokenRefreshTimer(callback?: () => void): () => void {
 
     // Refresh token 5 minutes before expiry
     if (timeUntilExpiry < 300 && timeUntilExpiry > 0) {
-      console.log('Token expiring soon, refreshing...');
       const newToken = await refreshAccessToken();
       
       if (!newToken) {
-        console.log('Failed to refresh token, logging out...');
         clearTokens();
         if (callback) callback();
       }
     } else if (timeUntilExpiry <= 0) {
-      console.log('Token expired, logging out...');
       clearTokens();
       if (callback) callback();
     }

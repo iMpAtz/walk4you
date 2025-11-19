@@ -126,7 +126,6 @@ export default function RegisterModal({ isOpen, onClose, onSwitchToLogin }: Regi
       if (!res.ok) throw new Error(data?.detail || 'สมัครสมาชิกไม่สำเร็จ');
       
       if (data?.access_token) localStorage.setItem('access_token', data.access_token);
-      console.log('[register] success', data);
       
       alert('✅ สมัครสมาชิกสำเร็จ!');
       onClose();

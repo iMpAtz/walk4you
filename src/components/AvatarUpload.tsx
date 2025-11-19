@@ -34,8 +34,6 @@ export default function AvatarUpload({ currentAvatar, onAvatarUpdate, username }
         : '/api/uploads/cloudinary-sign?type=avatar';
       const signatureResponse = await fetch(signatureUrl);
       const { timestamp, signature, apiKey, cloudName, folder } = await signatureResponse.json();
-      
-      console.log('Avatar upload folder:', folder); // Debug log
 
       // Create form data
       const formData = new FormData();
@@ -52,8 +50,6 @@ export default function AvatarUpload({ currentAvatar, onAvatarUpdate, username }
       });
 
       const uploadResult = await uploadResponse.json();
-      
-      console.log('Cloudinary upload result:', uploadResult); // Debug log
       
       if (uploadResult.secure_url) {
         // Update avatar in database
@@ -77,7 +73,6 @@ export default function AvatarUpload({ currentAvatar, onAvatarUpdate, username }
 
         if (updateResponse.ok) {
           const result = await updateResponse.json();
-          console.log('Avatar updated successfully:', result);
           alert('อัปโหลดรูปโปรไฟล์สำเร็จ ✓');
           onAvatarUpdate(uploadResult);
           setPreviewUrl(null);

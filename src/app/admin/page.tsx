@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import TopBar from '@/components/TopBar';
+import SuspendUserModal from '@/components/SuspendUserModal';
 import { 
   Shield, 
   AlertTriangle, 
@@ -19,6 +20,7 @@ import {
   Image
 } from 'lucide-react';
 import UserEditModal from '@/components/UserEditModal';
+import StoreStatusModal from '@/components/StoreStatusModal';
 import { config } from '@/lib/config';
 
 interface UserData {
@@ -31,6 +33,7 @@ interface UserData {
   storeCount: number;
   storeStatus?: string;
   status?: string;
+  statusReason?: string;
 }
 
 interface StoreData {
@@ -42,7 +45,11 @@ interface StoreData {
   buMail?: string;
   registerDate: string;
   status: string;
+  statusReason?: string;
 }
+
+type StoreStatus = 'ACTIVE' | 'INACTIVE' | 'BLOCKED';
+type RestrictableStoreStatus = Exclude<StoreStatus, 'ACTIVE'>;
 
 interface Report {
   id: string;
@@ -85,12 +92,21 @@ export default function AdminPage() {
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [editingUser, setEditingUser] = useState<UserData | null>(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [isStoreStatusModalOpen, setIsStoreStatusModalOpen] = useState(false);
+  const [storeStatusReason, setStoreStatusReason] = useState('');
+  const [pendingStore, setPendingStore] = useState<StoreData | null>(null);
+  const [storeTargetStatus, setStoreTargetStatus] = useState<RestrictableStoreStatus | null>(null);
+  const [isUpdatingStoreStatus, setIsUpdatingStoreStatus] = useState(false);
+  const [isSuspendModalOpen, setIsSuspendModalOpen] = useState(false);
+  const [userToSuspend, setUserToSuspend] = useState<UserData | null>(null);
+  const [suspendReason, setSuspendReason] = useState('');
+  const [isSuspending, setIsSuspending] = useState(false);
 
   useEffect(() => {
     const init = async () => {
       const token = localStorage.getItem('access_token');
       if (!token) {
-        router.push('/login');
+        router.push('/');
         return;
       }
 
@@ -100,7 +116,7 @@ export default function AdminPage() {
         });
 
         if (!userRes.ok) {
-          router.push('/login');
+          router.push('/');
           return;
         }
 
@@ -115,7 +131,7 @@ export default function AdminPage() {
         await Promise.all([fetchReports(token), fetchUsers(token), fetchStores(token)]);
       } catch (error) {
         console.error('Error initializing admin page:', error);
-        router.push('/login');
+        router.push('/');
       } finally {
         setLoading(false);
       }
@@ -166,6 +182,46 @@ export default function AdminPage() {
     }
   };
 
+  const handleStoreStatusChange = (store: StoreData, newStatus: StoreStatus) => {
+    if (newStatus === store.status) return;
+
+    if (newStatus === 'ACTIVE') {
+      const confirmed = confirm(`ต้องการเปิดใช้งานร้าน ${store.storeName} อีกครั้งหรือไม่?`);
+      if (!confirmed) return;
+      updateStoreStatus(store.id, newStatus);
+      return;
+    }
+
+    setPendingStore(store);
+    setStoreTargetStatus(newStatus as RestrictableStoreStatus);
+    setStoreStatusReason('');
+    setIsStoreStatusModalOpen(true);
+  };
+
+  const handleCloseStoreStatusModal = () => {
+    setIsStoreStatusModalOpen(false);
+    setStoreStatusReason('');
+    setPendingStore(null);
+    setStoreTargetStatus(null);
+  };
+
+  const handleConfirmStoreStatus = async () => {
+    if (!pendingStore || !storeTargetStatus) return;
+    const trimmed = storeStatusReason.trim();
+    if (trimmed.length < 10) {
+      alert('กรุณาระบุสาเหตุอย่างน้อย 10 อักขระ');
+      return;
+    }
+
+    setIsUpdatingStoreStatus(true);
+    try {
+      await updateStoreStatus(pendingStore.id, storeTargetStatus, trimmed);
+      handleCloseStoreStatusModal();
+    } finally {
+      setIsUpdatingStoreStatus(false);
+    }
+  };
+
   const updateReportStatus = async (reportId: string, newStatus: string) => {
     try {
       const token = localStorage.getItem('access_token');
@@ -193,7 +249,7 @@ export default function AdminPage() {
     }
   };
 
-  const updateStoreStatus = async (storeId: string, newStatus: string) => {
+  const updateStoreStatus = async (storeId: string, newStatus: string, reason?: string) => {
     try {
       const token = localStorage.getItem('access_token');
       if (!token) return;
@@ -204,7 +260,10 @@ export default function AdminPage() {
           Authorization: `Bearer ${token}`,
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ status: newStatus }),
+        body: JSON.stringify({
+          status: newStatus,
+          ...(reason ? { reason } : {}),
+        }),
       });
 
       if (res.ok) {
@@ -220,18 +279,15 @@ export default function AdminPage() {
     }
   };
 
-  const updateUserStatus = async (userId: string, newStatus: string) => {
+  const updateUserStatus = async (userId: string, newStatus: string, reason?: string) => {
     try {
       const token = localStorage.getItem('access_token');
       if (!token) return;
 
-      const confirmed = confirm(
-        newStatus === 'BANNED' 
-          ? 'คุณแน่ใจหรือไม่ที่จะแบนผู้ใช้นี้?' 
-          : 'คุณแน่ใจหรือไม่ที่จะปลดแบนผู้ใช้นี้?'
-      );
-      
-      if (!confirmed) return;
+      const payload: Record<string, string> = { status: newStatus };
+      if (typeof reason === 'string' && reason.trim().length > 0) {
+        payload.reason = reason.trim();
+      }
 
       const res = await fetch(`${config.apiBaseUrl}/admin/users/${userId}/status`, {
         method: 'PUT',
@@ -239,7 +295,7 @@ export default function AdminPage() {
           Authorization: `Bearer ${token}`,
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ status: newStatus }),
+        body: JSON.stringify(payload),
       });
 
       if (res.ok) {
@@ -253,6 +309,41 @@ export default function AdminPage() {
       console.error('Error updating user status:', error);
       alert('เกิดข้อผิดพลาดในการอัปเดต');
     }
+  };
+
+  const handleOpenSuspendModal = (user: UserData) => {
+    setUserToSuspend(user);
+    setSuspendReason('');
+    setIsSuspendModalOpen(true);
+  };
+
+  const handleCloseSuspendModal = () => {
+    setIsSuspendModalOpen(false);
+    setUserToSuspend(null);
+    setSuspendReason('');
+  };
+
+  const handleConfirmSuspend = async () => {
+    if (!userToSuspend) return;
+    const trimmedReason = suspendReason.trim();
+    if (trimmedReason.length < 10) {
+      alert('กรุณาระบุสาเหตุอย่างน้อย 10 ตัวอักษร');
+      return;
+    }
+
+    setIsSuspending(true);
+    try {
+      await updateUserStatus(userToSuspend.id, 'BANNED', trimmedReason);
+      handleCloseSuspendModal();
+    } finally {
+      setIsSuspending(false);
+    }
+  };
+
+  const handleReactivateUser = async (user: UserData) => {
+    const confirmed = confirm(`คุณต้องการปลดแบนผู้ใช้ ${user.username} หรือไม่?`);
+    if (!confirmed) return;
+    await updateUserStatus(user.id, 'ACTIVE');
   };
 
   const filteredReports = reports.filter((report) => {
@@ -327,7 +418,28 @@ export default function AdminPage() {
         />
       )}
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <SuspendUserModal
+        isOpen={isSuspendModalOpen}
+        user={userToSuspend}
+        reason={suspendReason}
+        loading={isSuspending}
+        onReasonChange={setSuspendReason}
+        onClose={handleCloseSuspendModal}
+        onConfirm={handleConfirmSuspend}
+      />
+
+      <StoreStatusModal
+        isOpen={isStoreStatusModalOpen}
+        store={pendingStore}
+        targetStatus={storeTargetStatus}
+        reason={storeStatusReason}
+        loading={isUpdatingStoreStatus}
+        onReasonChange={setStoreStatusReason}
+        onClose={handleCloseStoreStatusModal}
+        onConfirm={handleConfirmStoreStatus}
+      />
+
+      <div className="w-full max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-10 xl:px-12 py-8">
         <div className="flex flex-col lg:flex-row gap-6">
           {/* Sidebar */}
           <div className="lg:w-64">
@@ -363,10 +475,10 @@ export default function AdminPage() {
                     <AlertTriangle className={`w-5 h-5 ${activeTab === 'reports' ? 'text-white' : 'text-gray-600'}`} />
                   </div>
                   <div className="flex-1">
-                    <span className={`font-medium ${activeTab === 'reports' ? 'font-semibold' : 'text-gray-700 group-hover:text-gray-900'}`}>
+                    <span className={`font-medium ${activeTab === 'reports' ? '!text-white font-semibold' : 'text-gray-700 group-hover:text-gray-900'}`}>
                       รายงาน
                     </span>
-                    <div className="text-xs opacity-75">{reports.length} รายการ</div>
+                    <div className={`text-xs opacity-75 ${activeTab === 'reports' ? '!text-white' : 'text-gray-700 group-hover:text-gray-900'}`}>{reports.length} รายการ</div>
                   </div>
                 </button>
 
@@ -389,10 +501,10 @@ export default function AdminPage() {
                     <Users className={`w-5 h-5 ${activeTab === 'users' ? 'text-white' : 'text-gray-600'}`} />
                   </div>
                   <div className="flex-1">
-                    <span className={`font-medium ${activeTab === 'users' ? 'font-semibold' : 'text-gray-700 group-hover:text-gray-900'}`}>
+                    <span className={`font-medium ${activeTab === 'users' ? '!text-white font-semibold' : 'text-gray-700 group-hover:text-gray-900'}`}>
                       ผู้ใช้งาน
                     </span>
-                    <div className="text-xs opacity-75">{users.length} คน</div>
+                    <div className={`text-xs opacity-75 ${activeTab === 'users' ? '!text-white' : 'text-gray-700 group-hover:text-gray-900'}`}>{users.length} คน</div>
                   </div>
                 </button>
 
@@ -415,10 +527,11 @@ export default function AdminPage() {
                     <Store className={`w-5 h-5 ${activeTab === 'stores' ? 'text-white' : 'text-gray-600'}`} />
                   </div>
                   <div className="flex-1">
-                    <span className={`font-medium ${activeTab === 'stores' ? 'font-semibold' : 'text-gray-700 group-hover:text-gray-900'}`}>
+                    <span className={`font-medium ${activeTab === 'stores' ? '!text-white font-semibold' : 'text-gray-700 group-hover:text-gray-900'}`}>
                       ร้านค้า
                     </span>
-                    <div className="text-xs opacity-75">{stores.length} ร้าน</div>
+                    <div className={`text-xs opacity-75 ${activeTab === 'stores' ? '!text-white' : 'text-gray-700 group-hover:text-gray-900'}`}>
+                      {stores.length} ร้าน</div>
                   </div>
                 </button>
 
@@ -603,6 +716,11 @@ export default function AdminPage() {
                           }`}>
                             {user.status === 'BANNED' ? 'ถูกแบน' : 'ปกติ'}
                           </span>
+                          {user.status === 'BANNED' && user.statusReason && (
+                            <div className="text-xs text-red-500 mt-1 whitespace-pre-line">
+                              {user.statusReason}
+                            </div>
+                          )}
                         </td>
                         <td className="px-4 py-3 text-sm text-gray-600">{user.storeCount}</td>
                         <td className="px-4 py-3 text-sm text-gray-600">
@@ -612,21 +730,25 @@ export default function AdminPage() {
                           <div className="flex gap-2">
                             <button
                               onClick={() => handleEditUser(user)}
-                              className="px-3 py-1.5 text-xs font-medium rounded-lg bg-gradient-to-r from-[#0B44A3] to-[#1a5fd4] text-white hover:opacity-90 transition flex items-center gap-1 shadow-sm"
+                              className="px-3 py-1.5 text-xs  font-medium rounded-lg bg-gradient-to-r from-[#0B44A3] to-[#1a5fd4] !text-white hover:opacity-90 transition flex items-center gap-1 shadow-sm"
                             >
                               <Edit className="w-3 h-3" />
                               แก้ไข
                             </button>
                             {user.role !== 'ADMIN' && (
                               <button
-                                onClick={() => updateUserStatus(user.id, user.status === 'BANNED' ? 'ACTIVE' : 'BANNED')}
+                                onClick={() =>
+                                  user.status === 'BANNED'
+                                    ? handleReactivateUser(user)
+                                    : handleOpenSuspendModal(user)
+                                }
                                 className={`px-3 py-1.5 text-xs font-medium rounded-lg transition shadow-sm ${
                                   user.status === 'BANNED'
-                                    ? 'bg-gradient-to-r from-green-500 to-green-600 text-white hover:opacity-90'
-                                    : 'bg-gradient-to-r from-red-500 to-red-600 text-white hover:opacity-90'
+                                    ? 'bg-gradient-to-r from-green-500 to-green-600 !text-white hover:opacity-90'
+                                    : 'bg-gradient-to-r from-red-500 to-red-600 !text-white hover:opacity-90'
                                 }`}
                               >
-                                {user.status === 'BANNED' ? 'ปลดแบน' : 'แบน'}
+                                {user.status === 'BANNED' ? 'ปลดระงับการใช้งาน' : 'ระงับการใช้งาน'}
                               </button>
                             )}
                           </div>
@@ -676,11 +798,16 @@ export default function AdminPage() {
                             {store.status === 'INACTIVE' && 'ปิดใช้งาน'}
                             {store.status === 'BLOCKED' && 'ถูกบล็อก'}
                           </span>
+                          {store.status !== 'ACTIVE' && store.statusReason && (
+                            <div className="text-xs text-red-500 mt-1 whitespace-pre-line">
+                              {store.statusReason}
+                            </div>
+                          )}
                         </div>
                         <div className="flex gap-2">
                           <select
                             value={store.status}
-                            onChange={(e) => updateStoreStatus(store.id, e.target.value)}
+                            onChange={(e) => handleStoreStatusChange(store, e.target.value as StoreStatus)}
                             className="px-3 py-2 text-sm border-2 border-gray-200 rounded-lg focus:border-[#0B44A3] focus:ring-2 focus:ring-[#0B44A3] focus:ring-opacity-20 transition-all"
                           >
                             <option value="ACTIVE">เปิดใช้งาน</option>

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { 
@@ -9,6 +9,7 @@ import {
   Clipboard, 
   BarChart3,
   Package, 
+  AlertTriangle,
 } from 'lucide-react';
 import TopBar from '@/components/TopBar';
 import { Metadata } from 'next';
@@ -24,6 +25,7 @@ interface StoreData {
   status: string;
   qrUrl?: string | null;
   logoUrl?: string | null;
+  statusReason?: string | null;
 }
 
 interface UserData {
@@ -52,11 +54,6 @@ export default function StoreManagementLayout({ storeData, userData, onSave }: S
     if (storeData?.qrUrl) setQrPreview(storeData.qrUrl);
     if (storeData?.logoUrl) setLogoPreview(storeData.logoUrl);
   }, [storeData?.qrUrl, storeData?.logoUrl]);
-  // ...existing code...
-  const handleSave = async () => {
-    await onSave(formData);
-    setIsEditing(false);
-  };
   const router = useRouter();
   const [formData, setFormData] = useState({
     storeName: storeData?.storeName || '',
@@ -70,51 +67,81 @@ export default function StoreManagementLayout({ storeData, userData, onSave }: S
   const [logoFile, setLogoFile] = useState<File | null>(null);
   const [logoPreview, setLogoPreview] = useState<string | null>(storeData?.logoUrl || null);
   const [uploadingLogo, setUploadingLogo] = useState(false);
+  const [statusAlertOpen, setStatusAlertOpen] = useState(false);
+  const isStoreRestricted = storeData && (storeData.status === 'INACTIVE' || storeData.status === 'BLOCKED');
+  const isStoreBlocked = storeData?.status === 'BLOCKED';
+  const lastReasonRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    if (!isStoreRestricted) {
+      setStatusAlertOpen(false);
+      lastReasonRef.current = null;
+      return;
+    }
+
+    const currentReason = storeData?.statusReason ?? null;
+    if (lastReasonRef.current !== currentReason) {
+      lastReasonRef.current = currentReason;
+      setStatusAlertOpen(true);
+    }
+  }, [isStoreRestricted, storeData?.statusReason]);
+
+  useEffect(() => {
+    if (isStoreBlocked) {
+      setIsEditing(false);
+    }
+  }, [isStoreBlocked]);
 
   const handleInputChange = (field: string, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
+  const handleSave = async () => {
+    if (isStoreBlocked) {
+      alert('ร้านค้าถูกบล็อก ไม่สามารถแก้ไขข้อมูลได้');
+      return;
+    }
+    await onSave(formData);
+    setIsEditing(false);
+  };
+
   const handleQrChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (isStoreBlocked) {
+      alert('ร้านค้าถูกบล็อก ไม่สามารถเปลี่ยน QR ได้');
+      return;
+    }
     const file = e.target.files?.[0] || null;
-    console.log('📁 File selected:', { name: file?.name, size: file?.size, type: file?.type });
     setQrFile(file);
     if (file) {
       const preview = URL.createObjectURL(file);
-      console.log('👁️ Preview URL created:', preview);
       setQrTempPreview(preview); // Show temporary preview
     }
   };
 
   const handleUploadQr = async () => {
-    console.log('🔵 handleUploadQr called', { qrFile: !!qrFile, storeId: storeData?.id });
+    if (isStoreBlocked) {
+      alert('ร้านค้าถูกบล็อก ไม่สามารถอัปโหลด QR ได้');
+      return;
+    }
     if (!qrFile || !storeData?.id) {
-      console.log('❌ Upload blocked - missing qrFile or storeId');
       alert('กรุณาเลือกไฟล์ QR Code ก่อน');
       return;
     }
     setUploading(true);
     
     try {
-      console.log('Starting QR upload...', { fileName: qrFile.name, size: qrFile.size });
-      
       // 1. Get Cloudinary signature
       const signUrl = `/api/uploads/cloudinary-sign?folder=walk4you/qrcodes`;
-      console.log('Fetching signature from:', signUrl);
       
       const signRes = await fetch(signUrl, { method: 'GET' });
-      console.log('Signature response status:', signRes.status);
       
       if (!signRes.ok) {
-        const error = await signRes.text();
-        console.error('Failed to get signature:', error);
         alert('ไม่สามารถได้รับลายเซ็นจาก Cloudinary');
         setUploading(false);
         return;
       }
       
       const sig = await signRes.json();
-      console.log('Got signature, uploading to Cloudinary...');
       
       // 2. Upload to Cloudinary
       const form = new FormData();
@@ -130,7 +157,6 @@ export default function StoreManagementLayout({ storeData, userData, onSave }: S
       
       if (!uploadRes.ok) {
         const error = await uploadRes.json();
-        console.error('Cloudinary upload failed:', error);
         alert(`อัปโหลด QR ไม่สำเร็จ: ${error.error?.message || 'Unknown error'}`);
         setUploading(false);
         return;
@@ -138,7 +164,6 @@ export default function StoreManagementLayout({ storeData, userData, onSave }: S
       
       const data = await uploadRes.json();
       const qrUrl = data.secure_url;
-      console.log('Cloudinary upload successful:', qrUrl);
       
       // 3. Save QR URL to backend
       const token = localStorage.getItem('access_token');
@@ -148,7 +173,6 @@ export default function StoreManagementLayout({ storeData, userData, onSave }: S
         return;
       }
       
-      console.log('Saving QR URL to backend...', { storeId: storeData.id });
       const saveRes = await fetch(`${config.apiBaseUrl}/stores/${storeData.id}/qr`, {
         method: 'PUT',
         headers: {
@@ -158,20 +182,15 @@ export default function StoreManagementLayout({ storeData, userData, onSave }: S
         body: JSON.stringify({ qrUrl }),
       });
       
-      console.log('Save response status:', saveRes.status);
-      
       if (saveRes.ok) {
-        console.log('QR URL saved successfully');
         setQrPreview(qrUrl);
         setQrFile(null);
         alert('อัปโหลด QR สำเร็จ!');
       } else {
         const error = await saveRes.json();
-        console.error('Failed to save QR URL:', error);
         alert(`บันทึก QR URL ไม่สำเร็จ: ${error.detail || 'Unknown error'}`);
       }
     } catch (error) {
-      console.error('Error uploading QR:', error);
       alert(`เกิดข้อผิดพลาด: ${error instanceof Error ? error.message : 'Unknown error'}`);
     } finally {
       setUploading(false);
@@ -179,12 +198,20 @@ export default function StoreManagementLayout({ storeData, userData, onSave }: S
   };
 
   const handleRemoveQr = () => {
+    if (isStoreBlocked) {
+      alert('ร้านค้าถูกบล็อก ไม่สามารถลบ QR ได้');
+      return;
+    }
     setQrPreview(null);
     setQrFile(null);
     // TODO: call API to remove QR if needed
   };
 
   const handleLogoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (isStoreBlocked) {
+      alert('ร้านค้าถูกบล็อก ไม่สามารถเปลี่ยนโลโก้ได้');
+      return;
+    }
     const file = e.target.files?.[0] || null;
     setLogoFile(file);
     if (file) {
@@ -193,6 +220,10 @@ export default function StoreManagementLayout({ storeData, userData, onSave }: S
   };
 
   const handleUploadLogo = async () => {
+    if (isStoreBlocked) {
+      alert('ร้านค้าถูกบล็อก ไม่สามารถอัปโหลดโลโก้ได้');
+      return;
+    }
     if (!logoFile || !storeData?.id) {
       alert('กรุณาเลือกไฟล์โลโก้ก่อน');
       return;
@@ -271,13 +302,65 @@ export default function StoreManagementLayout({ storeData, userData, onSave }: S
   };
 
   const handleRemoveLogo = () => {
+    if (isStoreBlocked) {
+      alert('ร้านค้าถูกบล็อก ไม่สามารถลบโลโก้ได้');
+      return;
+    }
     setLogoPreview(null);
     setLogoFile(null);
+  };
+
+  const handleEditClick = () => {
+    if (isStoreBlocked) {
+      alert('ร้านค้าถูกบล็อก ไม่สามารถแก้ไขข้อมูลได้');
+      return;
+    }
+    setIsEditing(true);
+  };
+
+  const handleNavigateProducts = () => {
+    if (isStoreBlocked) {
+      alert('ร้านค้าถูกบล็อก ไม่สามารถเพิ่มหรือแก้ไขสินค้าได้');
+      return;
+    }
+    router.push('/store-management/products');
   };
 
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
+      {statusAlertOpen && storeData && isStoreRestricted && (
+        <div
+          className="fixed inset-0 z-[9998] flex items-center justify-center bg-black/40 backdrop-blur-sm px-4"
+          onClick={() => setStatusAlertOpen(false)}
+        >
+          <div
+            className="w-full max-w-md bg-white rounded-2xl shadow-2xl p-6 text-center"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-red-100 text-red-600 flex items-center justify-center">
+              <AlertTriangle className="w-8 h-8" />
+            </div>
+            <h2 className="text-2xl font-semibold text-gray-900 mb-2">
+              {storeData.status === 'BLOCKED' ? 'ร้านค้าถูกบล็อก' : 'ร้านค้าถูกปิดใช้งาน'}
+            </h2>
+            <p className="text-gray-600 mb-4">
+              ร้านค้าของคุณไม่สามารถให้บริการได้ในขณะนี้ โปรดตรวจสอบสาเหตุด้านล่าง
+            </p>
+            <div className="bg-red-50 border border-red-100 rounded-xl p-4 text-left text-sm text-red-700 whitespace-pre-line mb-6">
+              {storeData.statusReason || 'ผู้ดูแลระบบไม่ได้ระบุสาเหตุ'}
+            </div>
+            <button
+              type="button"
+              onClick={() => setStatusAlertOpen(false)}
+              className="w-full px-5 py-3 rounded-xl bg-gradient-to-r from-[#0B44A3] to-[#1a5fd4] !text-white font-semibold hover:opacity-90 transition"
+            >
+              รับทราบ
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Navbar */}
       <TopBar />
 
@@ -339,13 +422,22 @@ export default function StoreManagementLayout({ storeData, userData, onSave }: S
                 </button>
 
                 <button 
-                  onClick={() => router.push('/store-management/products')}
-                  className="w-full flex items-center gap-2 sm:gap-3 p-2 sm:p-3 text-left hover:bg-gray-50 rounded-lg transition-all group touch-manipulation min-h-[44px]"
+                  onClick={handleNavigateProducts}
+                  disabled={isStoreBlocked}
+                  className={`w-full flex items-center gap-2 sm:gap-3 p-2 sm:p-3 text-left rounded-lg transition-all group touch-manipulation min-h-[44px] ${
+                    isStoreBlocked ? 'opacity-60 cursor-not-allowed bg-gray-100' : 'hover:bg-gray-50'
+                  }`}
                 >
-                  <div className="w-8 h-8 sm:w-9 sm:h-9 bg-gray-100 group-hover:bg-gray-200 rounded-lg flex items-center justify-center transition-colors flex-shrink-0">
+                  <div className={`w-8 h-8 sm:w-9 sm:h-9 rounded-lg flex items-center justify-center transition-colors flex-shrink-0 ${
+                    isStoreBlocked ? 'bg-gray-100' : 'bg-gray-100 group-hover:bg-gray-200'
+                  }`}>
                     <Package className="w-4 h-4 sm:w-5 sm:h-5 text-gray-600" />
                   </div>
-                  <span className="font-medium text-gray-700 group-hover:text-gray-900 text-sm sm:text-base">สินค้าของฉัน</span>
+                  <span className={`font-medium text-sm sm:text-base ${
+                    isStoreBlocked ? 'text-gray-500' : 'text-gray-700 group-hover:text-gray-900'
+                  }`}>
+                    สินค้าของฉัน
+                  </span>
                 </button>
                 
                 <button 
@@ -364,6 +456,14 @@ export default function StoreManagementLayout({ storeData, userData, onSave }: S
           {/* Main Content */}
           <div className="flex-1">
             <div className="bg-white rounded-xl shadow-md border border-gray-200">
+              {isStoreRestricted && storeData && (
+                <div className="px-4 sm:px-6 md:px-8 py-4 bg-red-50 border-b border-red-100 text-sm text-red-700 whitespace-pre-line">
+                  <div className="font-semibold mb-1">
+                    {storeData.status === 'BLOCKED' ? 'ร้านค้าถูกบล็อก' : 'ร้านค้าถูกปิดใช้งาน'}
+                  </div>
+                  {storeData.statusReason || 'ผู้ดูแลระบบไม่ได้ระบุสาเหตุ'}
+                </div>
+              )}
               {/* Header */}
               <div className="px-4 sm:px-6 md:px-8 py-4 sm:py-5 md:py-6 border-b border-gray-200">
                 <h1 className="text-xl sm:text-2xl md:text-3xl font-bold bg-gradient-to-r from-[#0B44A3] to-[#1a5fd4] bg-clip-text text-transparent">ร้านค้าของฉัน</h1>
@@ -491,52 +591,69 @@ export default function StoreManagementLayout({ storeData, userData, onSave }: S
                     </div>
                   </div>
 
-                  {/* QR PromptPay Upload */}
-                  <div>
-                    <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-2">
-                      ช่องทางชำระเงิน QR PromptPay
-                    </label>
-                    <div className="flex items-center gap-4">
-                      {qrPreview ? (
-                        <div className="flex flex-col items-start gap-3">
-                          <div className="relative">
-                            <Image src={qrPreview} alt="QR PromptPay" width={96} height={96} className="rounded border" />
-                          </div>
+                {/* QR PromptPay Upload */}
+                <div>
+                  <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-2">
+                    ช่องทางชำระเงิน QR PromptPay
+                  </label>
+                  <div className="flex items-center gap-4">
+                    {qrPreview ? (
+                      <div className="flex flex-col items-start gap-3">
+                        <div className="relative">
+                          <Image src={qrPreview} alt="QR PromptPay" width={120} height={120} className="rounded border" />
                           {isEditing && (
                             <button
                               type="button"
-                              onClick={() => {
-                                setQrPreview(null);
-                                setQrFile(null);
-                              }}
-                              className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 text-sm"
+                              onClick={handleRemoveQr}
+                              className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center shadow"
                             >
-                              เปลี่ยน QR Code
+                              ×
                             </button>
                           )}
                         </div>
-                      ) : (
-                        <div className="w-24 h-24 bg-gray-100 rounded flex items-center justify-center text-gray-400 border">
-                          ไม่มี QR
-                        </div>
-                      )}
-                    </div>
-                    {isEditing && !qrPreview && (
-                      <div className="mt-3">
-                        <input type="file" accept="image/*" onChange={handleQrChange} className="mb-2" title="เลือกไฟล์ QR Code" />
-                        {qrFile && (
+                        <p className="text-xs text-gray-500">แสดง QR นี้ให้ลูกค้าเมื่อเลือกชำระเงินแบบโอน</p>
+                        {isEditing && (
                           <button
                             type="button"
-                            onClick={handleUploadQr}
-                            disabled={uploading}
-                            className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700"
+                            onClick={handleRemoveQr}
+                            className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 text-sm"
                           >
-                            {uploading ? 'กำลังอัปโหลด...' : 'อัปโหลด QR Code'}
+                            เปลี่ยน QR Code
                           </button>
                         )}
                       </div>
+                    ) : (
+                      <div className="w-24 h-24 bg-gray-100 rounded flex items-center justify-center text-gray-400 border">
+                        ไม่มี QR
+                      </div>
                     )}
                   </div>
+                  {isEditing && !qrPreview && (
+                    <div className="mt-3 space-y-2">
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={handleQrChange}
+                        className="w-full border border-dashed border-gray-300 rounded px-3 py-2 text-sm"
+                        title="เลือกไฟล์ QR Code"
+                      />
+                      {qrFile && (
+                        <button
+                          type="button"
+                          onClick={handleUploadQr}
+                          disabled={uploading}
+                          className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700"
+                        >
+                          {uploading ? 'กำลังอัปโหลด...' : 'อัปโหลด QR Code'}
+                        </button>
+                      )}
+                      <p className="text-xs text-gray-500">
+                        อัปโหลดไฟล์ JPG หรือ PNG ขนาดไม่เกิน 5MB
+                      </p>
+                    </div>
+                  )}
+                </div>
+
                 </div>
 
                 {/* Action Buttons */}
@@ -558,8 +675,13 @@ export default function StoreManagementLayout({ storeData, userData, onSave }: S
                     </div>
                   ) : (
                     <button
-                      onClick={() => setIsEditing(true)}
-                      className="w-full sm:w-auto px-4 sm:px-6 py-2.5 sm:py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors text-sm sm:text-base min-h-[44px] touch-manipulation"
+                      onClick={handleEditClick}
+                      disabled={isStoreBlocked}
+                      className={`w-full sm:w-auto px-4 sm:px-6 py-2.5 sm:py-2 rounded-lg text-sm sm:text-base min-h-[44px] touch-manipulation ${
+                        isStoreBlocked
+                          ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                          : 'bg-gray-600 text-white hover:bg-gray-700 transition-colors'
+                      }`}
                     >
                       แก้ไข
                     </button>
