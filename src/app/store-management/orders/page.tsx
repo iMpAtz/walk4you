@@ -34,6 +34,10 @@ interface Order {
   shippingAddress?: string;
   phoneNumber?: string;
   notes?: string;
+  selection?: {
+    selectedShipping?: Record<string, string>;
+    selectedPayment?: Record<string, string>;
+  };
   paymentProofUrl?: string;
   createdAt?: string;
   updatedAt?: string;
@@ -42,22 +46,30 @@ interface Order {
   shippingId?: string;
 }
 
-// Helper function to get customer's selected delivery method from notes
+// Helper function to get customer's selected delivery method from selection field
 const getCustomerDeliveryMethod = (order: Order): string => {
-  if (!order.notes) return '—';
+  // First try to get from selection field (direct)
+  const selectedShipping = order.selection?.selectedShipping?.[order.storeId];
   
-  try {
-    const parsed = JSON.parse(order.notes);
-    const selectedShipping = parsed?.selection?.selectedShipping?.[order.storeId];
-    
-    if (selectedShipping === 'post') return 'ส่งไปรษณีย์';
-    if (selectedShipping === 'meet') return 'นัดรับ';
-    if (selectedShipping) return selectedShipping; // Return custom method if exists
-    return '—';
-  } catch {
-    // If notes is not JSON, try to get from order.notes directly
-    return '—';
+  if (selectedShipping === 'post') return 'ส่งไปรษณีย์';
+  if (selectedShipping === 'meet') return 'นัดรับ';
+  if (selectedShipping) return selectedShipping;
+  
+  // Fallback: try to parse from notes if selection field is not available (for old orders)
+  if (order.notes) {
+    try {
+      const parsed = JSON.parse(order.notes);
+      const notesShipping = parsed?.selection?.selectedShipping?.[order.storeId];
+      
+      if (notesShipping === 'post') return 'ส่งไปรษณีย์';
+      if (notesShipping === 'meet') return 'นัดรับ';
+      if (notesShipping) return notesShipping;
+    } catch (error) {
+      console.error('[getCustomerDeliveryMethod] Failed to parse notes:', error);
+    }
   }
+  
+  return '—';
 };
 
 interface UserData {

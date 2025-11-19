@@ -217,7 +217,7 @@ export default function ProductEditModal({ isOpen, onClose, product, onUpdate }:
             {/* Shipping Cost */}
             <div>
               <label htmlFor="shippingCost" className="block text-sm font-medium text-gray-700 mb-1">
-                ค่าจัดส่ง (บาท) - ไปรศนีย์
+                ค่าจัดส่ง (บาท)
               </label>
               <input
                 type="number"

@@ -120,11 +120,6 @@ export default function CheckoutConfirmPage() {
     await submitOrder(null);
   };
 
-  const handleProofChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const f = e.target.files?.[0] || null;
-    setProofFile(f);
-  };
-
   const handleStoreProofChange = (storeId: string, e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0] || null;
     if (file) {
@@ -220,6 +215,11 @@ export default function CheckoutConfirmPage() {
             selection: selection,
             notes: ''
           };
+
+          console.log('[submitOrder] Sending order for store:', store.storeId);
+          console.log('[submitOrder] Body:', JSON.stringify(body, null, 2));
+          console.log('[submitOrder] Selection:', selection);
+          console.log('[submitOrder] selectedShipping:', selection?.selectedShipping);
 
           const res = await fetch(`${config.apiBaseUrl}/orders`, {
             method: 'POST',

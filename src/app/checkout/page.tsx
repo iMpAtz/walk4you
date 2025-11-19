@@ -148,6 +148,7 @@ export default function CheckoutPage() {
 
   // Calculate overall total with all shipping
   const getTotalWithShipping = () => {
+    if (!checkoutData) return 0;
     let total = checkoutData.totalAmount;
     checkoutData.stores.forEach(store => {
       total += calculateStoreShipping(store);

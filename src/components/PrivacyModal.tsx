@@ -141,7 +141,6 @@ export default function PrivacyModal({ isOpen, onClose, onAccept }: PrivacyModal
                 ท่านมีสิทธิ์ในการเข้าถึง, แก้ไข, หรือร้องขอให้ลบข้อมูลส่วนบุคคลของท่าน (ภายใต้ข้อจำกัดของกฎหมายและข้อกำหนดของแพลตฟอร์ม) ท่านสามารถดำเนินการได้ผ่านหน้าตั้งค่าบัญชี หรือติดต่อเราโดยตรง
               </p>
             </div>
-
             {/* Section 7 */}
             <div>
               <h2 className="text-xl font-bold text-[#0B44A3] mb-3">7. การเปลี่ยนแปลงนโยบาย</h2>

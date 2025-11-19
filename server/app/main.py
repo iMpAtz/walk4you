@@ -2377,6 +2377,7 @@ async def get_orders_for_store(current_user: dict = Depends(get_current_user), d
                 "shippingAddress": o.get("shippingAddress"),
                 "phoneNumber": o.get("phoneNumber"),
                 "notes": o.get("notes"),
+                "selection": o.get("selection"),
                 "paymentProofUrl": o.get("paymentProofUrl"),
                 "shippingMethod": o.get("shippingMethod"),
                 "shippingCarrier": o.get("shippingCarrier"),
