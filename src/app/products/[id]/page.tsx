@@ -706,7 +706,7 @@ export default function ProductPage() {
                     {item.category && (
                       <p className="text-xs text-[#0B44A3] mb-2">{item.category}</p>
                     )}
-                    <p className="text-lg font-bold text-green-700">
+                    <p className="text-lg font-bold text-[#0B44A3]">
                       {(item.price || 0).toLocaleString("th-TH", { style: "currency", currency: "THB" })}
                     </p>
                   </div>
