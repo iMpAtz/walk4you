@@ -133,54 +133,56 @@ export default function TopBar() {
   return (
     <>
       {/* Navbar */}
-      <nav className="bg-[#0B44A3] border-b border-[#093782] px-6 lg:px-8 py-4 shadow-sm sticky top-0 z-50 backdrop-blur-lg bg-opacity-95">
-        <div className="max-w-7xl mx-auto flex justify-between items-center">
-          <div className="flex flex-col">
+      <nav className="bg-[#0B44A3] border-b border-[#093782] px-3 sm:px-4 md:px-6 lg:px-8 py-3 sm:py-4 shadow-sm sticky top-0 z-50 backdrop-blur-lg bg-opacity-95">
+        <div className="max-w-7xl mx-auto flex justify-between items-center gap-2 sm:gap-4">
+          <div className="flex flex-col min-w-0 flex-1">
             <Link 
               href="/" 
-              className="text-2xl lg:text-3xl font-bold text-white hover:opacity-80 transition cursor-pointer"
+              className="text-xl sm:text-2xl lg:text-3xl font-bold text-white hover:opacity-80 transition cursor-pointer leading-tight"
             >
               Walk4You
             </Link>
-            <p className="text-white text-xs lg:text-sm">เว็บไชต์ซื้อขายสำหรับนักศึกษามหาวิทยาลัยกรุงเทพ</p>
+            <p className="text-white text-[10px] sm:text-xs lg:text-sm leading-tight">
+              เว็บไชต์ซื้อขายสำหรับนักศึกษามหาวิทยาลัยกรุงเทพ
+            </p>
           </div>
-          <div className="flex items-center gap-3 lg:gap-6">
+          <div className="flex items-center gap-1.5 sm:gap-2 md:gap-3 lg:gap-6 flex-shrink-0">
             {hasToken && (
               <>
                 <NotificationBell />
                 <CartIcon />
                 <div 
                   onClick={() => setIsSidebarOpen(true)}
-                  className="flex items-center gap-2 lg:gap-3 px-3 lg:px-4 py-2 hover:bg-[#093782] rounded-full transition cursor-pointer"
+                  className="flex items-center gap-1.5 sm:gap-2 lg:gap-3 px-2 sm:px-3 lg:px-4 py-1.5 sm:py-2 hover:bg-[#093782] rounded-full transition cursor-pointer"
                 >
                   {userProfile?.avatar?.secure_url || userProfile?.avatar?.url ? (
                     <img
                       src={userProfile.avatar.secure_url || userProfile.avatar.url}
                       alt={userProfile.username}
-                      className="w-8 h-8 rounded-full object-cover"
+                      className="w-7 h-7 sm:w-8 sm:h-8 rounded-full object-cover flex-shrink-0"
                     />
                   ) : (
-                    <div className="w-8 h-8 bg-white rounded-full flex items-center justify-center">
-                      <User className="w-5 h-5 text-[#0B44A3]" />
+                    <div className="w-7 h-7 sm:w-8 sm:h-8 bg-white rounded-full flex items-center justify-center flex-shrink-0">
+                      <User className="w-4 h-4 sm:w-5 sm:h-5 text-[#0B44A3]" />
                     </div>
                   )}
-                  <span className="hidden sm:block font-medium text-white">
+                  <span className="hidden md:block font-medium text-white text-sm lg:text-base truncate max-w-[100px] lg:max-w-none">
                     {userProfile?.username || '...'}
                   </span>
                 </div>
               </>
             )}
             {!hasToken && (
-              <div className="flex items-center gap-4">
+              <div className="flex items-center gap-2 sm:gap-3 md:gap-4">
                 <button 
                   onClick={() => setShowLoginModal(true)}
-                  className="rounded bg-white px-4 py-2 text-[#0B44A3] font-semibold hover:bg-gray-100 transition-colors"
+                  className="rounded bg-white px-3 sm:px-4 py-1.5 sm:py-2 text-[#0B44A3] font-semibold text-sm sm:text-base hover:bg-gray-100 transition-colors whitespace-nowrap"
                 >
                   Login
                 </button>
                 <button 
                   onClick={() => setShowRegisterModal(true)}
-                  className="text-white underline hover:no-underline transition-all"
+                  className="text-white underline hover:no-underline transition-all text-sm sm:text-base whitespace-nowrap"
                 >
                   Register
                 </button>

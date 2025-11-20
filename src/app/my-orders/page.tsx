@@ -53,7 +53,7 @@ export default function MyOrdersPage() {
     const init = async () => {
       const token = localStorage.getItem('access_token');
       if (!token) {
-        router.push('/login');
+        router.push('/');
         return;
       }
       setHasToken(true);
@@ -168,7 +168,7 @@ export default function MyOrdersPage() {
                       <div>Shipping ID: {order.shippingId || '—'}</div>
                     </div>
 
-                    {order.status !== 'COMPLETED' && order.status !== 'CANCELLED' && (
+                    {order.status !== 'COMPLETED' && order.status !== 'CANCELLED' && order.status !== 'REJECTED' && order.status !== 'PENDING' && (
                       <div className="mt-4">
                         <button
                           onClick={() => confirmReceived(order.id)}
