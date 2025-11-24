@@ -1473,7 +1473,7 @@ async def get_store_dashboard(
         
         logger.info(f"Store {store_id} - Found {len(orders_with_store_items)} orders with store items")
         
-        for order in sorted(orders_with_store_items, key=lambda x: x.get("updatedAt") or x.get("orderDate", datetime.min), reverse=True)[:5]:
+        for order in sorted(orders_with_store_items, key=lambda x: x.get("updatedAt") or x.get("orderDate", datetime.min), reverse=True)[:20]:
             store_items = []
             for item in order.get("items", []):
                 if is_product_in_store(item.get("productId"), product_ids, product_ids_str):
