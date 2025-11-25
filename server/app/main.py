@@ -11,6 +11,8 @@ import secrets
 import base64
 import json
 from bson import ObjectId
+from pymongo.errors import OperationFailure
+from pymongo.errors import OperationFailure
 import logging
 import httpx
 from ultralytics import YOLO
@@ -80,25 +82,129 @@ async def startup_event() -> None:
     db = mongo_client[MONGODB_DB]
     
     # Create indexes for better performance
+
     try:
+
         # Product indexes
-        await db.Product.create_index([("status", 1)])
-        await db.Product.create_index([("storeId", 1), ("status", 1)])
-        await db.Product.create_index([("name", "text"), ("description", "text"), ("category", "text")])
-        await db.Product.create_index([("category", 1), ("status", 1)])
-        await db.Product.create_index([("createdAt", -1)])
+
+        try:
+
+            await db.Product.create_index([("status", 1)])
+
+        except OperationFailure as e:
+
+            if e.code != 85:  # 85 = IndexOptionsConflict
+
+                raise
+
         
+
+        try:
+
+            await db.Product.create_index([("storeId", 1), ("status", 1)])
+
+        except OperationFailure as e:
+
+            if e.code != 85:
+
+                raise
+
+        
+
+        try:
+
+            await db.Product.create_index([("name", "text"), ("description", "text"), ("category", "text")])
+
+        except OperationFailure as e:
+
+            if e.code != 85:
+
+                raise
+
+        
+
+        try:
+
+            await db.Product.create_index([("category", 1), ("status", 1)])
+
+        except OperationFailure as e:
+
+            if e.code != 85:
+
+                raise
+
+        
+
+        try:
+
+            await db.Product.create_index([("createdAt", -1)])
+
+        except OperationFailure as e:
+
+            if e.code != 85:
+
+                raise
+
+        
+
         # Store indexes
-        await db.Store.create_index([("ownerId", 1)])
-        await db.Store.create_index([("status", 1)])
+
+        try:
+
+            await db.Store.create_index([("ownerId", 1)])
+
+        except OperationFailure as e:
+
+            if e.code != 85:
+
+                raise
+
         
+
+        try:
+
+            await db.Store.create_index([("status", 1)])
+
+        except OperationFailure as e:
+
+            if e.code != 85:
+
+                raise
+
+        
+
         # User indexes
-        await db.User.create_index([("username", 1)], unique=True)
-        await db.User.create_index([("email", 1)], unique=True)
+
+        try:
+
+            await db.User.create_index([("username", 1)], unique=True)
+
+        except OperationFailure as e:
+
+            if e.code != 85:
+
+                raise
+
         
+
+        try:
+
+            await db.User.create_index([("email", 1)], unique=True)
+
+        except OperationFailure as e:
+
+            if e.code != 85:
+
+                raise
+
+        
+
         logger.info("Database indexes created successfully")
+
     except Exception as e:
+
         logger.error(f"Error creating indexes: {e}")
+
 
 
 @app.on_event("shutdown")
@@ -1018,6 +1124,7 @@ import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 import os
+import asyncio
 
 class OTPRequest(BaseModel):
     email: str
@@ -1033,18 +1140,28 @@ def generate_otp():
     """Generate 6-digit OTP"""
     return str(random.randint(100000, 999999))
 
-def send_email_otp(email: str, otp: str):
-    """Send OTP via email"""
+def _send_email_otp_sync(email: str, otp: str):
+    """Send OTP via email (synchronous function to be run in thread)"""
     try:
         # Email configuration (you should use environment variables)
         smtp_server = os.getenv("SMTP_SERVER")
-        smtp_port = int(os.getenv("SMTP_PORT"))
+        smtp_port_str = os.getenv("SMTP_PORT", "587")
         smtp_username = os.getenv("SMTP_USERNAME")
         smtp_password = os.getenv("SMTP_PASSWORD")
         
+        if not smtp_server or not smtp_port_str:
+            logger.warning("SMTP server or port not configured")
+            return False
+        
         if not smtp_username or not smtp_password:
-            print("SMTP credentials not configured, using mock email")
+            logger.warning("SMTP credentials not configured, using mock email")
             return True
+        
+        try:
+            smtp_port = int(smtp_port_str)
+        except ValueError:
+            logger.error(f"Invalid SMTP_PORT value: {smtp_port_str}")
+            return False
         
         # Create message
         msg = MIMEMultipart()
@@ -1068,17 +1185,41 @@ def send_email_otp(email: str, otp: str):
         
         msg.attach(MIMEText(body, 'html'))
         
-        # Send email
-        server = smtplib.SMTP(smtp_server, smtp_port)
-        server.starttls()
-        server.login(smtp_username, smtp_password)
-        text = msg.as_string()
-        server.sendmail(smtp_username, email, text)
-        server.quit()
+        # Send email with proper connection handling
+        server = None
+        try:
+            server = smtplib.SMTP(smtp_server, smtp_port, timeout=10)
+            server.starttls()
+            server.login(smtp_username, smtp_password)
+            text = msg.as_string()
+            server.sendmail(smtp_username, email, text)
+            logger.info(f"OTP email sent successfully to {email}")
+            return True
+        except smtplib.SMTPException as e:
+            logger.error(f"SMTP error while sending email: {e}")
+            return False
+        except Exception as e:
+            logger.error(f"Unexpected error while sending email: {e}")
+            return False
+        finally:
+            if server:
+                try:
+                    server.quit()
+                except Exception as e:
+                    logger.warning(f"Error closing SMTP connection: {e}")
         
-        return True
     except Exception as e:
-        print(f"Email sending failed: {e}")
+        logger.error(f"Email sending failed: {e}")
+        return False
+
+async def send_email_otp(email: str, otp: str):
+    """Send OTP via email (async wrapper)"""
+    try:
+        # Run the blocking SMTP code in a thread pool to avoid blocking the event loop
+        result = await asyncio.to_thread(_send_email_otp_sync, email, otp)
+        return result
+    except Exception as e:
+        logger.error(f"Error in async email sending: {e}")
         return False
 
 @app.post("/auth/send-otp")
@@ -1105,7 +1246,7 @@ async def send_otp(request: OTPRequest):
     }
     
     # Send email
-    email_sent = send_email_otp(email, otp)
+    email_sent = await send_email_otp(email, otp)
     
     if email_sent:
         return {
