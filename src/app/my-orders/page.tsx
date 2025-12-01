@@ -3,9 +3,11 @@
 import { useEffect, useState } from 'react';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
+import { Flag } from 'lucide-react';
 import NotificationBell from '@/components/NotificationBell';
 import CartIcon from '@/components/CartIcon';
 import TopBar from '@/components/TopBar';
+import OrderReportModal from '@/components/OrderReportModal';
 import { config } from '@/lib/config';
 
 interface OrderItem {
@@ -26,6 +28,10 @@ interface Order {
   shippingAddress?: string;
   phoneNumber?: string;
   notes?: string;
+  selection?: {
+    selectedShipping?: Record<string, string>;
+    selectedPayment?: Record<string, string>;
+  };
   paymentProofUrl?: string;
   shippingMethod?: string;
   shippingCarrier?: string;
@@ -33,6 +39,31 @@ interface Order {
   createdAt?: string;
   updatedAt?: string;
 }
+
+// Helper function to get customer's selected delivery method
+const getCustomerDeliveryMethod = (order: Order): string => {
+  const selectedShipping = order.selection?.selectedShipping?.[order.storeId];
+  
+  if (selectedShipping === 'post') return 'ส่งไปรษณีย์';
+  if (selectedShipping === 'meet') return 'นัดรับ';
+  if (selectedShipping) return selectedShipping;
+  
+  // Fallback: try to parse from notes
+  if (order.notes) {
+    try {
+      const parsed = JSON.parse(order.notes);
+      const notesShipping = parsed?.selection?.selectedShipping?.[order.storeId];
+      
+      if (notesShipping === 'post') return 'ส่งไปรษณีย์';
+      if (notesShipping === 'meet') return 'นัดรับ';
+      if (notesShipping) return notesShipping;
+    } catch (error) {
+      // Ignore parse errors
+    }
+  }
+  
+  return '—';
+};
 
 interface UserData {
   id: string;
@@ -48,6 +79,7 @@ export default function MyOrdersPage() {
   const [userData, setUserData] = useState<UserData | null>(null);
   const [loading, setLoading] = useState(true);
   const [hasToken, setHasToken] = useState(false);
+  const [reportModal, setReportModal] = useState<string | null>(null);
 
   useEffect(() => {
     const init = async () => {
@@ -107,6 +139,41 @@ export default function MyOrdersPage() {
     }
   };
 
+  const submitReport = async (reason: string, details: string) => {
+    if (!reportModal) return;
+
+    const token = localStorage.getItem('access_token');
+    if (!token) return;
+
+    // Get the order to find the storeId
+    const order = orders.find(o => o.id === reportModal);
+    if (!order) {
+      alert('ไม่พบข้อมูลคำสั่งซื้อ');
+      throw new Error('Order not found');
+    }
+
+    const res = await fetch(`${config.apiBaseUrl}/reports`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        targetStoreId: order.storeId,
+        reportType: reason,
+        description: details.trim() || undefined
+      })
+    });
+
+    if (res.ok) {
+      alert('รายงานของคุณถูกส่งเรียบร้อยแล้ว ทีมงานจะตรวจสอบและดำเนินการต่อไป');
+    } else {
+      const error = await res.json().catch(() => ({}));
+      alert(error.detail || 'เกิดข้อผิดพลาดในการส่งรายงาน');
+      throw new Error('Report submission failed');
+    }
+  };
+
   if (!hasToken || loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -160,24 +227,84 @@ export default function MyOrdersPage() {
                       </div>
                     )}
 
-                    <div className="mt-3 text-sm text-gray-700">
-                      <div>ที่อยู่จัดส่ง: {order.shippingAddress || '—'}</div>
-                      <div>เบอร์โทร: {order.phoneNumber || '—'}</div>
-                      <div className="mt-1">รูปแบบการจัดส่ง: {order.shippingMethod || '—'}</div>
-                      <div>ชื่อขนส่ง: {order.shippingCarrier || '—'}</div>
-                      <div>Shipping ID: {order.shippingId || '—'}</div>
+                    {/* Customer's selected delivery method */}
+                    <div className="mt-3 bg-purple-50 rounded-lg p-3 border-l-4 border-purple-500">
+                      <div className="text-xs font-semibold text-gray-700 mb-1">วิธีจัดส่งที่เลือก</div>
+                      <div className="text-sm text-purple-700 font-medium">{getCustomerDeliveryMethod(order)}</div>
                     </div>
 
-                    {order.status !== 'COMPLETED' && order.status !== 'CANCELLED' && order.status !== 'REJECTED' && order.status !== 'PENDING' && (
-                      <div className="mt-4">
+                    {/* Shipping/Pickup information from seller */}
+                    {(() => {
+                      const customerDeliveryMethod = getCustomerDeliveryMethod(order);
+                      const isPickup = customerDeliveryMethod === 'นัดรับ';
+                      
+                      return (
+                    <div className="mt-3 text-sm text-gray-700 bg-blue-50 rounded-lg p-3 border border-blue-200">
+                      <div className="font-semibold text-gray-900 mb-2">
+                        {isPickup ? 'ข้อมูลการนัดรับจากผู้ขาย' : 'ข้อมูลการจัดส่งจากผู้ขาย'}
+                      </div>
+                      {isPickup ? (
+                        <>
+                          <div className="mb-1">
+                            <span className="text-gray-600">เบอร์โทรศัพท์ติดต่อ:</span>{' '}
+                            <span className="font-medium">{order.shippingCarrier || '—'}</span>
+                          </div>
+                          <div>
+                            <span className="text-gray-600">สถานที่นัดรับ:</span>{' '}
+                            <span className="font-medium">{order.shippingId || '—'}</span>
+                          </div>
+                        </>
+                      ) : (
+                        <>
+                          <div className="mb-1">
+                            <span className="text-gray-600">รูปแบบการจัดส่ง:</span>{' '}
+                            <span className="font-medium">{order.shippingMethod || '—'}</span>
+                          </div>
+                          <div className="mb-1">
+                            <span className="text-gray-600">ชื่อขนส่ง:</span>{' '}
+                            <span className="font-medium">{order.shippingCarrier || '—'}</span>
+                          </div>
+                          <div>
+                            <span className="text-gray-600">Tracking No.:</span>{' '}
+                            <span className="font-medium break-all">{order.shippingId || '—'}</span>
+                          </div>
+                        </>
+                      )}
+                    </div>
+                      );
+                    })()}
+
+                    {/* Shipping address */}
+                    <div className="mt-3 text-sm text-gray-700 bg-gray-50 rounded-lg p-3">
+                      <div className="mb-1">
+                        <span className="text-gray-600">ที่อยู่จัดส่ง:</span>{' '}
+                        <span className="font-medium">{order.shippingAddress || '—'}</span>
+                      </div>
+                      <div>
+                        <span className="text-gray-600">เบอร์โทร:</span>{' '}
+                        <span className="font-medium">{order.phoneNumber || '—'}</span>
+                      </div>
+                    </div>
+
+                    <div className="mt-4 flex flex-wrap gap-2">
+                      {order.status !== 'COMPLETED' && order.status !== 'CANCELLED' && order.status !== 'REJECTED' && order.status !== 'PENDING' && (
                         <button
                           onClick={() => confirmReceived(order.id)}
-                          className="px-4 py-2 bg-[#0B44A3] text-white rounded-lg hover:bg-[#093782]"
+                          className="px-4 py-2 bg-[#0B44A3] text-white rounded-lg hover:bg-[#093782] transition-colors"
                         >
                           ยืนยันได้รับสินค้า
                         </button>
-                      </div>
-                    )}
+                      )}
+                      {order.status !== 'PENDING' && order.status !== 'CANCELLED' && (
+                        <button
+                          onClick={() => setReportModal(order.id)}
+                          className="px-4 py-2 border-2 border-red-500 text-red-600 rounded-lg hover:bg-red-50 transition-colors flex items-center gap-2"
+                        >
+                          <Flag className="w-4 h-4" />
+                          รายงานปัญหา
+                        </button>
+                      )}
+                    </div>
                   </div>
                 ))}
               </div>
@@ -185,6 +312,14 @@ export default function MyOrdersPage() {
           </div>
         </div>
       </div>
+
+      {/* Report Modal */}
+      <OrderReportModal
+        isOpen={!!reportModal}
+        onClose={() => setReportModal(null)}
+        order={orders.find(o => o.id === reportModal) || null}
+        onSubmit={submitReport}
+      />
     </div>
   );
 }

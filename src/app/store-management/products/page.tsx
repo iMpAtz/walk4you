@@ -19,6 +19,7 @@ import {
 } from 'lucide-react';
 import ProductFormModal from '@/components/ProductFormModal';
 import ProductEditModal from '@/components/ProductEditModal';
+import DetectionAlertModal from '@/components/DetectionAlertModal';
 import TopBar from '@/components/TopBar';
 import { config } from '@/lib/config';
 
@@ -73,6 +74,9 @@ export default function MyProductsPage() {
   const [deletingProductId, setDeletingProductId] = useState<string | null>(null);
   const [editingPriceId, setEditingPriceId] = useState<string | null>(null);
   const [tempPrice, setTempPrice] = useState<string>('');
+  const [showDetectionModal, setShowDetectionModal] = useState(false);
+  const [detectedItem, setDetectedItem] = useState<{ class: string; confidence: number } | null>(null);
+  const [pendingFormData, setPendingFormData] = useState<ProductFormData | null>(null);
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -224,6 +228,25 @@ export default function MyProductsPage() {
         const errorData = await response.json();
         const errorMessage = errorData.detail || 'ไม่สามารถเพิ่มสินค้านี้ได้';
         
+        // Check if there's detection data in the error
+        if (errorData.detected_items && errorData.detected_items.length > 0) {
+          // Find the item with highest confidence
+          const bestPrediction = errorData.detected_items.reduce((max: any, item: any) => 
+            item.confidence > max.confidence ? item : max
+          );
+          
+          // Show modal if confidence > 0.8 and modal not already open
+          if (bestPrediction.confidence > 0.8 && !showDetectionModal) {
+            setDetectedItem({
+              class: bestPrediction.class,
+              confidence: bestPrediction.confidence
+            });
+            setPendingFormData(formData);
+            setShowDetectionModal(true);
+            return; // Don't show alert, let modal handle it
+          }
+        }
+        
         // Show popup for illegal product
         if (errorMessage.includes('ตรวจพบสินค้าที่ผิดกฎหมาย')) {
           alert('🚫 ตรวจพบสินค้าที่ผิดกฎหมาย\n\nระบบได้ตรวจจับและป้องกันการขายสินค้าผิดกฎหมายอัตโนมัติ');
@@ -289,6 +312,24 @@ export default function MyProductsPage() {
         // Handle illegal product detection
         const errorData = await response.json();
         const errorMessage = errorData.detail || 'ไม่สามารถอัปเดตสินค้านี้ได้';
+        
+        // Check if there's detection data in the error
+        if (errorData.detected_items && errorData.detected_items.length > 0) {
+          // Find the item with highest confidence
+          const bestPrediction = errorData.detected_items.reduce((max: any, item: any) => 
+            item.confidence > max.confidence ? item : max
+          );
+          
+          // Show modal if confidence > 0.8 and modal not already open
+          if (bestPrediction.confidence > 0.8 && !showDetectionModal) {
+            setDetectedItem({
+              class: bestPrediction.class,
+              confidence: bestPrediction.confidence
+            });
+            setShowDetectionModal(true);
+            return; // Don't show alert, let modal handle it
+          }
+        }
         
         // Show popup for illegal product
         if (errorMessage.includes('ตรวจพบสินค้าที่ผิดกฎหมาย')) {
@@ -692,6 +733,31 @@ export default function MyProductsPage() {
         }}
         product={editingProduct}
         onUpdate={handleUpdateProduct}
+      />
+
+      {/* Detection Alert Modal */}
+      <DetectionAlertModal
+        isOpen={showDetectionModal}
+        onClose={() => {
+          setShowDetectionModal(false);
+          setDetectedItem(null);
+          setPendingFormData(null);
+        }}
+        onConfirm={() => {
+          setShowDetectionModal(false);
+          setDetectedItem(null);
+          setPendingFormData(null);
+          alert('การตรวจจับวัตถุเสร็จสมบูรณ์ กรุณาตรวจสอบสินค้าของคุณ');
+        }}
+        onRescan={() => {
+          setShowDetectionModal(false);
+          setDetectedItem(null);
+          // Keep the form data but allow user to change the image
+          if (pendingFormData) {
+            setShowProductModal(true);
+          }
+        }}
+        detectedItem={detectedItem}
       />
 
       {/* Delete Confirmation Modal */}

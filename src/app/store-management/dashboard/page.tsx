@@ -12,10 +12,28 @@ import {
   Building2,
   User,
   Clipboard,
-  BarChart3
+  BarChart3,
+  X,
+  Calendar
 } from 'lucide-react';
 import TopBar from '@/components/TopBar';
+import OrderDetailsModal from '@/components/OrderDetailsModal';
 import { config } from '@/lib/config';
+
+interface OrderDetail {
+  orderId: string;
+  orderDate: string;
+  status: string;
+  total: number;
+  itemCount: number;
+  productNames: string;
+  customerName?: string;
+  products: Array<{
+    name: string;
+    quantity: number;
+    price: number;
+  }>;
+}
 
 interface DashboardData {
   totalRevenue: number;
@@ -47,11 +65,30 @@ interface DashboardData {
   }>;
 }
 
+interface OrderDetail {
+  orderId: string;
+  orderDate: string;
+  status: string;
+  total: number;
+  itemCount: number;
+  productNames: string;
+  customerName?: string;
+  products: Array<{
+    name: string;
+    quantity: number;
+    price: number;
+  }>;
+}
+
 export default function StoreDashboardPage() {
   const router = useRouter();
   const [data, setData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [modalOpen, setModalOpen] = useState(false);
+  const [modalOrders, setModalOrders] = useState<OrderDetail[]>([]);
+  const [modalTitle, setModalTitle] = useState('');
+  const [loadingOrders, setLoadingOrders] = useState(false);
 
   useEffect(() => {
     fetchDashboardData();
@@ -90,6 +127,69 @@ export default function StoreDashboardPage() {
       setError(err.message || 'เกิดข้อผิดพลาด');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchOrdersForDate = async (date: string, type: 'day' | 'month') => {
+    setLoadingOrders(true);
+    setModalOpen(true);
+    
+    try {
+      if (!data || !data.recentOrders) {
+        throw new Error('No order data available');
+      }
+
+      // Filter orders from existing dashboard data
+      const filteredOrders = data.recentOrders.filter(order => {
+        if (order.status !== 'COMPLETED') return false;
+        
+        const orderDate = new Date(order.orderDate.endsWith('Z') ? order.orderDate : order.orderDate + 'Z');
+        
+        if (type === 'day') {
+          const orderDateStr = orderDate.toISOString().split('T')[0];
+          return orderDateStr === date;
+        } else {
+          const orderMonthStr = orderDate.toISOString().substring(0, 7); // YYYY-MM
+          return orderMonthStr === date;
+        }
+      });
+
+      // Map to OrderDetail format
+      const ordersWithDetails: OrderDetail[] = filteredOrders.map(order => ({
+        orderId: order.orderId,
+        orderDate: order.orderDate,
+        status: order.status,
+        total: order.total,
+        itemCount: order.itemCount,
+        productNames: order.productNames,
+        products: [] // Dashboard data doesn't include detailed product list
+      }));
+
+      setModalOrders(ordersWithDetails);
+      
+      if (type === 'day') {
+        const formattedDate = new Date(date + 'T00:00:00Z').toLocaleDateString('th-TH', {
+          year: 'numeric',
+          month: 'long',
+          day: 'numeric',
+          weekday: 'long',
+          timeZone: 'Asia/Bangkok'
+        });
+        setModalTitle(`คำสั่งซื้อที่สำเร็จ - ${formattedDate}`);
+      } else {
+        const formattedMonth = new Date(date + '-01T00:00:00Z').toLocaleDateString('th-TH', {
+          year: 'numeric',
+          month: 'long',
+          timeZone: 'Asia/Bangkok'
+        });
+        setModalTitle(`คำสั่งซื้อที่สำเร็จ - ${formattedMonth}`);
+      }
+    } catch (err: any) {
+      console.error('Error filtering orders:', err);
+      setModalOrders([]);
+      setModalTitle('เกิดข้อผิดพลาดในการโหลดข้อมูล');
+    } finally {
+      setLoadingOrders(false);
     }
   };
 
@@ -162,7 +262,7 @@ export default function StoreDashboardPage() {
       {/* TopBar */}
       <TopBar />
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className={`max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 transition-all duration-300 ${modalOpen ? 'blur-sm pointer-events-none' : ''}`}>
         <div className="flex flex-col lg:flex-row gap-6">
           {/* Sidebar */}
           <div className="lg:w-64">
@@ -345,97 +445,193 @@ export default function StoreDashboardPage() {
                 </div>
               </div>
 
-              {/* Daily Sales Chart */}
-              <div className="bg-white rounded-xl shadow-md border border-gray-200 p-6 mb-8">
-                <div className="flex items-center gap-2 mb-6">
-                  <div className="p-2 bg-[#0B44A3] bg-opacity-10 rounded-lg">
-                    <TrendingUp className="w-5 h-5 text-[#0B44A3]" />
+              {/* Sales Summary - Simplified View */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* Daily Sales Summary */}
+                <div className="bg-white rounded-xl shadow-md border border-gray-200 p-6">
+                  <div className="flex items-center gap-2 mb-6">
+                    <div className="p-2 bg-[#0B44A3] bg-opacity-10 rounded-lg">
+                      <TrendingUp className="w-5 h-5 text-[#0B44A3]" />
+                    </div>
+                    <h2 className="text-lg font-bold text-gray-900">ยอดขายรายวัน (30 วันล่าสุด)</h2>
                   </div>
-                  <h2 className="text-lg font-bold text-gray-900">ยอดขายรายวัน (30 วันล่าสุด)</h2>
-                </div>
-                <div className="w-full">
-                  <div className="flex gap-1 justify-between w-full">
+                  <div className="space-y-3">
                     {data.dailySales.length === 0 ? (
-                      <div className="text-center py-8 w-full">
+                      <div className="text-center py-8">
                         <TrendingUp className="w-12 h-12 text-gray-300 mx-auto mb-2" />
                         <p className="text-gray-500">ยังไม่มีข้อมูล</p>
                       </div>
                     ) : (
-                      data.dailySales.map((day) => {
-                        const maxRevenue = Math.max(...data.dailySales.map(d => d.revenue), 1);
-                        const height = (day.revenue / maxRevenue) * 250;
-                        return (
-                          <div key={day.date} className="flex flex-col items-center gap-1">
-                            <div className="flex-1 flex items-end" style={{ height: '250px' }}>
-                              <div
-                                className="w-8 bg-gradient-to-t from-[#0B44A3] to-[#1a5fd4] rounded-t-lg transition-all hover:opacity-80 shadow-sm"
-                                style={{ height: `${height}px`, minHeight: day.revenue > 0 ? '20px' : '0px' }}
-                                title={`${day.date}: ${formatCurrency(day.revenue)}`}
-                              ></div>
-                            </div>
-                            <div className="text-[7px] text-gray-500 rotate-45 origin-left whitespace-nowrap">
-                              {new Date(day.date + 'T00:00:00Z').toLocaleDateString('th-TH', {
-                                day: 'numeric',
-                                timeZone: 'Asia/Bangkok'
-                              })}
-                            </div>
+                      <>
+                        <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-lg p-4 border border-blue-100">
+                          <p className="text-sm text-blue-700 font-medium mb-1">ยอดขายรวม 30 วัน</p>
+                          <p className="text-3xl font-bold text-gray-900">
+                            {formatCurrency(data.dailySales.reduce((sum, day) => sum + day.revenue, 0))}
+                          </p>
+                        </div>
+                        <div className="grid grid-cols-2 gap-3">
+                          <div className="bg-gray-50 rounded-lg p-3 border border-gray-200">
+                            <p className="text-xs text-gray-600 mb-1">ยอดเฉลี่ยต่อวัน</p>
+                            <p className="text-lg font-bold text-gray-900">
+                              {formatCurrency(data.dailySales.reduce((sum, day) => sum + day.revenue, 0) / data.dailySales.length)}
+                            </p>
                           </div>
-                        );
-                      })
+                          <div className="bg-gray-50 rounded-lg p-3 border border-gray-200">
+                            <p className="text-xs text-gray-600 mb-1">วันที่มียอดสูงสุด</p>
+                            <p className="text-lg font-bold text-[#0B44A3]">
+                              {formatCurrency(Math.max(...data.dailySales.map(d => d.revenue)))}
+                            </p>
+                          </div>
+                        </div>
+                        
+                        {/* Daily Sales Details */}
+                        <div className="mt-4 pt-4 border-t border-gray-200">
+                          <h3 className="text-sm font-semibold text-gray-700 mb-3">รายละเอียดยอดขายรายวัน</h3>
+                          <div className="max-h-64 overflow-y-auto space-y-2">
+                            {data.dailySales
+                              .filter(day => day.revenue > 0)
+                              .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+                              .map((day, index) => (
+                                <div 
+                                  key={day.date} 
+                                  onClick={() => fetchOrdersForDate(day.date, 'day')}
+                                  className="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-blue-50 transition-colors cursor-pointer"
+                                >
+                                  <div className="flex items-center gap-3">
+                                    <div className="w-8 h-8 rounded-full bg-[#0B44A3] bg-opacity-10 flex items-center justify-center">
+                                      <span className="text-xs font-bold text-[#0B44A3]">{index + 1}</span>
+                                    </div>
+                                    <div>
+                                      <p className="text-sm font-medium text-gray-900">
+                                        {new Date(day.date + 'T00:00:00Z').toLocaleDateString('th-TH', {
+                                          year: 'numeric',
+                                          month: 'long',
+                                          day: 'numeric',
+                                          timeZone: 'Asia/Bangkok'
+                                        })}
+                                      </p>
+                                      <p className="text-xs text-gray-500">
+                                        {new Date(day.date + 'T00:00:00Z').toLocaleDateString('th-TH', {
+                                          weekday: 'long',
+                                          timeZone: 'Asia/Bangkok'
+                                        })}
+                                      </p>
+                                    </div>
+                                  </div>
+                                  <div className="text-right">
+                                    <p className="text-sm font-bold text-[#0B44A3]">
+                                      {formatCurrency(day.revenue)}
+                                    </p>
+                                  </div>
+                                </div>
+                              ))}
+                            {data.dailySales.filter(day => day.revenue > 0).length === 0 && (
+                              <p className="text-sm text-gray-500 text-center py-4">ไม่มียอดขายในช่วง 30 วันที่ผ่านมา</p>
+                            )}
+                          </div>
+                        </div>
+                      </>
                     )}
                   </div>
                 </div>
-              </div>
 
-              {/* Monthly Sales */}
-              <div className="bg-white rounded-xl shadow-md border border-gray-200 p-6">
-                <div className="flex items-center gap-2 mb-6">
-                  <div className="p-2 bg-[#0B44A3] bg-opacity-10 rounded-lg">
-                    <TrendingUp className="w-5 h-5 text-[#0B44A3]" />
-                  </div>
-                  <h2 className="text-lg font-bold text-gray-900">ยอดขายรายเดือน (12 เดือนล่าสุด)</h2>
-                </div>
-                <div className="space-y-4">
-                  {data.monthlySales.length === 0 ? (
-                    <div className="text-center py-8">
-                      <TrendingUp className="w-12 h-12 text-gray-300 mx-auto mb-2" />
-                      <p className="text-gray-500">ยังไม่มีข้อมูล</p>
+                {/* Monthly Sales Summary */}
+                <div className="bg-white rounded-xl shadow-md border border-gray-200 p-6">
+                  <div className="flex items-center gap-2 mb-6">
+                    <div className="p-2 bg-[#0B44A3] bg-opacity-10 rounded-lg">
+                      <TrendingUp className="w-5 h-5 text-[#0B44A3]" />
                     </div>
-                  ) : (
-                    data.monthlySales.map((month) => {
-                      const maxRevenue = Math.max(...data.monthlySales.map(m => m.revenue), 1);
-                      const percentage = (month.revenue / maxRevenue) * 100;
-                      return (
-                        <div key={month.month} className="flex items-center gap-4">
-                          <div className="w-24 text-sm font-semibold text-gray-700">
-                            {new Date(month.month + '-01T00:00:00Z').toLocaleDateString('th-TH', {
-                              year: 'numeric',
-                              month: 'short',
-                              timeZone: 'Asia/Bangkok'
-                            })}
+                    <h2 className="text-lg font-bold text-gray-900">ยอดขายรายเดือน (12 เดือนล่าสุด)</h2>
+                  </div>
+                  <div className="space-y-3">
+                    {data.monthlySales.length === 0 ? (
+                      <div className="text-center py-8">
+                        <TrendingUp className="w-12 h-12 text-gray-300 mx-auto mb-2" />
+                        <p className="text-gray-500">ยังไม่มีข้อมูล</p>
+                      </div>
+                    ) : (
+                      <>
+                        <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-lg p-4 border border-green-100">
+                          <p className="text-sm text-green-700 font-medium mb-1">ยอดขายรวม 12 เดือน</p>
+                          <p className="text-3xl font-bold text-gray-900">
+                            {formatCurrency(data.monthlySales.reduce((sum, month) => sum + month.revenue, 0))}
+                          </p>
+                        </div>
+                        <div className="grid grid-cols-2 gap-3">
+                          <div className="bg-gray-50 rounded-lg p-3 border border-gray-200">
+                            <p className="text-xs text-gray-600 mb-1">ยอดเฉลี่ยต่อเดือน</p>
+                            <p className="text-lg font-bold text-gray-900">
+                              {formatCurrency(data.monthlySales.reduce((sum, month) => sum + month.revenue, 0) / data.monthlySales.length)}
+                            </p>
                           </div>
-                          <div className="flex-1">
-                            <div className="bg-gray-100 rounded-full h-10 overflow-hidden shadow-inner">
-                              <div
-                                className="bg-gradient-to-r from-[#0B44A3] to-[#1a5fd4] h-full rounded-full flex items-center justify-end pr-4 transition-all hover:opacity-90 shadow-sm"
-                                style={{ width: `${percentage}%` }}
-                              >
-                                <span className="text-xs font-bold text-white drop-shadow">
-                                  {formatCurrency(month.revenue)}
-                                </span>
-                              </div>
-                            </div>
+                          <div className="bg-gray-50 rounded-lg p-3 border border-gray-200">
+                            <p className="text-xs text-gray-600 mb-1">เดือนที่มียอดสูงสุด</p>
+                            <p className="text-lg font-bold text-[#0B44A3]">
+                              {formatCurrency(Math.max(...data.monthlySales.map(m => m.revenue)))}
+                            </p>
                           </div>
                         </div>
-                      );
-                    })
-                  )}
+
+                        {/* Monthly Sales Details */}
+                        <div className="mt-4 pt-4 border-t border-gray-200">
+                          <h3 className="text-sm font-semibold text-gray-700 mb-3">รายละเอียดยอดขายรายเดือน</h3>
+                          <div className="max-h-64 overflow-y-auto space-y-2">
+                            {data.monthlySales
+                              .filter(month => month.revenue > 0)
+                              .sort((a, b) => new Date(b.month + '-01').getTime() - new Date(a.month + '-01').getTime())
+                              .map((month, index) => (
+                                <div 
+                                  key={month.month} 
+                                  onClick={() => fetchOrdersForDate(month.month, 'month')}
+                                  className="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-green-50 transition-colors cursor-pointer"
+                                >
+                                  <div className="flex items-center gap-3">
+                                    <div className="w-8 h-8 rounded-full bg-green-600 bg-opacity-10 flex items-center justify-center">
+                                      <span className="text-xs font-bold text-green-700">{index + 1}</span>
+                                    </div>
+                                    <div>
+                                      <p className="text-sm font-medium text-gray-900">
+                                        {new Date(month.month + '-01T00:00:00Z').toLocaleDateString('th-TH', {
+                                          year: 'numeric',
+                                          month: 'long',
+                                          timeZone: 'Asia/Bangkok'
+                                        })}
+                                      </p>
+                                    </div>
+                                  </div>
+                                  <div className="text-right">
+                                    <p className="text-sm font-bold text-green-700">
+                                      {formatCurrency(month.revenue)}
+                                    </p>
+                                  </div>
+                                </div>
+                              ))}
+                            {data.monthlySales.filter(month => month.revenue > 0).length === 0 && (
+                              <p className="text-sm text-gray-500 text-center py-4">ไม่มียอดขายในช่วง 12 เดือนที่ผ่านมา</p>
+                            )}
+                          </div>
+                        </div>
+                      </>
+                    )}
+                  </div>
                 </div>
               </div>
             </div>
           </div>
         </div>
       </div>
+
+      {/* Orders Modal */}
+      <OrderDetailsModal
+        isOpen={modalOpen}
+        onClose={() => setModalOpen(false)}
+        orders={modalOrders}
+        title={modalTitle}
+        loading={loadingOrders}
+        formatCurrency={formatCurrency}
+        formatDate={formatDate}
+        getStatusBadge={getStatusBadge}
+      />
     </div>
   );
 }

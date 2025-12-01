@@ -96,7 +96,15 @@ export default function StoreOrdersPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [hasToken, setHasToken] = useState(false);
   const [showStatusError, setShowStatusError] = useState<string | null>(null);
-  const [shippingDrafts, setShippingDrafts] = useState<Record<string, { shippingMethod: string; shippingCarrier: string; shippingId: string; shippingMethodCustom?: string; shippingCarrierCustom?: string }>>({});
+  const [shippingDrafts, setShippingDrafts] = useState<Record<string, { 
+    shippingMethod: string; 
+    shippingCarrier: string; 
+    shippingId: string; 
+    shippingMethodCustom?: string; 
+    shippingCarrierCustom?: string;
+    contactNumber?: string;
+    meetingLocation?: string;
+  }>>({});
   const [confirmDialog, setConfirmDialog] = useState<{ orderId: string; order: Order } | null>(null);
 
   useEffect(() => {
@@ -183,17 +191,42 @@ export default function StoreOrdersPage() {
       setShowStatusError(null);
 
       const order = orders.find(o => o.id === orderId);
+      if (!order) return;
+      
       const draft = shippingDrafts[orderId];
 
       // If approving order, check that shipping info is complete
       if (newStatus === 'APPROVED') {
-        const shippingMethod = draft?.shippingMethod || order?.shippingMethod || '';
-        const shippingCarrier = draft?.shippingCarrier || order?.shippingCarrier || '';
-        const shippingId = draft?.shippingId || order?.shippingId || '';
+        const customerDeliveryMethod = getCustomerDeliveryMethod(order);
+        const isPickup = customerDeliveryMethod === 'นัดรับ';
 
-        if (!shippingMethod.trim() || !shippingCarrier.trim() || !shippingId.trim()) {
-          setShowStatusError('กรุณากรอกข้อมูลการจัดส่งให้ครบถ้วนก่อนยืนยันคำสั่งซื้อ (รูปแบบการจัดส่ง, ชื่อขนส่ง, และ Tracking No.)');
-          return;
+        if (isPickup) {
+          // Validate pickup fields
+          const contactNumber = draft?.contactNumber || '';
+          const meetingLocation = draft?.meetingLocation || '';
+
+          if (!contactNumber.trim() || !meetingLocation.trim()) {
+            setShowStatusError('กรุณากรอกข้อมูลการนัดรับให้ครบถ้วนก่อนยืนยันคำสั่งซื้อ (เบอร์โทรศัพท์ และ สถานที่นัดรับ)');
+            return;
+          }
+        } else {
+          // Validate shipping fields
+          let shippingMethod = draft?.shippingMethod || order?.shippingMethod || '';
+          let shippingCarrier = draft?.shippingCarrier || order?.shippingCarrier || '';
+          const shippingId = draft?.shippingId || order?.shippingId || '';
+
+          // Use custom values if 'อื่น ๆ' is selected
+          if (shippingMethod === 'อื่น ๆ') {
+            shippingMethod = draft?.shippingMethodCustom || '';
+          }
+          if (shippingCarrier === 'อื่น ๆ') {
+            shippingCarrier = draft?.shippingCarrierCustom || '';
+          }
+
+          if (!shippingMethod.trim() || !shippingCarrier.trim() || !shippingId.trim()) {
+            setShowStatusError('กรุณากรอกข้อมูลการจัดส่งให้ครบถ้วนก่อนยืนยันคำสั่งซื้อ (รูปแบบการจัดส่ง, ชื่อขนส่ง, และ Tracking No.)');
+            return;
+          }
         }
 
         // Save shipping info first if there are unsaved changes
@@ -238,18 +271,62 @@ export default function StoreOrdersPage() {
 
   const updateOrderShipping = async (
     orderId: string,
-    payload: { shippingMethod?: string; shippingCarrier?: string; shippingId?: string }
+    payload: { 
+      shippingMethod?: string; 
+      shippingCarrier?: string; 
+      shippingId?: string;
+      contactNumber?: string;
+      meetingLocation?: string;
+      shippingMethodCustom?: string;
+      shippingCarrierCustom?: string;
+    }
   ) => {
     try {
       const token = localStorage.getItem('access_token');
       if (!token) return;
+      
+      // Get the order to determine delivery method
+      const order = orders.find(o => o.id === orderId);
+      if (!order) return;
+      
+      const customerDeliveryMethod = getCustomerDeliveryMethod(order);
+      const isPickup = customerDeliveryMethod === 'นัดรับ';
+      
+      // Map fields based on delivery method
+      let apiPayload;
+      if (isPickup) {
+        // For pickup: map contactNumber and meetingLocation to API fields
+        apiPayload = {
+          shippingMethod: 'นัดรับ', // Always set as "นัดรับ"
+          shippingCarrier: payload.contactNumber, // Use shippingCarrier for contact number
+          shippingId: payload.meetingLocation // Use shippingId for meeting location
+        };
+      } else {
+        // For shipping: use custom values if 'อื่น ๆ' is selected
+        let shippingMethod = payload.shippingMethod;
+        let shippingCarrier = payload.shippingCarrier;
+        
+        if (payload.shippingMethod === 'อื่น ๆ' && payload.shippingMethodCustom) {
+          shippingMethod = payload.shippingMethodCustom;
+        }
+        if (payload.shippingCarrier === 'อื่น ๆ' && payload.shippingCarrierCustom) {
+          shippingCarrier = payload.shippingCarrierCustom;
+        }
+        
+        apiPayload = {
+          shippingMethod: shippingMethod,
+          shippingCarrier: shippingCarrier,
+          shippingId: payload.shippingId
+        };
+      }
+      
       const res = await fetch(`${config.apiBaseUrl}/orders/${orderId}/shipping`, {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify(payload)
+        body: JSON.stringify(apiPayload)
       });
       if (!res.ok) {
         const txt = await res.text();
@@ -449,10 +526,75 @@ export default function StoreOrdersPage() {
                           </div>
 
                           {/* Shipping details entry for seller - Only show if PENDING */}
-                          {order.status === 'PENDING' && (
+                          {order.status === 'PENDING' && (() => {
+                            const customerDeliveryMethod = getCustomerDeliveryMethod(order);
+                            const isPickup = customerDeliveryMethod === 'นัดรับ';
+                            
+                            return (
                             <div className="mt-3 sm:mt-4 bg-gray-50 rounded-lg p-3 sm:p-4">
-                              <div className="text-xs sm:text-sm font-semibold text-gray-700 mb-2 sm:mb-3">ข้อมูลการจัดส่ง</div>
-                              <div className="space-y-2 sm:space-y-3">
+                              <div className="text-xs sm:text-sm font-semibold text-gray-700 mb-2 sm:mb-3">
+                                {isPickup ? 'ข้อมูลการนัดรับ' : 'ข้อมูลการจัดส่ง'}
+                              </div>
+                              <div className="space-y-2 sm:space-y-3">{isPickup ? (
+                                <>
+                                  {/* Contact Number for Pickup */}
+                                  <div>
+                                    <label className="text-xs sm:text-sm font-medium text-gray-700 mb-1 block">
+                                      เบอร์โทรศัพท์สำหรับติดต่อ <span className="text-red-500">*</span>
+                                    </label>
+                                    <input
+                                      type="tel"
+                                      className="w-full border-2 border-gray-200 rounded-lg px-3 sm:px-4 py-2 sm:py-2.5 text-xs sm:text-sm focus:border-[#0B44A3] focus:ring-2 focus:ring-[#0B44A3] focus:ring-opacity-20 transition-all touch-manipulation"
+                                      placeholder="กรอกเบอร์โทรศัพท์"
+                                      value={shippingDrafts[order.id]?.contactNumber ?? ''}
+                                      onChange={(e) => {
+                                        setShowStatusError('');
+                                        setShippingDrafts((prev) => ({
+                                          ...prev,
+                                          [order.id]: {
+                                            ...prev[order.id],
+                                            shippingMethod: '',
+                                            shippingCarrier: '',
+                                            shippingId: '',
+                                            contactNumber: e.target.value,
+                                            meetingLocation: prev[order.id]?.meetingLocation ?? ''
+                                          }
+                                        }));
+                                      }}
+                                    />
+                                  </div>
+
+                                  {/* Meeting Location for Pickup */}
+                                  <div>
+                                    <label className="text-xs sm:text-sm font-medium text-gray-700 mb-1 block">
+                                      สถานที่นัดรับ <span className="text-red-500">*</span>
+                                    </label>
+                                    <textarea
+                                      className="w-full border-2 border-gray-200 rounded-lg px-3 sm:px-4 py-2 sm:py-2.5 text-xs sm:text-sm focus:border-[#0B44A3] focus:ring-2 focus:ring-[#0B44A3] focus:ring-opacity-20 transition-all touch-manipulation resize-none"
+                                      placeholder="กรอกสถานที่นัดรับ (เช่น ตึก A ชั้น 1 หน้าร้านกาแฟ)"
+                                      rows={3}
+                                      value={shippingDrafts[order.id]?.meetingLocation ?? ''}
+                                      onChange={(e) => {
+                                        setShowStatusError('');
+                                        setShippingDrafts((prev) => ({
+                                          ...prev,
+                                          [order.id]: {
+                                            ...prev[order.id],
+                                            shippingMethod: '',
+                                            shippingCarrier: '',
+                                            shippingId: '',
+                                            contactNumber: prev[order.id]?.contactNumber ?? '',
+                                            meetingLocation: e.target.value
+                                          }
+                                        }));
+                                      }}
+                                    />
+                                  </div>
+
+                                  <p className="text-xs sm:text-sm text-gray-500 italic mt-2">ข้อมูลการนัดรับจะถูกบันทึกอัตโนมัติเมื่อยืนยันหรือปฏิเสธคำสั่งซื้อ</p>
+                                </>
+                              ) : (
+                                <>
                                 {/* Shipping Method Dropdown */}
                                 <div>
                                   <label className="text-xs sm:text-sm font-medium text-gray-700 mb-1 block">
@@ -467,7 +609,9 @@ export default function StoreOrdersPage() {
                                         ...prev,
                                         [order.id]: {
                                           shippingMethod: e.target.value,
+                                          shippingMethodCustom: prev[order.id]?.shippingMethodCustom,
                                           shippingCarrier: prev[order.id]?.shippingCarrier ?? order.shippingCarrier ?? '',
+                                          shippingCarrierCustom: prev[order.id]?.shippingCarrierCustom,
                                           shippingId: prev[order.id]?.shippingId ?? order.shippingId ?? ''
                                         }
                                       }));
@@ -485,14 +629,19 @@ export default function StoreOrdersPage() {
                                       type="text"
                                       placeholder="กรอกรูปแบบการจัดส่ง"
                                       value={shippingDrafts[order.id]?.shippingMethodCustom ?? ''}
-                                      onChange={(e) => setShippingDrafts((prev) => ({
-                                        ...prev,
-                                        [order.id]: {
-                                          ...prev[order.id],
-                                          shippingMethodCustom: e.target.value,
-                                          shippingMethod: e.target.value || 'อื่น ๆ'
-                                        }
-                                      }))}
+                                      onChange={(e) => {
+                                        setShowStatusError('');
+                                        setShippingDrafts((prev) => ({
+                                          ...prev,
+                                          [order.id]: {
+                                            shippingMethod: 'อื่น ๆ',
+                                            shippingMethodCustom: e.target.value,
+                                            shippingCarrier: prev[order.id]?.shippingCarrier ?? order.shippingCarrier ?? '',
+                                            shippingCarrierCustom: prev[order.id]?.shippingCarrierCustom,
+                                            shippingId: prev[order.id]?.shippingId ?? order.shippingId ?? ''
+                                          }
+                                        }));
+                                      }}
                                       className="w-full mt-2 border-2 border-gray-200 rounded-lg px-3 sm:px-4 py-2 sm:py-2.5 text-xs sm:text-sm focus:border-[#0B44A3] focus:ring-2 focus:ring-[#0B44A3] focus:ring-opacity-20 transition-all touch-manipulation"
                                     />
                                   )}
@@ -512,7 +661,9 @@ export default function StoreOrdersPage() {
                                         ...prev,
                                         [order.id]: {
                                           shippingMethod: prev[order.id]?.shippingMethod ?? order.shippingMethod ?? '',
+                                          shippingMethodCustom: prev[order.id]?.shippingMethodCustom,
                                           shippingCarrier: e.target.value,
+                                          shippingCarrierCustom: prev[order.id]?.shippingCarrierCustom,
                                           shippingId: prev[order.id]?.shippingId ?? order.shippingId ?? ''
                                         }
                                       }));
@@ -533,14 +684,19 @@ export default function StoreOrdersPage() {
                                       type="text"
                                       placeholder="กรอกชื่อขนส่ง"
                                       value={shippingDrafts[order.id]?.shippingCarrierCustom ?? ''}
-                                      onChange={(e) => setShippingDrafts((prev) => ({
-                                        ...prev,
-                                        [order.id]: {
-                                          ...prev[order.id],
-                                          shippingCarrierCustom: e.target.value,
-                                          shippingCarrier: e.target.value || 'อื่น ๆ'
-                                        }
-                                      }))}
+                                      onChange={(e) => {
+                                        setShowStatusError('');
+                                        setShippingDrafts((prev) => ({
+                                          ...prev,
+                                          [order.id]: {
+                                            shippingMethod: prev[order.id]?.shippingMethod ?? order.shippingMethod ?? '',
+                                            shippingMethodCustom: prev[order.id]?.shippingMethodCustom,
+                                            shippingCarrier: 'อื่น ๆ',
+                                            shippingCarrierCustom: e.target.value,
+                                            shippingId: prev[order.id]?.shippingId ?? order.shippingId ?? ''
+                                          }
+                                        }));
+                                      }}
                                       className="w-full mt-2 border-2 border-gray-200 rounded-lg px-3 sm:px-4 py-2 sm:py-2.5 text-xs sm:text-sm focus:border-[#0B44A3] focus:ring-2 focus:ring-[#0B44A3] focus:ring-opacity-20 transition-all touch-manipulation"
                                     />
                                   )}
@@ -562,7 +718,9 @@ export default function StoreOrdersPage() {
                                         ...prev,
                                         [order.id]: {
                                           shippingMethod: prev[order.id]?.shippingMethod ?? order.shippingMethod ?? '',
+                                          shippingMethodCustom: prev[order.id]?.shippingMethodCustom,
                                           shippingCarrier: prev[order.id]?.shippingCarrier ?? order.shippingCarrier ?? '',
+                                          shippingCarrierCustom: prev[order.id]?.shippingCarrierCustom,
                                           shippingId: e.target.value
                                         }
                                       }));
@@ -571,21 +729,42 @@ export default function StoreOrdersPage() {
                                 </div>
 
                                 <p className="text-xs sm:text-sm text-gray-500 italic mt-2">ข้อมูลการจัดส่งจะถูกบันทึกอัตโนมัติเมื่อยืนยันหรือปฏิเสธคำสั่งซื้อ</p>
+                              </>
+                              )}
                               </div>
                             </div>
-                          )}
+                            );
+                          })()}
 
                           {/* Read-only shipping summary - Show for all statuses */}
+                          {(() => {
+                            const customerDeliveryMethod = getCustomerDeliveryMethod(order);
+                            const isPickup = customerDeliveryMethod === 'นัดรับ';
+                            
+                            return (
                           <div className={`mt-2 sm:mt-3 text-xs sm:text-sm rounded-lg p-3 border space-y-1 ${
                             order.status === 'PENDING' 
                               ? 'text-gray-600 bg-white border-gray-200' 
                               : 'text-gray-700 bg-blue-50 border-blue-200'
                           }`}>
-                            <div className="font-semibold text-gray-700 mb-2">ข้อมูลการจัดส่ง</div>
-                            <div className="break-words">รูปแบบการจัดส่ง: {order.shippingMethod || shippingDrafts[order.id]?.shippingMethod || '—'}</div>
-                            <div className="break-words">ชื่อขนส่ง: {order.shippingCarrier || shippingDrafts[order.id]?.shippingCarrier || '—'}</div>
-                            <div className="break-words">Shipping ID: {order.shippingId || shippingDrafts[order.id]?.shippingId || '—'}</div>
+                            <div className="font-semibold text-gray-700 mb-2">
+                              {isPickup ? 'ข้อมูลการนัดรับ' : 'ข้อมูลการจัดส่ง'}
+                            </div>
+                            {isPickup ? (
+                              <>
+                                <div className="break-words">เบอร์โทรศัพท์: {shippingDrafts[order.id]?.contactNumber || '—'}</div>
+                                <div className="break-words">สถานที่นัดรับ: {shippingDrafts[order.id]?.meetingLocation || '—'}</div>
+                              </>
+                            ) : (
+                              <>
+                                <div className="break-words">รูปแบบการจัดส่ง: {order.shippingMethod || shippingDrafts[order.id]?.shippingMethod || '—'}</div>
+                                <div className="break-words">ชื่อขนส่ง: {order.shippingCarrier || shippingDrafts[order.id]?.shippingCarrier || '—'}</div>
+                                <div className="break-words">Shipping ID: {order.shippingId || shippingDrafts[order.id]?.shippingId || '—'}</div>
+                              </>
+                            )}
                           </div>
+                            );
+                          })()}
 
                           {order.status === 'PENDING' && (
                             <div className="mt-4 sm:mt-5 flex flex-col sm:flex-row gap-2 sm:gap-3">
@@ -593,23 +772,43 @@ export default function StoreOrdersPage() {
                                 onClick={() => {
                                   // Validate shipping info before opening confirm dialog
                                   const draft = shippingDrafts[order.id];
-                                  const shippingMethod = draft?.shippingMethod || order?.shippingMethod || '';
-                                  const shippingCarrier = draft?.shippingCarrier || order?.shippingCarrier || '';
-                                  const shippingId = draft?.shippingId || order?.shippingId || '';
+                                  const customerDeliveryMethod = getCustomerDeliveryMethod(order);
+                                  const isPickup = customerDeliveryMethod === 'นัดรับ';
 
-                                  if (!shippingMethod.trim()) {
-                                    setShowStatusError('กรุณาเลือกรูปแบบการจัดส่งก่อนยืนยันคำสั่งซื้อ');
-                                    return;
-                                  }
-                                  
-                                  if (!shippingCarrier.trim()) {
-                                    setShowStatusError('กรุณากรอกชื่อขนส่งก่อนยืนยันคำสั่งซื้อ');
-                                    return;
-                                  }
-                                  
-                                  if (!shippingId.trim()) {
-                                    setShowStatusError('กรุณากรอก Tracking No. ก่อนยืนยันคำสั่งซื้อ');
-                                    return;
+                                  if (isPickup) {
+                                    // Validate pickup fields
+                                    const contactNumber = draft?.contactNumber || '';
+                                    const meetingLocation = draft?.meetingLocation || '';
+
+                                    if (!contactNumber.trim()) {
+                                      setShowStatusError('กรุณากรอกเบอร์โทรศัพท์สำหรับติดต่อก่อนยืนยันคำสั่งซื้อ');
+                                      return;
+                                    }
+                                    
+                                    if (!meetingLocation.trim()) {
+                                      setShowStatusError('กรุณากรอกสถานที่นัดรับก่อนยืนยันคำสั่งซื้อ');
+                                      return;
+                                    }
+                                  } else {
+                                    // Validate shipping fields
+                                    const shippingMethod = draft?.shippingMethod || order?.shippingMethod || '';
+                                    const shippingCarrier = draft?.shippingCarrier || order?.shippingCarrier || '';
+                                    const shippingId = draft?.shippingId || order?.shippingId || '';
+
+                                    if (!shippingMethod.trim()) {
+                                      setShowStatusError('กรุณาเลือกรูปแบบการจัดส่งก่อนยืนยันคำสั่งซื้อ');
+                                      return;
+                                    }
+                                    
+                                    if (!shippingCarrier.trim()) {
+                                      setShowStatusError('กรุณากรอกชื่อขนส่งก่อนยืนยันคำสั่งซื้อ');
+                                      return;
+                                    }
+                                    
+                                    if (!shippingId.trim()) {
+                                      setShowStatusError('กรุณากรอก Tracking No. ก่อนยืนยันคำสั่งซื้อ');
+                                      return;
+                                    }
                                   }
 
                                   // All validations passed, clear error and open modal
@@ -666,29 +865,57 @@ export default function StoreOrdersPage() {
               </div>
 
               {/* Shipping Info */}
+              {(() => {
+                const customerDeliveryMethod = getCustomerDeliveryMethod(confirmDialog.order);
+                const isPickup = customerDeliveryMethod === 'นัดรับ';
+                
+                return (
               <div className="bg-blue-50 rounded-lg p-3 sm:p-4 border border-blue-200">
-                <h3 className="font-semibold text-gray-900 mb-3">ข้อมูลการจัดส่ง</h3>
+                <h3 className="font-semibold text-gray-900 mb-3">
+                  {isPickup ? 'ข้อมูลการนัดรับ' : 'ข้อมูลการจัดส่ง'}
+                </h3>
                 <div className="space-y-2">
-                  <div className="grid grid-cols-3 gap-2 text-xs sm:text-sm">
-                    <div className="text-gray-600">รูปแบบการจัดส่ง</div>
-                    <div className="col-span-2 font-semibold text-gray-900">
-                      {shippingDrafts[confirmDialog.orderId]?.shippingMethod ?? confirmDialog.order.shippingMethod ?? '—'}
-                    </div>
-                  </div>
-                  <div className="grid grid-cols-3 gap-2 text-xs sm:text-sm">
-                    <div className="text-gray-600">ชื่อขนส่ง</div>
-                    <div className="col-span-2 font-semibold text-gray-900">
-                      {shippingDrafts[confirmDialog.orderId]?.shippingCarrier ?? confirmDialog.order.shippingCarrier ?? '—'}
-                    </div>
-                  </div>
-                  <div className="grid grid-cols-3 gap-2 text-xs sm:text-sm">
-                    <div className="text-gray-600">Tracking No.</div>
-                    <div className="col-span-2 font-semibold text-gray-900 break-all">
-                      {shippingDrafts[confirmDialog.orderId]?.shippingId ?? confirmDialog.order.shippingId ?? '—'}
-                    </div>
-                  </div>
+                  {isPickup ? (
+                    <>
+                      <div className="grid grid-cols-3 gap-2 text-xs sm:text-sm">
+                        <div className="text-gray-600">เบอร์โทรศัพท์</div>
+                        <div className="col-span-2 font-semibold text-gray-900">
+                          {shippingDrafts[confirmDialog.orderId]?.contactNumber ?? '—'}
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-3 gap-2 text-xs sm:text-sm">
+                        <div className="text-gray-600">สถานที่นัดรับ</div>
+                        <div className="col-span-2 font-semibold text-gray-900 break-words">
+                          {shippingDrafts[confirmDialog.orderId]?.meetingLocation ?? '—'}
+                        </div>
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      <div className="grid grid-cols-3 gap-2 text-xs sm:text-sm">
+                        <div className="text-gray-600">รูปแบบการจัดส่ง</div>
+                        <div className="col-span-2 font-semibold text-gray-900">
+                          {shippingDrafts[confirmDialog.orderId]?.shippingMethod ?? confirmDialog.order.shippingMethod ?? '—'}
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-3 gap-2 text-xs sm:text-sm">
+                        <div className="text-gray-600">ชื่อขนส่ง</div>
+                        <div className="col-span-2 font-semibold text-gray-900">
+                          {shippingDrafts[confirmDialog.orderId]?.shippingCarrier ?? confirmDialog.order.shippingCarrier ?? '—'}
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-3 gap-2 text-xs sm:text-sm">
+                        <div className="text-gray-600">Tracking No.</div>
+                        <div className="col-span-2 font-semibold text-gray-900 break-all">
+                          {shippingDrafts[confirmDialog.orderId]?.shippingId ?? confirmDialog.order.shippingId ?? '—'}
+                        </div>
+                      </div>
+                    </>
+                  )}
                 </div>
               </div>
+                );
+              })()}
 
               {/* Items */}
               <div className="bg-gray-50 rounded-lg p-3 sm:p-4">

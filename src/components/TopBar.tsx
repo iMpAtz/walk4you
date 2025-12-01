@@ -4,7 +4,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { User, Ban } from 'lucide-react';
+import { User, Ban, Store, Shield } from 'lucide-react';
 import type { UserProfile } from '@/types';
 import MobileSidebar from './MobileSidebar';
 import NotificationBell from './NotificationBell';
@@ -151,6 +151,27 @@ export default function TopBar() {
               <>
                 <NotificationBell />
                 <CartIcon />
+                {/* Admin Panel Icon - Only show if user is ADMIN */}
+                {userProfile?.role === 'ADMIN' && (
+                  <button
+                    onClick={() => router.push('/admin')}
+                    className="relative p-1.5 sm:p-2 hover:bg-[#093782] rounded-full transition-all group"
+                    title="Admin Panel"
+                  >
+                    <Shield className="w-5 h-5 sm:w-6 sm:h-6 text-gray-600" />
+                  </button>
+                )}
+                {/* Shop Icon - Only show if user has a store */}
+                {hasStore && (
+                  <button
+                    onClick={() => router.push('/store-management')}
+                    className="relative p-1.5 sm:p-2 hover:bg-[#093782] rounded-full transition-all group"
+                    title="จัดการร้านค้า"
+                  >
+                    <Store className="w-5 h-5 sm:w-6 sm:h-6 text-gray-600" />
+                    <span className="absolute -top-0.5 -right-0.5 w-2 h-2 bg-green-400 rounded-full border-2 border-[#0B44A3]"></span>
+                  </button>
+                )}
                 <div 
                   onClick={() => setIsSidebarOpen(true)}
                   className="flex items-center gap-1.5 sm:gap-2 lg:gap-3 px-2 sm:px-3 lg:px-4 py-1.5 sm:py-2 hover:bg-[#093782] rounded-full transition cursor-pointer"
@@ -166,9 +187,20 @@ export default function TopBar() {
                       <User className="w-4 h-4 sm:w-5 sm:h-5 text-[#0B44A3]" />
                     </div>
                   )}
-                  <span className="hidden md:block font-medium text-white text-sm lg:text-base truncate max-w-[100px] lg:max-w-none">
-                    {userProfile?.username || '...'}
-                  </span>
+                  <div className="hidden md:flex flex-col items-start">
+                    <span className="font-medium text-white text-sm lg:text-base truncate max-w-[100px] lg:max-w-none">
+                      {userProfile?.username || '...'}
+                    </span>
+                    <span className={`text-[10px] lg:text-xs px-2 py-0.5 rounded-full font-medium mt-0.5 ${
+                      userProfile?.role === 'ADMIN'
+                        ? 'bg-green-500 text-white'
+                        : hasStore 
+                        ? 'bg-green-500 text-white' 
+                        : 'bg-gray-300 text-gray-700'
+                    }`}>
+                      {userProfile?.role === 'ADMIN' ? 'ผู้ดูแลระบบ' : hasStore ? 'ร้านค้า' : 'ผู้ใช้งานทั่วไป'}
+                    </span>
+                  </div>
                 </div>
               </>
             )}

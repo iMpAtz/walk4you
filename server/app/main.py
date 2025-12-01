@@ -1,8 +1,10 @@
 from fastapi import FastAPI, Depends, HTTPException, status, Request, Header, UploadFile, File
+from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from motor.motor_asyncio import AsyncIOMotorClient, AsyncIOMotorDatabase
 from pydantic import BaseModel, EmailStr
 import os
+from pathlib import Path
 from dotenv import load_dotenv
 from datetime import datetime, timedelta
 from typing import Optional
@@ -25,7 +27,18 @@ import cloudinary.uploader
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-load_dotenv()
+# Load environment variables from multiple possible locations.
+# This allows deployments that keep the .env file outside of the /server directory.
+DOTENV_CANDIDATES = [
+    Path(__file__).resolve().parents[1] / ".env",  # server/.env
+    Path(__file__).resolve().parents[2] / ".env",  # project-root/.env
+]
+for dotenv_path in DOTENV_CANDIDATES:
+    if dotenv_path.exists():
+        load_dotenv(dotenv_path, override=False)
+
+# Final fallback to whatever is available in the current working directory/environment.
+load_dotenv(override=False)
 
 app = FastAPI(title="Walk4You API", version="0.1.0")
 
@@ -48,10 +61,6 @@ if YOLO_ENABLED and os.path.exists(YOLO_MODEL_PATH):
         yolo_model = None
 else:
     logger.warning(f"YOLOv8 model not found at {YOLO_MODEL_PATH} or YOLO detection is disabled")
-
-load_dotenv()
-
-app = FastAPI(title="Walk4You API", version="0.1.0")
 
 # ===== MongoDB (Motor) setup with connection pooling =====
 MONGODB_URI = os.getenv("MONGODB_URI", "mongodb://localhost:27017")
@@ -1846,9 +1855,13 @@ async def create_product(
             
             logger.warning(f"Illegal product detected for user {user_id}: {detected_items_str}")
             
-            raise HTTPException(
+            # Create custom error response with detection data
+            return JSONResponse(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"ไม่สามารถวางขายสินค้านี้ได้ เนื่องจากระบบตรวจพบสินค้าที่ผิดกฎหมาย: {detected_items_str}"
+                content={
+                    "detail": f"ไม่สามารถวางขายสินค้านี้ได้ เนื่องจากระบบตรวจพบสินค้าที่ผิดกฎหมาย: {detected_items_str}",
+                    "detected_items": illegal_check["detected_items"]
+                }
             )
     
     # Create new product
@@ -2011,9 +2024,13 @@ async def update_product(
             
             logger.warning(f"Illegal product detected in update for user {user_id}: {detected_items_str}")
             
-            raise HTTPException(
+            # Create custom error response with detection data
+            return JSONResponse(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"ไม่สามารถอัปเดตสินค้านี้ได้ เนื่องจากระบบตรวจพบสินค้าที่ผิดกฎหมาย: {detected_items_str}"
+                content={
+                    "detail": f"ไม่สามารถอัปเดตสินค้านี้ได้ เนื่องจากระบบตรวจพบสินค้าที่ผิดกฎหมาย: {detected_items_str}",
+                    "detected_items": illegal_check["detected_items"]
+                }
             )
     
     # Update product

@@ -15,11 +15,12 @@ interface RegisterModalProps {
 
 export default function RegisterModal({ isOpen, onClose, onSwitchToLogin }: RegisterModalProps) {
   const router = useRouter();
-  const [fullName, setFullName] = useState('');
+  const [email, setEmail] = useState('');
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [confirm, setConfirm] = useState('');
-  const [email, setEmail] = useState('');
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
   const [phone, setPhone] = useState('');
   const [gender, setGender] = useState<'Male' | 'Female' | 'Other'>('Male');
   const [day, setDay] = useState('');
@@ -107,6 +108,7 @@ export default function RegisterModal({ isOpen, onClose, onSwitchToLogin }: Regi
     
     setLoading(true);
     const birth = day && month && year ? `${year}-${month}-${day}` : undefined;
+    const fullName = `${firstName} ${lastName}`.trim();
     
     try {
       const res = await fetch(`${config.apiBaseUrl}/auth/register`, {
@@ -158,61 +160,41 @@ export default function RegisterModal({ isOpen, onClose, onSwitchToLogin }: Regi
         {/* Form */}
         <div className="p-8 max-h-[calc(100vh-200px)] overflow-y-auto">
           <form onSubmit={onSubmit} className="space-y-4">
-            {/* Full Name */}
+            {/* Email */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                ชื่อ-นามสกุล
+                อีเมล
               </label>
               <div className="relative">
-                <User className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
                 <input
-                  type="text"
-                  placeholder="กรอกชื่อ-นามสกุล"
-                  value={fullName}
-                  onChange={(e) => setFullName(e.target.value)}
+                  type="email"
+                  placeholder="example@email.com"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
                   className="w-full pl-11 pr-4 py-3 border border-gray-300 rounded-lg focus:border-[#0B44A3] focus:outline-none focus:ring-2 focus:ring-[#0B44A3]/20 transition"
                   required
                 />
               </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {/* Username */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  ชื่อผู้ใช้
-                </label>
-                <input
-                  type="text"
-                  placeholder="Username"
-                  value={username}
-                  onChange={(e) => {
-                    const value = e.target.value.replace(/[^a-zA-Z0-9_-]/g, '');
-                    setUsername(value);
-                  }}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:border-[#0B44A3] focus:outline-none focus:ring-2 focus:ring-[#0B44A3]/20 transition"
-                  title="ใช้ได้เฉพาะภาษาอังกฤษ ตัวเลข _ และ -"
-                  required
-                />
-              </div>
-
-              {/* Email */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  อีเมล
-                </label>
-                <div className="relative">
-                  <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-                  <input
-                    type="email"
-                    placeholder="example@email.com"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    className="w-full pl-11 pr-4 py-3 border border-gray-300 rounded-lg focus:border-[#0B44A3] focus:outline-none focus:ring-2 focus:ring-[#0B44A3]/20 transition"
-                    required
-                  />
-                </div>
-              </div>
+            {/* Username */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                ชื่อผู้ใช้
+              </label>
+              <input
+                type="text"
+                placeholder="Username"
+                value={username}
+                onChange={(e) => {
+                  const value = e.target.value.replace(/[^a-zA-Z0-9_-]/g, '');
+                  setUsername(value);
+                }}
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:border-[#0B44A3] focus:outline-none focus:ring-2 focus:ring-[#0B44A3]/20 transition"
+                title="ใช้ได้เฉพาะภาษาอังกฤษ ตัวเลข _ และ -"
+                required
+              />
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -246,6 +228,43 @@ export default function RegisterModal({ isOpen, onClose, onSwitchToLogin }: Regi
                     placeholder="••••••••"
                     value={confirm}
                     onChange={(e) => setConfirm(e.target.value)}
+                    className="w-full pl-11 pr-4 py-3 border border-gray-300 rounded-lg focus:border-[#0B44A3] focus:outline-none focus:ring-2 focus:ring-[#0B44A3]/20 transition"
+                    required
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* First Name & Last Name */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  ชื่อจริง
+                </label>
+                <div className="relative">
+                  <User className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                  <input
+                    type="text"
+                    placeholder="ชื่อจริง"
+                    value={firstName}
+                    onChange={(e) => setFirstName(e.target.value)}
+                    className="w-full pl-11 pr-4 py-3 border border-gray-300 rounded-lg focus:border-[#0B44A3] focus:outline-none focus:ring-2 focus:ring-[#0B44A3]/20 transition"
+                    required
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  นามสกุล
+                </label>
+                <div className="relative">
+                  <User className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                  <input
+                    type="text"
+                    placeholder="นามสกุล"
+                    value={lastName}
+                    onChange={(e) => setLastName(e.target.value)}
                     className="w-full pl-11 pr-4 py-3 border border-gray-300 rounded-lg focus:border-[#0B44A3] focus:outline-none focus:ring-2 focus:ring-[#0B44A3]/20 transition"
                     required
                   />

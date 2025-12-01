@@ -100,19 +100,10 @@ export default function StoreManagementPage() {
           statusReason: store.statusReason ?? null,
         });
       } else if (storeResponse.status === 404) {
-        // No store exists, create default data
-        setStoreData({
-          id: '',
-          storeName: userData.username || 'Store001',
-          storeDescription: '',
-          phoneNumber: userData.phone,
-          buMail: userData.email,
-          qrUrl: null,
-          logoUrl: null,
-          registerDate: new Date().toISOString(),
-          status: 'DRAFT',
-          statusReason: null,
-        });
+        // No store exists - redirect to home page
+        console.log('No store found for user, redirecting to home');
+        router.push('/');
+        return;
       } else {
         throw new Error(`Failed to fetch store data: ${storeResponse.status}`);
       }
