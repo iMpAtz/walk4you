@@ -113,7 +113,7 @@ export default function DetectionAlertModal({
                       </div>
                       <div className="mt-2">
                         <div className="flex items-center justify-between text-xs text-gray-600 mb-1">
-                          <span>ความมั่นใจ:</span>
+                          <span>ค่าความมั่นใจของโมเดล:</span>
                           <span className="font-semibold">{(item.confidence * 100).toFixed(1)}%</span>
                         </div>
                         <div className="w-full bg-gray-200 rounded-full h-2 overflow-hidden">

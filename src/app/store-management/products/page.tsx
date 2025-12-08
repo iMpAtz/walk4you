@@ -75,7 +75,7 @@ export default function MyProductsPage() {
   const [editingPriceId, setEditingPriceId] = useState<string | null>(null);
   const [tempPrice, setTempPrice] = useState<string>('');
   const [showDetectionModal, setShowDetectionModal] = useState(false);
-  const [detectedItem, setDetectedItem] = useState<{ class: string; confidence: number } | null>(null);
+  const [detectedItem, setDetectedItem] = useState<{ class: string; confidence: number } | { class: string; confidence: number }[] | null>(null);
   const [pendingFormData, setPendingFormData] = useState<ProductFormData | null>(null);
 
   useEffect(() => {
@@ -230,17 +230,23 @@ export default function MyProductsPage() {
         
         // Check if there's detection data in the error
         if (errorData.detected_items && errorData.detected_items.length > 0) {
-          // Find the item with highest confidence
-          const bestPrediction = errorData.detected_items.reduce((max: any, item: any) => 
-            item.confidence > max.confidence ? item : max
-          );
+          // Group by class name and keep highest confidence for each
+          const uniqueClasses = errorData.detected_items.reduce((acc: any[], item: any) => {
+            const existingIndex = acc.findIndex(x => x.class === item.class);
+            if (existingIndex === -1) {
+              acc.push({ class: item.class, confidence: item.confidence });
+            } else if (item.confidence > acc[existingIndex].confidence) {
+              acc[existingIndex].confidence = item.confidence;
+            }
+            return acc;
+          }, []);
           
-          // Show modal if confidence > 0.8 and modal not already open
-          if (bestPrediction.confidence > 0.8 && !showDetectionModal) {
-            setDetectedItem({
-              class: bestPrediction.class,
-              confidence: bestPrediction.confidence
-            });
+          // Find max confidence across all items
+          const maxConfidence = Math.max(...uniqueClasses.map((item: any) => item.confidence));
+          
+          // Show modal if any confidence > 0.6 and modal not already open
+          if (maxConfidence > 0.6 && !showDetectionModal) {
+            setDetectedItem(uniqueClasses.length === 1 ? uniqueClasses[0] : uniqueClasses);
             setPendingFormData(formData);
             setShowDetectionModal(true);
             return; // Don't show alert, let modal handle it
@@ -315,17 +321,23 @@ export default function MyProductsPage() {
         
         // Check if there's detection data in the error
         if (errorData.detected_items && errorData.detected_items.length > 0) {
-          // Find the item with highest confidence
-          const bestPrediction = errorData.detected_items.reduce((max: any, item: any) => 
-            item.confidence > max.confidence ? item : max
-          );
+          // Group by class name and keep highest confidence for each
+          const uniqueClasses = errorData.detected_items.reduce((acc: any[], item: any) => {
+            const existingIndex = acc.findIndex(x => x.class === item.class);
+            if (existingIndex === -1) {
+              acc.push({ class: item.class, confidence: item.confidence });
+            } else if (item.confidence > acc[existingIndex].confidence) {
+              acc[existingIndex].confidence = item.confidence;
+            }
+            return acc;
+          }, []);
           
-          // Show modal if confidence > 0.8 and modal not already open
-          if (bestPrediction.confidence > 0.8 && !showDetectionModal) {
-            setDetectedItem({
-              class: bestPrediction.class,
-              confidence: bestPrediction.confidence
-            });
+          // Find max confidence across all items
+          const maxConfidence = Math.max(...uniqueClasses.map((item: any) => item.confidence));
+          
+          // Show modal if any confidence > 0.6 and modal not already open
+          if (maxConfidence > 0.6 && !showDetectionModal) {
+            setDetectedItem(uniqueClasses.length === 1 ? uniqueClasses[0] : uniqueClasses);
             setShowDetectionModal(true);
             return; // Don't show alert, let modal handle it
           }
