@@ -77,12 +77,6 @@ npm i @prisma/client
 npm install lucide-react
 ```
 
-### ตั้งค่า Prisma (MongoDB)
-```
-npx prisma generate
-# (ตัวเลือก)
-npx prisma studio
-```
 
 ---
 
@@ -378,62 +372,5 @@ npm run dev -- --no-turbopack
 1. ตั้งค่า Environment Variables ทั้งหมด (ดูใน `.env`)
 2. Deploy ด้วย Dockerfile หรือ `uvicorn`
 3. เปิด port 8000
-
----
-
-## 📄 License
-
-MIT License - สามารถนำไปใช้ได้ตามต้องการ
-
----
-
-## 👥 Contributors
-
-- Backend (FastAPI + MongoDB + YOLOv8)
-- Frontend (Next.js 15 + TypeScript)
-- AI Detection (YOLOv8 trained model)
-
----
-
-**🎉 Happy Coding!**
-
-**หมายเหตุ:** โปรเจคนี้ใช้ **FastAPI + Motor** เป็นตัวจัดการ MongoDB โดยตรง (ไม่ใช้ Prisma)
-
----
-
-## 📦 NPM Scripts
-
-```json
-{
-  "dev": "next dev --turbopack",
-  "build": "next build --turbopack",
-  "start": "next start",
-  "lint": "eslint"
-}
-```
-
----
-
-## 🚀 Deployment
-
-### Frontend (Vercel)
-1. Push โค้ดไปยัง GitHub
-2. เชื่อมต่อ repository กับ Vercel
-3. ตั้ง Environment Variables:
-   - `NEXT_PUBLIC_API_BASE=https://your-backend-url.com`
-
-### Backend (Google Cloud Run / Railway)
-1. ตั้งค่า Environment Variables ทั้งหมด (ดูใน `.env`)
-2. Deploy ด้วย Dockerfile หรือ `uvicorn`
-3. เปิด port 8000
-
----
----
-
-## 👥 Contributors
-
-- Backend (FastAPI + MongoDB + YOLOv8)
-- Frontend (Next.js 15 + TypeScript)
-- AI Detection (YOLOv8 trained model)
 
 ---
