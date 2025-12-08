@@ -1,22 +1,44 @@
-## Walk4You - Multivendor E-commerce (Next.js + FastAPI + Prisma/MongoDB)
+## Walk4You - Multivendor E-commerce Platform
 
-### โครงสร้าง
+**Tech Stack:** Next.js 15 (Frontend) + FastAPI (Backend) + MongoDB (Database) + YOLOv8 (AI Detection)
+
+### โครงสร้างโปรเจค
 ```
 walk4you/
-├─ api/                       # FastAPI backend
+├─ server/                              # FastAPI Backend (Python)
 │  └─ app/
-│     └─ main.py
-├─ prisma/
-│  └─ schema.prisma           # Prisma + MongoDB schema
+│     └─ main.py                        # API endpoints, MongoDB queries
 ├─ src/
-│  ├─ app/                    # Next.js App Router
-│  │  ├─ page.tsx
-│  │  └─ layout.tsx
-│  └─ components/
-│     └─ ApiProbe.tsx
-├─ package.json               # Next.js scripts
+│  ├─ app/                              # Next.js App Router (Frontend)
+│  │  ├─ page.tsx                       # หน้าแรก
+│  │  ├─ layout.tsx                     # Root layout
+│  │  ├─ login/                         # หน้า Login
+│  │  ├─ register/                      # หน้า Register
+│  │  ├─ products/                      # รายละเอียดสินค้า
+│  │  ├─ cart/                          # ตะกร้าสินค้า
+│  │  ├─ checkout/                      # ชำระเงิน
+│  │  ├─ my-orders/                     # ออเดอร์ของผู้ซื้อ
+│  │  ├─ my-reports/                    # รายงานที่ส่งโดยผู้ใช้
+│  │  ├─ profile/                       # โปรไฟล์ผู้ใช้
+│  │  ├─ stores/                        # หน้าร้านค้า
+│  │  ├─ search/                        # ค้นหาสินค้า
+│  │  ├─ store-management/              # จัดการร้านค้า (Seller)
+│  │  │  ├─ products/                   # จัดการสินค้า + YOLOv8 Detection
+│  │  │  └─ orders/                     # จัดการออเดอร์
+│  │  └─ admin/                         # Admin Dashboard
+│  └─ components/                       # Reusable Components
+│     ├─ TopBar.tsx                     # Navigation bar
+│     ├─ DetectionAlertModal.tsx        # AI Detection Alert
+│     ├─ OrderReportModal.tsx           # Report modal
+│     ├─ ProductFormModal.tsx           # Add/Edit Product
+│     ├─ CartDropdown.tsx               # Cart dropdown
+│     ├─ NotificationBell.tsx           # Notifications
+│     └─ ... (20+ components)
+├─ models/
+│  └─ best.pt                           # YOLOv8 trained model
+├─ package.json
 ├─ tsconfig.json
-├─ next.config.ts
+└─ next.config.js
 ```
 
 ### เตรียมเครื่องมือ
@@ -62,156 +84,356 @@ npx prisma generate
 npx prisma studio
 ```
 
-### รัน Backend (FastAPI)
-```
+---
+
+### 3. ติดตั้ง Backend (FastAPI)
+
+```bash
 cd server
 
-# 1) สร้าง venv (ใช้ Python ที่มีอยู่บนเครื่อง)
+# 1) สร้าง virtual environment
 python -m venv .venv
+
+# 2) เปิดใช้งาน venv (Windows PowerShell)
 .\.venv\Scripts\Activate.ps1
 
-# 2) ติดตั้ง dependencies หลัก
+# 3) อัปเกรด pip
 python -m pip install --upgrade pip
-python -m pip install fastapi "uvicorn[standard]" motor python-dotenv pydantic email-validator cloudinary python-multipart
 
-# 3) ตั้งค่า .env (เช่นเชื่อม MongoDB Atlas)
-#   สร้างไฟล์ api/.env แล้วใส่:
-#   MONGODB_URI=mongodb+srv://<user>:<pass>@<cluster>/?retryWrites=true&w=majority
-#   MONGODB_DB=walk4you
-
-# 4) รันเซิร์ฟเวอร์ด้วย interpreter ของ venv โดยตรง (แนะนำ)
-.\.venv\Scripts\python.exe -m uvicorn app.main:app --reload --port 8000
+# 4) ติดตั้ง dependencies
+python -m pip install fastapi "uvicorn[standard]" motor python-dotenv pydantic email-validator cloudinary python-multipart ultralytics pillow httpx
 ```
-ทดสอบ: http://localhost:8000/health และ http://localhost:8000/docs
 
-**หมายเหตุสำคัญ:** ต้องใช้ `.\.venv\Scripts\python.exe` แทน `python` เพื่อให้ใช้ interpreter จาก venv ที่มี cloudinary และ dependencies อื่นๆ
+**Dependencies หลัก:**
+- `fastapi` - Web framework
+- `uvicorn` - ASGI server
+- `motor` - Async MongoDB driver
+- `cloudinary` - Image storage
+- `ultralytics` - YOLOv8 object detection
+- `pillow` - Image processing
+- `httpx` - HTTP client
 
-คำสั่งตรวจสอบ/ดีบัก
+---
+
+### 4. รัน Backend Server
+
+```bash
+# รันด้วย Python จาก venv (แนะนำ)
+.\.venv\Scripts\python.exe -m uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 ```
-# ตรวจว่าใช้ python จาก venv จริง
+
+**ทดสอบ:**
+- API Docs: http://localhost:8000/docs
+- Health Check: http://localhost:8000/health
+
+**คำสั่งตรวจสอบ:**
+```bash
+# ตรวจสอบ Python path
 python -c "import sys; print(sys.executable)"
 
-# ตรวจว่าแพ็กเกจสำคัญพร้อมใช้งาน
-python -c "import uvicorn, email_validator; print('deps ok')"
-
-# ตรวจการเชื่อม MongoDB
-curl http://localhost:8000/db/status
+# ตรวจสอบ dependencies
+python -c "import uvicorn, cloudinary, ultralytics; print('✓ All deps installed')"
 ```
 
-### รัน Frontend (Next.js)
-python -m uvicorn app.main:app --reload --port 8000
-```
-npm run dev
-# ถ้าเจอปัญหา Turbopack
-npm run dev:no-turbo
-```
-เปิด http://localhost:3000 แล้วดู Console จะเห็น log จาก `ApiProbe` ที่เรียก `/health` ของ FastAPI
+---
 
-### ฟีเจอร์ Payment Slip Upload
-ระบบการชำระเงินแบบหลายร้านค้า โดยลูกค้าต้องอัปโหลดหลักฐานการทำรายการสำหรับแต่ละร้าน
+## ⚠️ ปัญหาที่พบบ่อย
 
-#### Frontend Flow (src/app/checkout/confirm/page.tsx)
-1. ลูกค้าเลือกการชำระเงินแบบ QR Code ต่อร้านค้า
-2. เข้าสู่หน้า Checkout Confirmation
-3. ระบบแสดง Step-by-step Modal:
-   - Stepper: "Store 1 of 3" (แสดงความคืบหน้า)
-   - QR Code: แสดง QR ของร้านปัจจุบัน
-   - Upload: อัปโหลดหลักฐานการโอนเงิน (ชำระแบบ COD ข้ามขั้นนี้ไป)
-   - Navigation: ปุ่ม Previous/Next เพื่อนำทาง เก็บไฟล์ต่างแต่ละร้าน
+### Backend (Python/FastAPI)
 
-#### Backend Endpoint
-```
-POST /orders/upload-slip
-
-Request:
-  - file: UploadFile (jpg, png, gif, webp, เป็นต้น)
-  - Authorization: Bearer <token>
-
-Response:
-  { "url": "https://res.cloudinary.com/...", "message": "Upload successful" }
-
-Validation:
-  - ไฟล์ต้องเป็น image type
-  - ขนาดสูงสุด: 5MB
-  - Cloudinary Path: walk4you/payment-slips/
+**1. ModuleNotFoundError: cloudinary / ultralytics**
+```bash
+# ต้องเปิดใช้ venv ก่อนรัน
+.\.venv\Scripts\Activate.ps1
+python -m pip install cloudinary ultralytics pillow httpx
 ```
 
-#### การใช้งาน
-1. ลูกค้าเลือก QR Payment และอัปโหลด file ต่อ `/orders/upload-slip`
-2. Backend เก็บ URL ใน Cloudinary แล้วส่ง url กลับ
-3. Frontend เก็บ URL ไว้ใน `storeProofUrls` Record
-4. เมื่อส่งคำสั่ง submit บัญชี จะรวม URL ทั้งหมด
+**2. Cloudinary credentials not configured**
+- ตรวจสอบว่าชื่อตัวแปรใน `.env` ถูกต้อง:
+  - `CLOUDINARY_API_SECRET` (ต้องมี **T** ท้าย, ไม่ใช่ `CLOUDINARY_API_SECRE`)
 
-#### State Management (Frontend)
-- `currentStoreIndex`: ร้านปัจจุบันในขั้นตอน
-- `storeProofs`: Map ของ storeId → File object
-- `storeProofPreviews`: Map ของ storeId → blob URL preview
-- `uploading`: Global loading state
+**3. YOLOv8 model not found**
+```bash
+# วาง model ไว้ที่
+models/best.pt
 
-### ปัญหาที่พบบ่อย
-- 404 หน้า Home: อย่าให้มีโฟลเดอร์ Python ชื่อ `app` ในรูท Next ให้ย้ายไป `api/`
-- PowerShell ใช้ `;` แทน `&&` เมื่อต่อคำสั่งหลายตัว
-- Prisma P1012 (Decimal ไม่รองรับ MongoDB): สคีมาใช้ Int หน่วยเซ็นต์แล้ว
-- หาก `npx prisma generate` error: ติดตั้ง `prisma` และ `@prisma/client` แล้วลองใหม่
-- FastAPI แจ้ง email-validator ไม่พบ: ติดตั้งเพิ่มด้วย `python -m pip install email-validator` ใน venv
-- ถ้ารัน `uvicorn` แล้วดึง Python global: รันแบบ `python -m uvicorn ...` แทน เพื่อบังคับใช้ venv
-- **Payment Slip Upload ไม่สำเร็จ**: ต้องติดตั้ง `cloudinary` ด้วย `python -m pip install cloudinary` ใน venv
-- **Form data requires "python-multipart"**: ติดตั้ง `python-multipart` ด้วย `python -m pip install python-multipart` ใน venv
-- **Venv Activation Failed**: ใช้ full path: `.\.venv\Scripts\Activate.ps1` หรือลองสร้าง venv ใหม่ด้วย `python -m venv .venv`
-- **ModuleNotFoundError: cloudinary**: ต้องเปิดใช้ venv ก่อนรัน Python (ดู prompt ควรมี `(.venv)` นำหน้า)
-
-### สคริปต์ใน package.json
+# หรือเปลี่ยน path ใน .env
+YOLO_MODEL_PATH=path/to/your/model.pt
 ```
-"scripts": {
+
+**4. MongoDB connection failed**
+- ตรวจสอบ `MONGODB_URI` ใน `.env`
+- ตรวจสอบ IP Whitelist ใน MongoDB Atlas
+- ทดสอบ: `curl http://localhost:8000/health`
+
+**5. uvicorn ใช้ Python global แทน venv**
+```bash
+# ใช้ full path ของ Python ใน venv
+.\.venv\Scripts\python.exe -m uvicorn app.main:app --reload --port 8000
+```
+
+### Frontend (Next.js)
+
+**6. API calls failed (CORS)**
+- ตรวจสอบ `NEXT_PUBLIC_API_BASE` ใน `.env`
+- ตรวจสอบ `ALLOWED_ORIGINS` ใน Backend `.env`
+
+**7. Turbopack issues**
+```bash
+# ปิด Turbopack
+npm run dev -- --no-turbopack
+```
+
+---
+
+## 📚 API Endpoints
+
+### Authentication
+- `POST /auth/register` - ลงทะเบียนผู้ใช้ใหม่
+- `POST /auth/login` - เข้าสู่ระบบ
+- `POST /auth/refresh` - Refresh token
+- `POST /auth/send-otp` - ส่ง OTP
+- `POST /auth/verify-otp` - ยืนยัน OTP
+
+### Users
+- `GET /users/me` - ข้อมูลผู้ใช้ปัจจุบัน
+- `PUT /users/change-password` - เปลี่ยนรหัสผ่าน
+- `PUT /users/address` - อัปเดตที่อยู่
+- `POST /users/me/avatar` - อัปโหลด Avatar
+
+### Products
+- `GET /products/search` - ค้นหาสินค้า
+- `GET /products/featured` - สินค้าแนะนำ
+- `GET /products/{id}` - รายละเอียดสินค้า
+- `POST /products` - เพิ่มสินค้า (+ YOLOv8 Detection)
+- `PUT /products/{id}` - แก้ไขสินค้า (+ YOLOv8 Detection)
+- `DELETE /products/{id}` - ลบสินค้า
+- `POST /products/check-illegal` - ทดสอบ AI Detection
+
+### Orders
+- `POST /orders` - สร้างออเดอร์
+- `GET /orders/my` - ออเดอร์ของผู้ซื้อ
+- `GET /orders/my-store` - ออเดอร์ของร้านค้า
+- `PUT /orders/{id}/status` - อัปเดตสถานะ
+- `PUT /orders/{id}/shipping` - อัปเดตข้อมูลจัดส่ง
+- `POST /orders/upload-slip` - อัปโหลดหลักฐานการโอน
+
+### Cart
+- `GET /cart` - ดูตะกร้า
+- `POST /cart/items` - เพิ่มสินค้าในตะกร้า
+- `PUT /cart/items/{id}` - แก้ไขจำนวน
+- `DELETE /cart/items/{id}` - ลบสินค้า
+
+### Stores
+- `GET /stores/my-store` - ข้อมูลร้านของตัวเอง
+- `POST /stores/my-store` - สร้างร้านค้า
+- `PUT /stores/my-store` - แก้ไขข้อมูลร้าน
+- `PUT /stores/{id}/qr` - อัปโหลด QR Code
+- `PUT /stores/{id}/logo` - อัปโหลด Logo
+
+### Reports
+- `POST /reports` - ส่งรายงาน
+- `GET /reports/my` - รายงานของตัวเอง
+- `GET /reports` - รายงานทั้งหมด (Admin)
+- `PUT /reports/{id}/status` - อัปเดตสถานะรายงาน (Admin)
+
+### Admin
+- `GET /admin/users` - รายชื่อผู้ใช้ทั้งหมด
+- `GET /admin/stores` - รายชื่อร้านค้าทั้งหมด
+- `PUT /admin/users/{id}/status` - ระงับ/ปลดบล็อกผู้ใช้
+- `PUT /admin/stores/{id}/status` - ระงับ/อนุมัติร้านค้า
+- `PUT /admin/users/{id}` - แก้ไขข้อมูลผู้ใช้
+
+### Notifications
+- `GET /notifications` - ดูการแจ้งเตือน
+- `PUT /notifications/{id}/read` - อ่านแล้ว
+- `GET /notifications/unread-count` - จำนวนที่ยังไม่อ่าน
+
+---
+
+## 🤖 YOLOv8 Object Detection
+
+### การทำงาน
+1. เมื่อ Seller อัปโหลดรูปสินค้า (Create/Update Product)
+2. Backend ส่งรูปไปยัง YOLOv8 model (`models/best.pt`)
+3. ถ้าตรวจพบสินค้าผิดกฎหมาย (confidence > 0.8):
+   - Backend ส่ง `detected_items` กลับใน response
+   - Frontend แสดง **DetectionAlertModal** แจ้งเตือน
+   - แสดงชื่อสินค้าที่ตรวจพบและระดับความมั่นใจ
+4. Seller สามารถเลือก:
+   - **เปลี่ยนรูปใหม่** - อัปโหลดรูปใหม่
+   - **ปิด** - ยกเลิกการเพิ่ม/แก้ไขสินค้า
+
+### ตั้งค่า YOLOv8
+```bash
+# วาง YOLOv8 model ไว้ที่
+models/best.pt
+
+# ตั้งค่าใน .env
+YOLO_MODEL_PATH=models/best.pt
+YOLO_CONFIDENCE_THRESHOLD=0.6
+YOLO_ENABLED=true
+```
+
+### ทดสอบ Detection
+```bash
+curl -X POST http://localhost:8000/products/check-illegal \
+  -H "Authorization: Bearer <token>" \
+  -F "image_url=https://example.com/image.jpg"
+```
+
+---
+
+## ⚠️ ปัญหาที่พบบ่อย
+
+### Backend (Python/FastAPI)
+
+**1. ModuleNotFoundError: cloudinary / ultralytics**
+```bash
+# ต้องเปิดใช้ venv ก่อนรัน
+.\.venv\Scripts\Activate.ps1
+python -m pip install cloudinary ultralytics pillow httpx
+```
+
+**2. Cloudinary credentials not configured**
+- ตรวจสอบว่าชื่อตัวแปรใน `.env` ถูกต้อง:
+  - `CLOUDINARY_API_SECRET` (ต้องมี **T** ท้าย, ไม่ใช่ `CLOUDINARY_API_SECRE`)
+
+**3. YOLOv8 model not found**
+```bash
+# วาง model ไว้ที่
+models/best.pt
+
+# หรือเปลี่ยน path ใน .env
+YOLO_MODEL_PATH=path/to/your/model.pt
+```
+
+**4. MongoDB connection failed**
+- ตรวจสอบ `MONGODB_URI` ใน `.env`
+- ตรวจสอบ IP Whitelist ใน MongoDB Atlas
+- ทดสอบ: `curl http://localhost:8000/health`
+
+**5. uvicorn ใช้ Python global แทน venv**
+```bash
+# ใช้ full path ของ Python ใน venv
+.\.venv\Scripts\python.exe -m uvicorn app.main:app --reload --port 8000
+```
+
+### Frontend (Next.js)
+
+**6. API calls failed (CORS)**
+- ตรวจสอบ `NEXT_PUBLIC_API_BASE` ใน `.env`
+- ตรวจสอบ `ALLOWED_ORIGINS` ใน Backend `.env`
+
+**7. Turbopack issues**
+```bash
+# ปิด Turbopack
+npm run dev -- --no-turbopack
+```
+
+---
+
+## 🗂️ Database Schema
+
+**MongoDB Collections:**
+- `User` - ผู้ใช้ (CUSTOMER, SELLER, ADMIN)
+- `Store` - ร้านค้า
+- `Product` - สินค้า
+- `Order` - ออเดอร์หลัก
+- `SubOrder` - ออเดอร์ย่อย (แยกตามร้าน)
+- `Cart` - ตะกร้าสินค้า
+- `CartItem` - รายการในตะกร้า
+- `Review` - รีวิวสินค้า
+- `Notification` - การแจ้งเตือน
+- `Report` - รายงานปัญหา
+- `AdminAction` - บันทึกการกระทำของ Admin
+- `Banner` - แบนเนอร์โฆษณา
+
+**หมายเหตุ:** โปรเจคนี้ใช้ **FastAPI + Motor** เป็นตัวจัดการ MongoDB โดยตรง (ไม่ใช้ Prisma)
+
+---
+
+## 📦 NPM Scripts
+
+```json
+{
   "dev": "next dev --turbopack",
-  "dev:no-turbo": "next dev --no-turbopack",
-  "build": "next build",
+  "build": "next build --turbopack",
   "start": "next start",
-  "lint": "eslint",
-  "prisma:push": "prisma db push",
-  "prisma:gen": "prisma generate",
-  "prisma:studio": "prisma studio"
+  "lint": "eslint"
 }
 ```
 
-### หมายเหตุสคีมา
-- ราคา/จำนวนเงินเก็บเป็น Int หน่วยเซ็นต์
-- ความสัมพันธ์ Shipment ↔ SubOrder เป็น one-to-one โดย FK อยู่ `Shipment.subOrderId` (@unique)
-- ความสัมพันธ์ AdminAction มีฝั่งย้อนกลับใน `User` และ `Store`
+---
 
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+## 🚀 Deployment
 
-## Getting Started
+### Frontend (Vercel)
+1. Push โค้ดไปยัง GitHub
+2. เชื่อมต่อ repository กับ Vercel
+3. ตั้ง Environment Variables:
+   - `NEXT_PUBLIC_API_BASE=https://your-backend-url.com`
 
-First, run the development server:
+### Backend (Google Cloud Run / Railway)
+1. ตั้งค่า Environment Variables ทั้งหมด (ดูใน `.env`)
+2. Deploy ด้วย Dockerfile หรือ `uvicorn`
+3. เปิด port 8000
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+---
+
+## 📄 License
+
+MIT License - สามารถนำไปใช้ได้ตามต้องการ
+
+---
+
+## 👥 Contributors
+
+- Backend (FastAPI + MongoDB + YOLOv8)
+- Frontend (Next.js 15 + TypeScript)
+- AI Detection (YOLOv8 trained model)
+
+---
+
+**🎉 Happy Coding!**
+
+**หมายเหตุ:** โปรเจคนี้ใช้ **FastAPI + Motor** เป็นตัวจัดการ MongoDB โดยตรง (ไม่ใช้ Prisma)
+
+---
+
+## 📦 NPM Scripts
+
+```json
+{
+  "dev": "next dev --turbopack",
+  "build": "next build --turbopack",
+  "start": "next start",
+  "lint": "eslint"
+}
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+---
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## 🚀 Deployment
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+### Frontend (Vercel)
+1. Push โค้ดไปยัง GitHub
+2. เชื่อมต่อ repository กับ Vercel
+3. ตั้ง Environment Variables:
+   - `NEXT_PUBLIC_API_BASE=https://your-backend-url.com`
 
-## Learn More
+### Backend (Google Cloud Run / Railway)
+1. ตั้งค่า Environment Variables ทั้งหมด (ดูใน `.env`)
+2. Deploy ด้วย Dockerfile หรือ `uvicorn`
+3. เปิด port 8000
 
-To learn more about Next.js, take a look at the following resources:
+---
+---
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## 👥 Contributors
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+- Backend (FastAPI + MongoDB + YOLOv8)
+- Frontend (Next.js 15 + TypeScript)
+- AI Detection (YOLOv8 trained model)
 
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+---

@@ -12,7 +12,7 @@ interface DetectionAlertModalProps {
   onClose: () => void;
   onConfirm: () => void;
   onRescan: () => void;
-  detectedItem: DetectedItem | null;
+  detectedItem: DetectedItem | DetectedItem[] | null;
 }
 
 export default function DetectionAlertModal({
@@ -24,8 +24,12 @@ export default function DetectionAlertModal({
 }: DetectionAlertModalProps) {
   if (!isOpen || !detectedItem) return null;
 
-  const isHighConfidence = detectedItem.confidence > 0.8;
-  const confidencePercentage = (detectedItem.confidence * 100).toFixed(1);
+  // Convert to array if single item
+  const detectedItems = Array.isArray(detectedItem) ? detectedItem : [detectedItem];
+  
+  // Find highest confidence for color coding
+  const maxConfidence = Math.max(...detectedItems.map(item => item.confidence));
+  const isHighConfidence = maxConfidence > 0.6;
 
   return (
     <div className="fixed inset-0 backdrop-blur-sm bg-opacity-60 flex items-center justify-center z-50 p-4 animate-fadeIn">
@@ -84,10 +88,12 @@ export default function DetectionAlertModal({
             </div>
           </div>
 
-          {/* Detected Object Display */}
+          {/* Detected Objects Display */}
           <div className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl p-5 border-2 border-gray-200">
             <div className="flex items-center justify-between mb-3">
-              <span className="text-sm font-semibold text-gray-700">สินค้าที่ตรวจพบ:</span>
+              <span className="text-sm font-semibold text-gray-700">
+                สินค้าที่ตรวจพบ: ({detectedItems.length} รายการ)
+              </span>
               <span className={`px-3 py-1 rounded-full text-xs font-semibold ${
                 isHighConfidence 
                   ? 'bg-red-100 text-red-700' 
@@ -96,10 +102,33 @@ export default function DetectionAlertModal({
                 {isHighConfidence ? 'ความมั่นใจสูง' : 'ความมั่นใจปานกลาง'}
               </span>
             </div>
-            <div className="bg-white rounded-lg p-4 border-2 border-red-200">
-              <div className="text-2xl font-bold text-red-600 break-words text-center">
-                {detectedItem.class}
-              </div>
+            
+            <div className="space-y-3 max-h-60 overflow-y-auto">
+              {detectedItems.map((item, index) => (
+                <div key={index} className="bg-white rounded-lg p-4 border-2 border-red-200">
+                  <div className="flex items-center justify-between">
+                    <div className="flex-1">
+                      <div className="text-lg font-bold text-red-600 break-words">
+                        {item.class}
+                      </div>
+                      <div className="mt-2">
+                        <div className="flex items-center justify-between text-xs text-gray-600 mb-1">
+                          <span>ความมั่นใจ:</span>
+                          <span className="font-semibold">{(item.confidence * 100).toFixed(1)}%</span>
+                        </div>
+                        <div className="w-full bg-gray-200 rounded-full h-2 overflow-hidden">
+                          <div 
+                            className={`h-full transition-all ${
+                              item.confidence > 0.8 ? 'bg-red-500' : 'bg-yellow-500'
+                            }`}
+                            style={{ width: `${item.confidence * 100}%` }}
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
           {/* Additional Warning */}
