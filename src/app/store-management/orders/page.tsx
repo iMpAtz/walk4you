@@ -462,6 +462,9 @@ export default function StoreOrdersPage() {
                               <span className="font-mono text-xs sm:text-sm text-gray-700">#{order.id.slice(-8)}</span>
                             </div>
                             <div className="text-xs sm:text-sm text-gray-600 break-words">ผู้สั่งซื้อ: <span className="font-semibold">{order.username || order.userId}</span></div>
+                            {order.phoneNumber && (
+                              <div className="text-xs sm:text-sm text-gray-600 break-words">เบอร์โทร: <span className="font-semibold">{order.phoneNumber}</span></div>
+                            )}
                             <div className="text-xl sm:text-2xl font-bold text-[#0B44A3] mt-1">฿{order.totalAmount?.toLocaleString()}</div>
                             <div className="mt-2">
                               {order.status === 'PENDING' && (
@@ -860,6 +863,9 @@ export default function StoreOrdersPage() {
                 <div className="text-xs sm:text-sm space-y-1 text-gray-700">
                   <div>Order ID: <span className="font-mono font-semibold">#{confirmDialog.order.id.slice(-8)}</span></div>
                   <div>ผู้สั่งซื้อ: <span className="font-semibold">{confirmDialog.order.username || confirmDialog.order.userId}</span></div>
+                  {confirmDialog.order.phoneNumber && (
+                    <div>เบอร์โทรผู้ซื้อ: <span className="font-semibold">{confirmDialog.order.phoneNumber}</span></div>
+                  )}
                   <div>ยอดรวม: <span className="font-semibold text-[#0B44A3]">฿{confirmDialog.order.totalAmount?.toLocaleString()}</span></div>
                 </div>
               </div>
