@@ -374,3 +374,24 @@ npm run dev -- --no-turbopack
 3. เปิด port 8000
 
 ---
+## 🗂️ .ENV Variables
+# Main Folder(Frontend) .ENV
+DATABASE_URL
+CLOUDINARY_CLOUD_NAME
+CLOUDINARY_API_KEY
+CLOUDINARY_API_SECRET
+NEXT_PUBLIC_API_BASE
+# Server Folder (Backend) .ENV
+MONGODB_URI
+MONGODB_DB
+CLOUDINARY_CLOUD_NAME
+CLOUDINARY_API_KEY
+CLOUDINARY_API_SECRET
+SMTP_SERVER
+SMTP_PORT
+SMTP_USERNAME
+SMTP_PASSWORD
+YOLO_MODEL_PATH=(path fo your model)
+YOLO_CONFIDENCE_THRESHOLD=(model confidence threshold format = 0.x)
+YOLO_ENABLED=(true/false)
+ALLOWED_ORIGINS=yourfrontendaddress
