@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import type { StoreCreate } from '@/types';
-import { config } from '@/lib/config';
+import { getApiBase } from '@/lib/config';
 
 interface StoreRegisterModalProps {
   isOpen: boolean;
@@ -39,7 +39,7 @@ export default function StoreRegisterModal({ isOpen, onClose, onSuccess }: Store
     setError(null);
     
     try {
-      const response = await fetch(`${config.apiBaseUrl}/auth/send-otp`, {
+      const response = await fetch(`${getApiBase()}/auth/send-otp`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -78,7 +78,7 @@ export default function StoreRegisterModal({ isOpen, onClose, onSuccess }: Store
 
     try {
       // First verify OTP
-      const otpResponse = await fetch(`${config.apiBaseUrl}/auth/verify-otp`, {
+      const otpResponse = await fetch(`${getApiBase()}/auth/verify-otp`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -98,7 +98,7 @@ export default function StoreRegisterModal({ isOpen, onClose, onSuccess }: Store
 
       // OTP verified, now create store
       const token = localStorage.getItem('access_token');
-      const response = await fetch(`${config.apiBaseUrl}/users/me/store`, {
+      const response = await fetch(`${getApiBase()}/users/me/store`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,

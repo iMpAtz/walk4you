@@ -6,7 +6,7 @@ import Image from 'next/image';
 import { Store, Package, Mail, Phone, Calendar, AlertTriangle, ShoppingCart, Heart, Star } from 'lucide-react';
 import TopBar from '@/components/TopBar';
 import { useCart } from '@/contexts/CartContext';
-import { config } from '@/lib/config';
+import { getApiBase } from '@/lib/config';
 
 interface StoreData {
   id: string;
@@ -65,7 +65,7 @@ export default function StorePage() {
   const fetchStoreData = async () => {
     if (!storeId) return;
     try {
-      const res = await fetch(`${config.apiBaseUrl}/stores/${storeId}`);
+      const res = await fetch(`${getApiBase()}/stores/${storeId}`);
       if (res.ok) {
         const data = await res.json();
         setStoreData(data);
@@ -82,7 +82,7 @@ export default function StorePage() {
   const fetchStoreProducts = async () => {
     if (!storeId) return;
     try {
-      const res = await fetch(`${config.apiBaseUrl}/stores/${storeId}/products`);
+      const res = await fetch(`${getApiBase()}/stores/${storeId}/products`);
       if (res.ok) {
         const data = await res.json();
         setProducts(Array.isArray(data) ? data : []);
@@ -100,7 +100,7 @@ export default function StorePage() {
       const token = localStorage.getItem('access_token');
       if (!token) return;
       
-      const res = await fetch(`${config.apiBaseUrl}/users/me`, {
+      const res = await fetch(`${getApiBase()}/users/me`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (res.ok) {

@@ -1,14 +1,14 @@
 'use client';
 
 import CloudinaryUploadButton from '@/components/CloudinaryUploadButton';
-import { config } from '@/lib/config';
+import { getApiBase } from '@/lib/config';
 
 export default function UploadTestClient() {
   const onUploaded = async (p: { url: string; publicId: string; width?: number; height?: number; bytes?: number; format?: string; folder?: string; }) => {
     try {
       const token = typeof window !== 'undefined' ? localStorage.getItem('access_token') : null;
       if (!token) return;
-      await fetch(`${config.apiBaseUrl}/users/me/avatar`, {
+      await fetch(`${getApiBase()}/users/me/avatar`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

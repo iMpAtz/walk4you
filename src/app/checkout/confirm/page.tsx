@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { useCart } from '@/contexts/CartContext';
-import { config } from '@/lib/config';
+import { getApiBase } from '@/lib/config';
 import TopBar from '@/components/TopBar';
 
 // Force dynamic rendering
@@ -31,7 +31,7 @@ function StoreQrImage({ storeId }: { storeId: string }) {
     let mounted = true;
     const fetchQr = async () => {
       try {
-        const res = await fetch(`${config.apiBaseUrl}/stores/${storeId}/qr`);
+        const res = await fetch(`${getApiBase()}/stores/${storeId}/qr`);
         if (res.ok) {
           const data = await res.json();
           if (mounted) {
@@ -95,7 +95,7 @@ export default function CheckoutConfirmPage() {
         const token = localStorage.getItem('access_token');
         if (!token) return;
 
-        const response = await fetch(`${config.apiBaseUrl}/users/me`, {
+        const response = await fetch(`${getApiBase()}/users/me`, {
           headers: {
             'Authorization': `Bearer ${token}`,
           },
@@ -201,7 +201,7 @@ export default function CheckoutConfirmPage() {
           const fd = new FormData();
           fd.append('file', file!);
           
-          const uploadRes = await fetch(`${config.apiBaseUrl}/orders/upload-slip`, {
+          const uploadRes = await fetch(`${getApiBase()}/orders/upload-slip`, {
             method: 'POST',
             headers: {
               'Authorization': `Bearer ${token}`,
@@ -259,7 +259,7 @@ export default function CheckoutConfirmPage() {
             notes: ''
           };
 
-          const res = await fetch(`${config.apiBaseUrl}/orders`, {
+          const res = await fetch(`${getApiBase()}/orders`, {
             method: 'POST',
             headers: {
               'Authorization': `Bearer ${token}`,

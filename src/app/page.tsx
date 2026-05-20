@@ -7,7 +7,7 @@ import { AlertCircle } from "lucide-react";
 import { categories as baseCategories, useCategoriesWithCounts } from '@/constants/categories';
 import Image from 'next/image';
 import Searchbar from '@/components/Searchbar';
-import { config } from '@/lib/config';
+import { getApiBase } from '@/lib/config';
 
 interface Product {
   id: string;
@@ -56,7 +56,7 @@ export default function Home() {
 
   const fetchBanners = async () => {
     try {
-      const response = await fetch(`${config.apiBaseUrl}/banners`);
+      const response = await fetch(`${getApiBase()}/banners`);
       if (response.ok) {
         const data: Banner[] = await response.json();
         
@@ -118,7 +118,7 @@ export default function Home() {
     try {
       setError(null);
       setIsLoading(true);
-      const response = await fetch(`${config.apiBaseUrl}/products/featured?limit=8`);
+      const response = await fetch(`${getApiBase()}/products/featured?limit=8`);
       if (!response.ok) throw new Error('Failed to fetch products');
       const products: Product[] = await response.json();
       setFeaturedProducts(products);

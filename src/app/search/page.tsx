@@ -6,7 +6,7 @@ import TopBar from '@/components/TopBar';
 import { useEffect, useState, Suspense } from 'react';
 import { AlertCircle } from 'lucide-react';
 import Image from 'next/image';
-import { config } from '@/lib/config';
+import { getApiBase } from '@/lib/config';
 
 interface Product {
   id: string;
@@ -28,7 +28,7 @@ function SearchContent() {
       try {
         setIsLoading(true);
         setError(null);
-        const res = await fetch(`${config.apiBaseUrl}/products/search?q=${encodeURIComponent(query)}`);
+        const res = await fetch(`${getApiBase()}/products/search?q=${encodeURIComponent(query)}`);
         if (!res.ok) throw new Error('Failed');
         const data: Product[] = await res.json();
         setResults(data);

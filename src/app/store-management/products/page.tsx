@@ -21,7 +21,7 @@ import ProductFormModal from '@/components/ProductFormModal';
 import ProductEditModal from '@/components/ProductEditModal';
 import DetectionAlertModal from '@/components/DetectionAlertModal';
 import TopBar from '@/components/TopBar';
-import { config } from '@/lib/config';
+import { getApiBase } from '@/lib/config';
 
 interface Product {
   id: string;
@@ -101,7 +101,7 @@ export default function MyProductsPage() {
 
   const fetchUserData = async (token: string) => {
     try {
-      const response = await fetch(`${config.apiBaseUrl}/users/me`, {
+      const response = await fetch(`${getApiBase()}/users/me`, {
         headers: {
           'Authorization': `Bearer ${token}`,
         },
@@ -118,7 +118,7 @@ export default function MyProductsPage() {
 
   const fetchStoreData = async (token: string) => {
     try {
-      const response = await fetch(`${config.apiBaseUrl}/users/me/store`, {
+      const response = await fetch(`${getApiBase()}/users/me/store`, {
         headers: {
           'Authorization': `Bearer ${token}`,
         },
@@ -141,7 +141,7 @@ export default function MyProductsPage() {
     try {
       setIsLoading(true);
       
-      const response = await fetch(`${config.apiBaseUrl}/products/my-products`, {
+      const response = await fetch(`${getApiBase()}/products/my-products`, {
         headers: {
           'Authorization': `Bearer ${token}`,
         },
@@ -198,7 +198,7 @@ export default function MyProductsPage() {
         category: formData.category || null
       };
 
-      const response = await fetch(`${config.apiBaseUrl}/products`, {
+      const response = await fetch(`${getApiBase()}/products`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -286,7 +286,7 @@ export default function MyProductsPage() {
         return;
       }
 
-      const response = await fetch(`${config.apiBaseUrl}/products/${productId}`, {
+      const response = await fetch(`${getApiBase()}/products/${productId}`, {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -375,7 +375,7 @@ export default function MyProductsPage() {
         return;
       }
 
-      const response = await fetch(`${config.apiBaseUrl}/products/${deletingProductId}`, {
+      const response = await fetch(`${getApiBase()}/products/${deletingProductId}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${token}`,

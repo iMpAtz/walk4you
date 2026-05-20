@@ -6,7 +6,7 @@ import { useState, useEffect } from "react";
 import { ShoppingCart, Share2, Star, Package, Shield, Truck, MessageCircle, AlertTriangle, User, Maximize2, X } from "lucide-react";
 import { useCart } from "@/contexts/CartContext";
 import TopBar from "@/components/TopBar";
-import { config } from '@/lib/config';
+import { getApiBase } from '@/lib/config';
 
 interface Product {
   id: string;
@@ -122,24 +122,24 @@ export default function ProductPage() {
   const { addToCart } = useCart();
 
   const { data: product, error, isLoading } = useSWR<Product>(
-    id ? `${config.apiBaseUrl}/public/products/${id}` : null,
+    id ? `${getApiBase()}/public/products/${id}` : null,
     fetcher
   );
 
   // Fetch store information
   const { data: store, error: storeError } = useSWR<Store>(
-    product?.storeId ? `${config.apiBaseUrl}/stores/${product.storeId}` : null,
+    product?.storeId ? `${getApiBase()}/stores/${product.storeId}` : null,
     storeFetcher
   );
 
   const { data: recommendedProducts, error: recommendedError } = useSWR<RecommendedProduct[]>(
-    `${config.apiBaseUrl}/products/featured?limit=4`,
+    `${getApiBase()}/products/featured?limit=4`,
     recommendedFetcher
   );
 
   const { data: currentUser, error: userError } = useSWR<User>(
     typeof window !== 'undefined' && localStorage.getItem('access_token') 
-      ? `${config.apiBaseUrl}/users/me`
+      ? `${getApiBase()}/users/me`
       : null,
     userFetcher
   );
@@ -156,7 +156,7 @@ export default function ProductPage() {
     
     try {
       setReviewsLoading(true);
-      const response = await fetch(`${config.apiBaseUrl}/products/${id}/reviews`);
+      const response = await fetch(`${getApiBase()}/products/${id}/reviews`);
       if (response.ok) {
         const reviewsData = await response.json();
         setReviews(reviewsData);
@@ -265,7 +265,7 @@ export default function ProductPage() {
         return;
       }
 
-      const response = await fetch(`${config.apiBaseUrl}/products/${id}/reviews`, {
+      const response = await fetch(`${getApiBase()}/products/${id}/reviews`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,

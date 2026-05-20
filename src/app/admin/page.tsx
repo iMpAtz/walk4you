@@ -21,7 +21,7 @@ import {
 } from 'lucide-react';
 import UserEditModal from '@/components/UserEditModal';
 import StoreStatusModal from '@/components/StoreStatusModal';
-import { config } from '@/lib/config';
+import { getApiBase } from '@/lib/config';
 
 interface UserData {
   id: string;
@@ -111,7 +111,7 @@ export default function AdminPage() {
       }
 
       try {
-        const userRes = await fetch(`${config.apiBaseUrl}/users/me`, {
+        const userRes = await fetch(`${getApiBase()}/users/me`, {
           headers: { Authorization: `Bearer ${token}` },
         });
 
@@ -142,7 +142,7 @@ export default function AdminPage() {
 
   const fetchReports = async (token: string) => {
     try {
-      const res = await fetch(`${config.apiBaseUrl}/reports`, {
+      const res = await fetch(`${getApiBase()}/reports`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (res.ok) {
@@ -156,7 +156,7 @@ export default function AdminPage() {
 
   const fetchUsers = async (token: string) => {
     try {
-      const res = await fetch(`${config.apiBaseUrl}/admin/users`, {
+      const res = await fetch(`${getApiBase()}/admin/users`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (res.ok) {
@@ -170,7 +170,7 @@ export default function AdminPage() {
 
   const fetchStores = async (token: string) => {
     try {
-      const res = await fetch(`${config.apiBaseUrl}/admin/stores`, {
+      const res = await fetch(`${getApiBase()}/admin/stores`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (res.ok) {
@@ -227,7 +227,7 @@ export default function AdminPage() {
       const token = localStorage.getItem('access_token');
       if (!token) return;
 
-      const res = await fetch(`${config.apiBaseUrl}/reports/${reportId}/status`, {
+      const res = await fetch(`${getApiBase()}/reports/${reportId}/status`, {
         method: 'PUT',
         headers: {
           Authorization: `Bearer ${token}`,
@@ -254,7 +254,7 @@ export default function AdminPage() {
       const token = localStorage.getItem('access_token');
       if (!token) return;
 
-      const res = await fetch(`${config.apiBaseUrl}/admin/stores/${storeId}/status`, {
+      const res = await fetch(`${getApiBase()}/admin/stores/${storeId}/status`, {
         method: 'PUT',
         headers: {
           Authorization: `Bearer ${token}`,
@@ -289,7 +289,7 @@ export default function AdminPage() {
         payload.reason = reason.trim();
       }
 
-      const res = await fetch(`${config.apiBaseUrl}/admin/users/${userId}/status`, {
+      const res = await fetch(`${getApiBase()}/admin/users/${userId}/status`, {
         method: 'PUT',
         headers: {
           Authorization: `Bearer ${token}`,

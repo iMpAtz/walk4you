@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { useAuth } from '@/contexts/AuthContext';
 import TopBar from '@/components/TopBar';
-import { config } from '@/lib/config';
+import { getApiBase } from '@/lib/config';
 
 interface Banner {
   id: string;
@@ -41,7 +41,7 @@ export default function BannerManagement() {
   const fetchBanners = async () => {
     try {
       setIsFetching(true);
-      const response = await fetch(`${config.apiBaseUrl}/banners?active_only=false`);
+      const response = await fetch(`${getApiBase()}/banners?active_only=false`);
       
       if (response.ok) {
         const data = await response.json();
@@ -95,8 +95,8 @@ export default function BannerManagement() {
 
     try {
       const url = editingBanner 
-        ? `${config.apiBaseUrl}/admin/banners/${editingBanner.id}`
-        : `${config.apiBaseUrl}/admin/banners`;
+        ? `${getApiBase()}/admin/banners/${editingBanner.id}`
+        : `${getApiBase()}/admin/banners`;
       
       const method = editingBanner ? 'PUT' : 'POST';
 
@@ -139,7 +139,7 @@ export default function BannerManagement() {
 
     try {
       const response = await authenticatedFetch(
-        `${config.apiBaseUrl}/admin/banners/${bannerId}`,
+        `${getApiBase()}/admin/banners/${bannerId}`,
         {
           method: 'DELETE',
         }
@@ -160,7 +160,7 @@ export default function BannerManagement() {
   const handleToggleActive = async (banner: Banner) => {
     try {
       const response = await authenticatedFetch(
-        `${config.apiBaseUrl}/admin/banners/${banner.id}`,
+        `${getApiBase()}/admin/banners/${banner.id}`,
         {
           method: 'PUT',
           headers: {

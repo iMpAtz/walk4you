@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import TopBar from '@/components/TopBar';
-import { config } from '@/lib/config';
+import { getApiBase } from '@/lib/config';
 import { 
   Building2,
   Clipboard,
@@ -134,7 +134,7 @@ export default function StoreOrdersPage() {
 
   const fetchUserData = async (token: string) => {
     try {
-      const response = await fetch(`${config.apiBaseUrl}/users/me`, {
+      const response = await fetch(`${getApiBase()}/users/me`, {
         headers: {
           'Authorization': `Bearer ${token}`,
         },
@@ -150,7 +150,7 @@ export default function StoreOrdersPage() {
 
   const fetchStoreData = async (token: string) => {
     try {
-      const response = await fetch(`${config.apiBaseUrl}/users/me/store`, {
+      const response = await fetch(`${getApiBase()}/users/me/store`, {
         headers: {
           'Authorization': `Bearer ${token}`,
         },
@@ -167,7 +167,7 @@ export default function StoreOrdersPage() {
 
   const fetchOrders = async (token: string) => {
     try {
-      const res = await fetch(`${config.apiBaseUrl}/orders/my-store`, {
+      const res = await fetch(`${getApiBase()}/orders/my-store`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       if (res.ok) {
@@ -242,7 +242,7 @@ export default function StoreOrdersPage() {
         }
       }
 
-      const res = await fetch(`${config.apiBaseUrl}/orders/${orderId}/status`, {
+      const res = await fetch(`${getApiBase()}/orders/${orderId}/status`, {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -320,7 +320,7 @@ export default function StoreOrdersPage() {
         };
       }
       
-      const res = await fetch(`${config.apiBaseUrl}/orders/${orderId}/shipping`, {
+      const res = await fetch(`${getApiBase()}/orders/${orderId}/shipping`, {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${token}`,

@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
-import { config } from '@/lib/config';
+import { getApiBase } from '@/lib/config';
 import { X, Mail, Lock, LogIn } from 'lucide-react';
 import Link from 'next/link';
 
@@ -36,7 +36,7 @@ export default function LoginModal({ isOpen, onClose, onSwitchToRegister }: Logi
       // Get user info to determine redirect
       const token = localStorage.getItem('access_token');
       if (token) {
-        const userRes = await fetch(`${config.apiBaseUrl}/users/me`, {
+        const userRes = await fetch(`${getApiBase()}/users/me`, {
           headers: { Authorization: `Bearer ${token}` }
         });
         

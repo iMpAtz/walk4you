@@ -5,7 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { AlertTriangle, FileText, Store } from 'lucide-react';
 import NotificationBell from '@/components/NotificationBell';
 import CartIcon from '@/components/CartIcon';
-import { config } from '@/lib/config';
+import { getApiBase } from '@/lib/config';
 import TopBar from '@/components/TopBar';
 
 interface UserData {
@@ -71,7 +71,7 @@ function ReportStoreContent() {
 
   const fetchUser = async (token: string) => {
     try {
-      const res = await fetch(`${config.apiBaseUrl}/users/me`, {
+      const res = await fetch(`${getApiBase()}/users/me`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (res.ok) setUserData(await res.json());
@@ -82,7 +82,7 @@ function ReportStoreContent() {
 
   const fetchStoreInfo = async (token: string, storeId: string) => {
     try {
-      const res = await fetch(`${config.apiBaseUrl}/stores/${storeId}`);
+      const res = await fetch(`${getApiBase()}/stores/${storeId}`);
       if (res.ok) {
         const store = await res.json();
         setStoreData({ id: store.id, storeName: store.storeName, storeDescription: store.storeDescription });
@@ -104,7 +104,7 @@ function ReportStoreContent() {
       // Note: You may need to create a store search endpoint
       // For now, we'll use a simple approach - you can enhance this later
       const res = await fetch(
-        `${config.apiBaseUrl}/products/search?q=${encodeURIComponent(query)}&limit=10`
+        `${getApiBase()}/products/search?q=${encodeURIComponent(query)}&limit=10`
       );
       if (res.ok) {
         const products = await res.json();
@@ -114,7 +114,7 @@ function ReportStoreContent() {
           if (product.storeId && !storeMap.has(product.storeId)) {
             try {
               const storeRes = await fetch(
-                `${config.apiBaseUrl}/stores/${product.storeId}`
+                `${getApiBase()}/stores/${product.storeId}`
               );
               if (storeRes.ok) {
                 const store = await storeRes.json();
@@ -166,7 +166,7 @@ function ReportStoreContent() {
         return;
       }
 
-      const res = await fetch(`${config.apiBaseUrl}/reports`, {
+      const res = await fetch(`${getApiBase()}/reports`, {
         method: 'POST',
         headers: {
           Authorization: `Bearer ${token}`,

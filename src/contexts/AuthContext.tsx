@@ -10,7 +10,7 @@ import {
   saveTokens,
   authenticatedFetch,
 } from '@/lib/auth';
-import { config } from '@/lib/config';
+import { getApiBase } from '@/lib/config';
 
 interface User {
   id: string;
@@ -59,7 +59,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
       
       const response = await authenticatedFetch(
-        `${config.apiBaseUrl}/users/me`
+        `${getApiBase()}/users/me`
       );
 
       if (response.ok) {
@@ -185,7 +185,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         : { username: emailOrUsername, password };
       
       const response = await fetch(
-        `${config.apiBaseUrl}/auth/login`,
+        `${getApiBase()}/auth/login`,
         {
           method: 'POST',
           headers: {

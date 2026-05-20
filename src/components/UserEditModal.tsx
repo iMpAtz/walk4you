@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { X } from 'lucide-react';
-import { config } from '@/lib/config';
+import { getApiBase } from '@/lib/config';
 
 interface UserEditModalProps {
   isOpen: boolean;
@@ -50,7 +50,7 @@ export default function UserEditModal({ isOpen, onClose, onUpdate, user }: UserE
         throw new Error('กรุณาเข้าสู่ระบบก่อน');
       }
       
-      const response = await fetch(`${config.apiBaseUrl}/admin/users/${user.id}`, {
+      const response = await fetch(`${getApiBase()}/admin/users/${user.id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',

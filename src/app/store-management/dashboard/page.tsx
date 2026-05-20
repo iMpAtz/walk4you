@@ -18,7 +18,7 @@ import {
 } from 'lucide-react';
 import TopBar from '@/components/TopBar';
 import OrderDetailsModal from '@/components/OrderDetailsModal';
-import { config } from '@/lib/config';
+import { getApiBase } from '@/lib/config';
 
 interface OrderDetail {
   orderId: string;
@@ -102,7 +102,7 @@ export default function StoreDashboardPage() {
         return;
       }
 
-      const res = await fetch(`${config.apiBaseUrl}/stores/my/dashboard`, {
+      const res = await fetch(`${getApiBase()}/stores/my/dashboard`, {
         headers: { Authorization: `Bearer ${token}` }
       });
 

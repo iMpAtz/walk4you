@@ -1,15 +1,19 @@
-// API Configuration
-// Use function to ensure runtime evaluation
-export const getApiBaseUrl = () => {
-  const url = process.env.NEXT_PUBLIC_API_BASE;
-  if (!url) {
-    throw new Error('NEXT_PUBLIC_API_BASE environment variable is not set');
+declare global {
+  interface Window {
+    __NEXT_PUBLIC_API_BASE__?: string;
   }
-  return url;
+}
+
+export const getApiBase = () => {
+  if (typeof window !== 'undefined') {
+    return window.__NEXT_PUBLIC_API_BASE__ || '';
+  }
+
+  return (globalThis as any).process?.env?.NEXT_PUBLIC_API_BASE ?? '';
 };
 
 export const config = {
   get apiBaseUrl() {
-    return getApiBaseUrl();
+    return getApiBase();
   },
 } as const;

@@ -3,6 +3,9 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./styles/globals.css";
 import { CartProvider } from "@/contexts/CartContext";
 import { AuthProvider } from "@/contexts/AuthContext";
+import { getApiBase } from "@/lib/config";
+
+export const dynamic = 'force-dynamic';
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -37,6 +40,13 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `window.__NEXT_PUBLIC_API_BASE__ = ${JSON.stringify(
+              getApiBase()
+            )};`,
+          }}
+        />
         <AuthProvider>
           <CartProvider>
             {children}

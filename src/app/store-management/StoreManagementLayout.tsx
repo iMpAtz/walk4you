@@ -13,7 +13,7 @@ import {
 } from 'lucide-react';
 import TopBar from '@/components/TopBar';
 import { Metadata } from 'next';
-import { config } from '@/lib/config';
+import { getApiBase } from '@/lib/config';
 
 interface StoreData {
   id: string;
@@ -173,7 +173,7 @@ export default function StoreManagementLayout({ storeData, userData, onSave }: S
         return;
       }
       
-      const saveRes = await fetch(`${config.apiBaseUrl}/stores/${storeData.id}/qr`, {
+      const saveRes = await fetch(`${getApiBase()}/stores/${storeData.id}/qr`, {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -277,7 +277,7 @@ export default function StoreManagementLayout({ storeData, userData, onSave }: S
       const logoUrl = uploadData.secure_url;
 
       // Save logo URL to backend
-      const saveRes = await fetch(`${config.apiBaseUrl}/stores/${storeData.id}/logo`, {
+      const saveRes = await fetch(`${getApiBase()}/stores/${storeData.id}/logo`, {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${token}`,

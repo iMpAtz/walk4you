@@ -11,7 +11,7 @@ import NotificationBell from './NotificationBell';
 import CartIcon from './CartIcon';
 import LoginModal from './LoginModal';
 import RegisterModal from './RegisterModal';
-import { config } from '@/lib/config';
+import { getApiBase } from '@/lib/config';
 
 export default function TopBar() {
   const router = useRouter();
@@ -50,7 +50,7 @@ export default function TopBar() {
 
   const fetchUserProfile = async (token: string) => {
     try {
-      const response = await fetch(`${config.apiBaseUrl}/users/me`, {
+      const response = await fetch(`${getApiBase()}/users/me`, {
         headers: {
           'Authorization': `Bearer ${token}`,
         },
@@ -82,7 +82,7 @@ export default function TopBar() {
 
   const checkStoreStatus = async (token: string) => {
     try {
-      const response = await fetch(`${config.apiBaseUrl}/users/me/has-store`, {
+      const response = await fetch(`${getApiBase()}/users/me/has-store`, {
         headers: {
           'Authorization': `Bearer ${token}`,
         },

@@ -1,6 +1,6 @@
 import { Smartphone, Laptop, Shirt, Home as HomeIcon, Book, Gift, Utensils, Dumbbell, Tag } from "lucide-react";
 import { useState, useEffect } from 'react';
-import { config } from '@/lib/config';
+import { getApiBase } from '@/lib/config';
 
 export interface Category {
   id: string;
@@ -37,7 +37,7 @@ export const getCategoryOptions = () => {
 // Function to fetch category counts from API
 export const fetchCategoryCounts = async (): Promise<CategoryWithCount[]> => {
   try {
-    const response = await fetch(`${config.apiBaseUrl}/products/category-counts`);
+    const response = await fetch(`${getApiBase()}/products/category-counts`);
     if (response.ok) {
       const counts = await response.json();
       return counts;

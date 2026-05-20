@@ -19,7 +19,7 @@ import type { UserProfile, Store } from '@/types';
 import AvatarUpload from '@/components/AvatarUpload';
 import StoreRegisterModal from '@/components/StoreRegisterModal';
 import TopBar from '@/components/TopBar';
-import { config } from '@/lib/config';
+import { getApiBase } from '@/lib/config';
 
 export default function ProfilePage() {
   const router = useRouter();
@@ -82,7 +82,7 @@ export default function ProfilePage() {
         return;
       }
 
-      const response = await fetch(`${config.apiBaseUrl}/users/me`, {
+      const response = await fetch(`${getApiBase()}/users/me`, {
         headers: {
           'Authorization': `Bearer ${token}`,
         },
@@ -127,7 +127,7 @@ export default function ProfilePage() {
       const token = localStorage.getItem('access_token');
       if (!token) return;
 
-      const response = await fetch(`${config.apiBaseUrl}/users/me/has-store`, {
+      const response = await fetch(`${getApiBase()}/users/me/has-store`, {
         headers: {
           'Authorization': `Bearer ${token}`,
         },
@@ -139,7 +139,7 @@ export default function ProfilePage() {
         
         if (data.hasStore) {
           // Fetch store details
-          const storeResponse = await fetch(`${config.apiBaseUrl}/users/me/store`, {
+          const storeResponse = await fetch(`${getApiBase()}/users/me/store`, {
             headers: {
               'Authorization': `Bearer ${token}`,
             },
@@ -188,7 +188,7 @@ export default function ProfilePage() {
         return;
       }
 
-      const response = await fetch(`${config.apiBaseUrl}/users/change-password`, {
+      const response = await fetch(`${getApiBase()}/users/change-password`, {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -221,7 +221,7 @@ export default function ProfilePage() {
         return;
       }
 
-      const response = await fetch(`${config.apiBaseUrl}/users/address`, {
+      const response = await fetch(`${getApiBase()}/users/address`, {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -256,7 +256,7 @@ export default function ProfilePage() {
       const token = localStorage.getItem('access_token');
       if (!token) return;
 
-      const response = await fetch(`${config.apiBaseUrl}/orders/my`, {
+      const response = await fetch(`${getApiBase()}/orders/my`, {
         headers: {
           'Authorization': `Bearer ${token}`,
         },
@@ -281,7 +281,7 @@ export default function ProfilePage() {
       const token = localStorage.getItem('access_token');
       if (!token) return;
       
-      const response = await fetch(`${config.apiBaseUrl}/orders/${orderId}/complete`, {
+      const response = await fetch(`${getApiBase()}/orders/${orderId}/complete`, {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${token}`,

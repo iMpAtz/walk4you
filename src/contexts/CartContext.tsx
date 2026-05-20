@@ -1,7 +1,7 @@
 'use client';
 
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { config } from '@/lib/config';
+import { getApiBase } from '@/lib/config';
 
 export interface CartItem {
   id: string;
@@ -77,7 +77,7 @@ export const CartProvider = ({ children }: CartProviderProps) => {
         return;
       }
 
-      const response = await fetch(`${config.apiBaseUrl}/cart`, {
+      const response = await fetch(`${getApiBase()}/cart`, {
         headers: getAuthHeaders(),
       });
 
@@ -103,7 +103,7 @@ export const CartProvider = ({ children }: CartProviderProps) => {
       setLoading(true);
       setError(null);
 
-      const response = await fetch(`${config.apiBaseUrl}/cart/items`, {
+      const response = await fetch(`${getApiBase()}/cart/items`, {
         method: 'POST',
         headers: getAuthHeaders(),
         body: JSON.stringify({
@@ -141,7 +141,7 @@ export const CartProvider = ({ children }: CartProviderProps) => {
       setLoading(true);
       setError(null);
 
-      const response = await fetch(`${config.apiBaseUrl}/cart/items/${itemId}`, {
+      const response = await fetch(`${getApiBase()}/cart/items/${itemId}`, {
         method: 'PUT',
         headers: getAuthHeaders(),
         body: JSON.stringify({
@@ -178,7 +178,7 @@ export const CartProvider = ({ children }: CartProviderProps) => {
       setLoading(true);
       setError(null);
 
-      const response = await fetch(`${config.apiBaseUrl}/cart/items/${itemId}`, {
+      const response = await fetch(`${getApiBase()}/cart/items/${itemId}`, {
         method: 'DELETE',
         headers: getAuthHeaders(),
       });
@@ -204,7 +204,7 @@ export const CartProvider = ({ children }: CartProviderProps) => {
       setLoading(true);
       setError(null);
 
-      const response = await fetch(`${config.apiBaseUrl}/cart`, {
+      const response = await fetch(`${getApiBase()}/cart`, {
         method: 'DELETE',
         headers: getAuthHeaders(),
       });

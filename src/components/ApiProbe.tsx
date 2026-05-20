@@ -1,13 +1,13 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { config } from '@/lib/config';
+import { getApiBase } from '@/lib/config';
 
 export default function ApiProbe() {
   const [statusText, setStatusText] = useState<string>('');
 
   useEffect(() => {
-    const url = `${config.apiBaseUrl}/health`;
+    const url = `${getApiBase()}/health`;
 
     fetch(url)
       .then(async (res) => {

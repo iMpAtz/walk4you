@@ -2,7 +2,7 @@
 
 import { useState, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
-import { config } from '@/lib/config';
+import { getApiBase } from '@/lib/config';
 import { X, UserPlus, Mail, Lock, User, Phone, Calendar } from 'lucide-react';
 import TermsModal from './TermsModal';
 import PrivacyModal from './PrivacyModal';
@@ -111,7 +111,7 @@ export default function RegisterModal({ isOpen, onClose, onSwitchToLogin }: Regi
     const fullName = `${firstName} ${lastName}`.trim();
     
     try {
-      const res = await fetch(`${config.apiBaseUrl}/auth/register`, {
+      const res = await fetch(`${getApiBase()}/auth/register`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 

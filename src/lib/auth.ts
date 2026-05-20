@@ -1,5 +1,5 @@
 // JWT Authentication Utilities
-import { config } from './config';
+import { getApiBase } from './config';
 
 interface TokenData {
   access_token: string;
@@ -141,7 +141,7 @@ export async function refreshAccessToken(): Promise<string | null> {
 
   try {
     const response = await fetch(
-      `${config.apiBaseUrl}/auth/refresh`,
+      `${getApiBase()}/auth/refresh`,
       {
         method: 'POST',
         headers: {
@@ -271,7 +271,7 @@ export function setupTokenRefreshTimer(callback?: () => void): () => void {
 export async function login(username: string, password: string): Promise<boolean> {
   try {
     const response = await fetch(
-      `${config.apiBaseUrl}/auth/login`,
+      `${getApiBase()}/auth/login`,
       {
         method: 'POST',
         headers: {
